@@ -19,12 +19,15 @@ best's minus z_L times the headroom's error when that is stricter, z_L joint ove
 
 After W42-R1's code has run, three named steps complete the output (the declaration's sections 3 and 4):
 1. the application record names W42-R2's script and output;
-2. **the corrected headroom, for every one of the seven limits (E-296):** W42-R1's headroom counts only the held-out
-   test's coin noise (`extended/wave42.py` lines 809-810); W42-R2's (`headroom`) also counts M_best's own search-year
-   estimate noise at H4's seed count, the two combined as independent errors. Each limit's value, which term binds and
-   its vacuity are then re-selected by W42-R1's section 6 steps 3-4 (`limit_value`; the added limit's vacuity read
-   against its own a priori range, (-inf, inf)), and its baseline checks re-read at the new value through W42-R1's
-   `limit_check`; W42-R1's own value is kept beside (`value_w42_r1_headroom`);
+2. **the corrected headroom, for every one of the seven limits (E-296; the red team's B-1, the lead's ruling):**
+   W42-R1's headroom counts only the held-out test's coin noise of the drawn winner (`extended/wave42.py` lines
+   809-810); W42-R2's (`headroom`) counts the held-out test's and M_best's own search-year noise at H4's seed count,
+   combined as independent errors, **both at sd*, the largest per-seed sd among the four baselines** (the drawn
+   winner's sd is selected by the same draw that selects the winner). Each limit's value, which term binds and its
+   vacuity are then re-selected by W42-R1's section 6 steps 3-4 (`limit_value`; the added limit's vacuity read against
+   its own a priori range, (-inf, inf)), and its baseline checks re-read at the new value through W42-R1's
+   `limit_check`; W42-R1's own value is kept beside (`value_w42_r1_headroom`), and beside, deciding nothing, sd*'s
+   95 % chi-square interval (m-2) and the refusal share a design equal to the best meets at other read sizes (m-1);
 3. the block `r2`: the parent rule and its pin, the added limit's value, where `net_month_12` came from, and whether
    the floor refuses the do-nothing journey (it does exactly when its value is above zero).
 
@@ -45,6 +48,7 @@ import types
 from typing import Any, Mapping, Sequence
 
 import numpy as np
+from scipy import stats
 
 from extended import wave42 as R
 
@@ -74,9 +78,14 @@ REQUIRED = {**R.REQUIRED, NET12_KEY: (YEAR, -math.inf, math.inf)}
 HORIZONS = tuple(sorted({d.horizon for d in R.DIMENSIONS} | {lim.horizon for lim in LIMITS}))
 
 #: E-296: the headroom's error term, the held-out test's coin noise and M_best's own search-year noise combined
-HEADROOM_FORM = "sqrt(se_test^2 + se_search^2); se_search = sd_best / sqrt(J_H4)"
+HEADROOM_FORM = ("sqrt(se_test^2 + se_search^2); se_test = sd* sqrt(n_search / (J n_test)), "
+                 "se_search = sd* / sqrt(J_H4), sd* = the largest per-seed sd among the four baselines")
 _VACUOUS_END = "at or beyond the a priori end of its range"
 _VACUOUS_UNITS = "beyond every baseline unit (no baseline's unit distribution crosses it)"
+#: m-1: other read sizes, beside, deciding nothing -- DRAFT_F-13's screen and deciding sizes (wt/wt-fs1 f543e25,
+#: lines 471-475): (its seed count, its start stride)
+READS_BESIDE = {"f13_screen": (4, 4), "f13_deciding": (16, 1)}
+SD_INTERVAL_LEVEL = 0.95                               # m-2: sd*'s chi-square interval, beside, deciding nothing
 
 #: W42-R2's constants: W42-R1's, with these replaced or added (the doc's delta table)
 CONSTANTS_DELTA: dict[str, Any] = {
@@ -121,9 +130,26 @@ def tables(net_floor: bool = True) -> dict[str, Any]:
             "HORIZONS": HORIZONS, "CONSTANTS": CONSTANTS}
 
 
+_NS_CACHE: dict[bool, tuple[tuple, dict[str, Any]]] = {}
+
+
+def _fingerprint(net_floor: bool) -> tuple:
+    return tuple(vars(R).items()) + tuple(tables(net_floor).items())
+
+
+def _same(a: tuple, b: tuple) -> bool:
+    return len(a) == len(b) and all(x[0] == y[0] and x[1] is y[1] for x, y in zip(a, b))
+
+
 def namespace(net_floor: bool = True) -> dict[str, Any]:
-    """W42-R1's namespace over W42-R2's tables (or W42-R1's), built afresh at each call."""
-    return rebind(R, tables(net_floor))
+    """W42-R1's namespace over W42-R2's tables (or W42-R1's), built once per process (m-6) and built again only when
+    an object in W42-R1's module or in the tables is not the one it was built from (so a test's monkeypatch reaches
+    it, and its restoration too)."""
+    fp = _fingerprint(net_floor)
+    hit = _NS_CACHE.get(net_floor)
+    if hit is None or not _same(hit[0], fp):
+        _NS_CACHE[net_floor] = (fp, rebind(R, tables(net_floor)))
+    return _NS_CACHE[net_floor][1]
 
 
 # --------------------------------------------------------------------------- the public scoring path (the survey's)
@@ -161,14 +187,16 @@ def null_net12(fee_unit: float) -> dict[str, float]:
 
 
 # ----------------------------------------------------------------------------- the corrected headroom (E-296)
-def headroom(m_best: float, sd_best: float, n_search: int, n_test: int, j_test: int, j_h4: int, z: float,
+def headroom(m_best: float, sd: float, n_search: int, n_test: int, j_test: int, j_h4: int, z: float,
              direction: str) -> dict[str, float]:
-    """The needed value of a limit (the declaration's section 4.2). A design equal to the best baseline is read at the
-    held-out test with error se_test = sd_best sqrt(n_search / (j_test n_test)) (W42-R1's term: the per-seed
-    statistic's sd, scaled from one seed's n_search starts to the test's j_test x n_test units), and M_best itself,
-    pooled over H4's j_h4 seeds, carries se_search = sd_best / sqrt(j_h4). The two are independent (other coins, other
-    days), so the design's estimate minus M_best has sd se = sqrt(se_test^2 + se_search^2), and the needed value is
-    M_best + z se (a ceiling) or M_best - z se (a floor): the design passes it with probability Phi(z)."""
+    """The needed value of a limit (the declaration's section 4.2), at the per-seed sd `sd` the rule passes -- sd*,
+    the largest among the four baselines (B-1). A design equal to the best baseline is read at the held-out test with
+    error se_test = sd sqrt(n_search / (j_test n_test)) (W42-R1's term: the per-seed statistic's sd, scaled from one
+    seed's n_search starts to the test's j_test x n_test units), and M_best itself, pooled over H4's j_h4 seeds,
+    carries se_search = sd / sqrt(j_h4). The two are independent (other coins, other days), so the design's estimate
+    minus M_best has sd at most se = sqrt(se_test^2 + se_search^2) when sd bounds both baselines' per-seed sds, and the
+    needed value is M_best + z se (a ceiling) or M_best - z se (a floor)."""
+    sd_best = sd
     if direction not in ("ceiling", "floor"):
         raise ValueError(f"a limit is a ceiling or a floor, not {direction!r}")
     if min(n_search, n_test, j_test, j_h4) < 1 or not math.isfinite(sd_best) or sd_best < 0:
@@ -177,8 +205,25 @@ def headroom(m_best: float, sd_best: float, n_search: int, n_test: int, j_test: 
     se_search = sd_best / math.sqrt(j_h4)
     se = math.sqrt(se_test * se_test + se_search * se_search)
     sign = 1.0 if direction == "ceiling" else -1.0
-    return {"se_test": se_test, "se_search": se_search, "se": se, "needed": m_best + sign * z * se,
-            "needed_w42_r1": m_best + sign * z * se_test}
+    return {"se_test": se_test, "se_search": se_search, "se": se, "needed": m_best + sign * z * se}
+
+
+def refusal_at_read(z: float, n_search: int, n_test: int, j_test: int, j_h4: int, n_read: int, j_read: int) -> float:
+    """m-1, beside, deciding nothing: the share of reads in which a design equal to the best baseline, read on n_read
+    starts by j_read seeds of the same history, falls beyond a headroom-bound value set for the held-out read: the sd
+    cancels, 1 - Phi(z sqrt(n_s / (j_test n_test) + 1 / j_h4) / sqrt(n_s / (j_read n_read) + 1 / j_h4)). At the
+    held-out read itself it is 1 - Phi(z), the nominal share."""
+    held = math.sqrt(n_search / (j_test * n_test) + 1.0 / j_h4)
+    read = math.sqrt(n_search / (j_read * n_read) + 1.0 / j_h4)
+    return float(stats.norm.sf(z * held / read))
+
+
+def sd_interval(sd: float, j_h4: int, level: float = SD_INTERVAL_LEVEL) -> list[float]:
+    """m-2, beside, deciding nothing: the chi-square interval of a per-seed sd over j_h4 seeds (normal-theory; for a
+    lumpy or lattice statistic only indicative). Not propagated into the headroom."""
+    a = (1.0 - level) / 2.0
+    k = j_h4 - 1
+    return [float(sd * math.sqrt(k / stats.chi2.ppf(1.0 - a, k))), float(sd * math.sqrt(k / stats.chi2.ppf(a, k)))]
 
 
 def limit_value(direction: str, kind: str, m_worst: float, needed: float, pooled: np.ndarray) -> dict[str, Any]:
@@ -270,15 +315,24 @@ def setting_rule(readings: Mapping[str, R.BaselineReading] | Sequence[R.Baseline
             continue
         L = _spec(x["name"])
         rows = sl >= L.horizon
-        sd_best = ns["limit_per_seed_sd"](out, sl, vals[x["best"]], L.name)
-        hr = headroom(x["baseline_values"][x["best"]], sd_best, int(rows.sum()), int(test_starts[L.horizon]),
-                      R.TEST_SEEDS, j_h4, float(x["headroom_z"]), L.direction)
+        sds = {b: float(ns["limit_per_seed_sd"](out, sl, vals[b], L.name)) for b in R.BASELINES}
+        sd_b = max(R.BASELINES, key=lambda b: (sds[b], -R.BASELINES.index(b)))   # B-1: the largest of the four
+        n_s, n_t = int(rows.sum()), int(test_starts[L.horizon])
+        z = float(x["headroom_z"])
+        hr = headroom(x["baseline_values"][x["best"]], sds[sd_b], n_s, n_t, R.TEST_SEEDS, j_h4, z, L.direction)
         pooled = np.concatenate([per[b][L.key][rows].ravel() for b in R.BASELINES])
         sel = limit_value(L.direction, L.kind, x["baseline_values"][x["worst"]], hr["needed"], pooled)
         x.update({"value_w42_r1_headroom": x["value"], "binds_w42_r1_headroom": x["binds"],
                   "headroom_needed_w42_r1": x["headroom_needed"], **sel, "headroom_needed": hr["needed"],
                   "best_se_test": hr["se_test"], "best_se_search": hr["se_search"], "headroom_se": hr["se"],
-                  "best_sd_per_seed": sd_best, "headroom_form": HEADROOM_FORM})
+                  "best_sd_per_seed": sds[x["best"]], "sd_per_seed": sds, "sd_star": sds[sd_b],
+                  "sd_star_baseline": sd_b, "headroom_form": HEADROOM_FORM,
+                  "beside": {"sd_star_interval": sd_interval(sds[sd_b], j_h4), "sd_star_interval_level":
+                             SD_INTERVAL_LEVEL, "refusal_at_read": {
+                                 "held_out": refusal_at_read(z, n_s, n_t, R.TEST_SEEDS, j_h4, n_t, R.TEST_SEEDS),
+                                 **{k: refusal_at_read(z, n_s, n_t, R.TEST_SEEDS, j_h4, -(-n_s // stride), j)
+                                    for k, (j, stride) in READS_BESIDE.items()}},
+                             "decides": "nothing (m-1, m-2): the headroom's rate is the held-out read's"}})
         x["baseline_checks"] = {b: ns["limit_check"](out, sl, vals[b], L.name, sel["value"]) for b in R.BASELINES}
         if L.kind == NET12_KIND:
             x["a_priori_range"] = ["-inf", "inf"]
@@ -317,6 +371,8 @@ def setting_rule(readings: Mapping[str, R.BaselineReading] | Sequence[R.Baseline
                                      "it; W42-R1's guards (not_paid_within_B, the do-nothing composite floor, the "
                                      "long-run gate) stand as before"),
         "floor_refuses_do_nothing": bites,
+        "report_with_and_without_floor": ("F-13's finalists are shown with and without this floor, deciding nothing "
+                                          "(B-3: the floor's form was ruled after the early look)"),
     }
     return R.Wave42Values(out)
 
@@ -330,6 +386,7 @@ def _sessions_left(starts: Sequence[str], calendar: Sequence[str]) -> list[int]:
 
 __all__ = ["RULE_ID", "PARENT_RULE_ID", "PARENT_ROW", "PARENT_SHA256", "PARENT_PIN_COMMIT", "OUTPUT_NAME",
            "APPLY_SCRIPT", "YEAR", "NET12_KEY", "NET12_KIND", "NET12_LIMIT", "LIMITS", "REQUIRED", "HORIZONS",
-           "CONSTANTS", "CONSTANTS_DELTA", "OVERRIDES", "HEADROOM_FORM", "headroom", "limit_value", "rebind", "tables", "namespace", "setting_rule",
+           "CONSTANTS", "CONSTANTS_DELTA", "OVERRIDES", "HEADROOM_FORM", "READS_BESIDE", "headroom", "limit_value",
+           "refusal_at_read", "sd_interval", "rebind", "tables", "namespace", "setting_rule",
            "limit_estimate", "limit_per_seed_sd", "limit_check", "composite_per_seed", "null_composites",
            "do_nothing_floor", "above_floor", "pinned_inputs", "values_from_rows", "null_net12"]

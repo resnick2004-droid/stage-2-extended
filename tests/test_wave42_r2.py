@@ -152,17 +152,23 @@ def test_with_the_limit_on_only_the_stated_keys_move(pair) -> None:
     lb = {x["name"]: x for x in b["limits"]["values"]}
     assert list(lb) == [L.name for L in R.LIMITS] + [R2.NET12_LIMIT.name]
     for name, y in lb.items():
+        h = int(y["horizon"])
+        r_t = math.sqrt(b["search_starts"][str(h)] / (R.TEST_SEEDS * T.TEST_STARTS[h]))
+        assert y["best_sd_per_seed"] == y["sd_per_seed"][y["best"]]                  # W42-R1's own sd_best
+        assert y["best_se_test"] == pytest.approx(y["sd_star"] * r_t, rel=1e-12)    # the test term at sd*
         if name in la:
             for k in ("baseline_values", "best", "worst", "by_search_year", "direction", "stat"):
                 assert la[name][k] == y[k], (name, k)
-            assert y["best_se_test"] == pytest.approx(la[name]["best_se_test"], rel=1e-12)   # W42-R1's term
+            assert la[name]["best_se_test"] == pytest.approx(y["best_sd_per_seed"] * r_t, rel=1e-12)  # W42-R1's
         assert y["headroom_z"] == b["limits"]["headroom_z"]
-        assert y["best_se_search"] == pytest.approx(y["best_sd_per_seed"] / math.sqrt(T.J0), rel=1e-12)
+        assert y["sd_star"] == max(y["sd_per_seed"].values()) == y["sd_per_seed"][y["sd_star_baseline"]]
+        assert y["best_se_search"] == pytest.approx(y["sd_star"] / math.sqrt(T.J0), rel=1e-12)
         assert y["headroom_se"] == pytest.approx(_se(y), rel=1e-12)
         sign = 1.0 if y["direction"] == "ceiling" else -1.0
         mb = y["baseline_values"][y["best"]]
         assert y["headroom_needed"] == pytest.approx(mb + sign * y["headroom_z"] * y["headroom_se"], rel=1e-12)
-        assert y["headroom_needed_w42_r1"] == pytest.approx(mb + sign * y["headroom_z"] * y["best_se_test"], rel=1e-12)
+        assert y["headroom_needed_w42_r1"] == pytest.approx(mb + sign * y["headroom_z"] * y["best_sd_per_seed"] * r_t,
+                                                            rel=1e-12)
         if y["binds"] == "worst_baseline":
             assert y["value"] == y["baseline_values"][y["worst"]]
         else:
@@ -185,15 +191,17 @@ def test_a_headroom_bound_w42_r1_limit_moves_out_by_z_at_seven_and_nothing_else_
     m = x["baseline_values"][x["best"]]
     assert x["value"] == pytest.approx(m - R.limit_z(6) * x["best_se_test"], rel=1e-12)          # W42-R1, L = 6
     assert y["value_w42_r1_headroom"] == pytest.approx(m - R.limit_z(7) * x["best_se_test"], rel=1e-12)
-    se = math.sqrt(x["best_se_test"] ** 2 + y["best_sd_per_seed"] ** 2 / T.J0)                    # E-296
+    assert y["sd_star"] == y["best_sd_per_seed"]                         # one matrix for all four: equal sds
+    se = math.sqrt(x["best_se_test"] ** 2 + y["sd_star"] ** 2 / T.J0)                             # E-296
     assert y["value"] == pytest.approx(m - R.limit_z(7) * se, rel=1e-12)
     assert y["value"] < y["value_w42_r1_headroom"] < x["value"]          # a floor: further out is lower
 
 
 # ------------------------------------------------------------------------------- the value comes from the formula
 def _formula(rx, J=R.TEST_SEEDS):
-    """Section 3.2 by its words, independently of the module: the median of the pooled units of E_252, the per-seed
-    standard deviation of the best's, the test standard error, z at L = 7, the floor."""
+    """Sections 3.2 and 4.2 by their words, independently of the module: the median of the pooled units of E_252,
+    sd* the largest of the four baselines' per-seed sds, the two terms at it, z at L = 7, the floor; and W42-R1's
+    value beside (the test term only, at the drawn winner's sd)."""
     sl = T._sl(rx[R.BASELINES[0]].starts)
     e = sl >= 252
     X = {b: np.asarray(rx[b].values["net_month_12"], dtype=float)[e] for b in R.BASELINES}
@@ -201,13 +209,16 @@ def _formula(rx, J=R.TEST_SEEDS):
     best = max(R.BASELINES, key=lambda b: (M[b], -R.BASELINES.index(b)))
     worst = min(R.BASELINES, key=lambda b: (M[b], R.BASELINES.index(b)))
     nJ = X[best].shape[1]
-    sd = float(np.std([np.quantile(X[best][:, c], 0.5) for c in range(nJ)], ddof=1))
-    se_test = sd * math.sqrt(int(e.sum()) / (J * T.TEST_STARTS[252]))
+    sds = {b: float(np.std([np.quantile(X[b][:, c], 0.5) for c in range(nJ)], ddof=1)) for b in R.BASELINES}
+    sd = max(sds.values())
+    r_t = math.sqrt(int(e.sum()) / (J * T.TEST_STARTS[252]))
+    se_test = sd * r_t
     se = math.sqrt(se_test ** 2 + sd ** 2 / nJ)                       # E-296: M_best's own noise beside
     z = float(stats.norm.ppf(1.0 - (1.0 - 0.8) / 7))
-    need, need_old = M[best] - z * se, M[best] - z * se_test
-    return {"M": M, "best": best, "worst": worst, "se_test": se_test, "se": se, "value": min(M[worst], need),
-            "value_old": min(M[worst], need_old), "binds": "worst_baseline" if M[worst] <= need else "headroom"}
+    need, need_old = M[best] - z * se, M[best] - z * sds[best] * r_t
+    return {"M": M, "best": best, "worst": worst, "se_test": se_test, "se": se, "sds": sds, "sd_star": sd,
+            "value": min(M[worst], need), "value_old": min(M[worst], need_old),
+            "binds": "worst_baseline" if M[worst] <= need else "headroom"}
 
 
 def test_the_floors_value_is_w42_r1s_formula_recomputed_from_the_readings(pair) -> None:
@@ -216,6 +227,9 @@ def test_the_floors_value_is_w42_r1s_formula_recomputed_from_the_readings(pair) 
     assert net["binds"] == f["binds"] and net["best"] == f["best"] and net["worst"] == f["worst"]
     assert net["best_se_test"] == pytest.approx(f["se_test"], rel=1e-12)
     assert net["headroom_se"] == pytest.approx(f["se"], rel=1e-12)
+    assert net["sd_star"] == pytest.approx(f["sd_star"], rel=1e-12)
+    for b in R.BASELINES:
+        assert net["sd_per_seed"][b] == pytest.approx(f["sds"][b], rel=1e-12)
     assert net["value_w42_r1_headroom"] == pytest.approx(f["value_old"], rel=1e-12)
     for b in R.BASELINES:
         assert net["baseline_values"][b] == pytest.approx(f["M"][b], rel=1e-12)
@@ -260,12 +274,12 @@ def test_the_headroom_by_hand() -> None:
     assert h["se_test"] == pytest.approx(se_t) and h["se_search"] == pytest.approx(se_s)
     assert h["se"] == pytest.approx(math.hypot(se_t, se_s))
     assert h["needed"] == pytest.approx(10.0 + 1.5 * math.hypot(se_t, se_s))
-    assert h["needed_w42_r1"] == pytest.approx(10.0 + 1.5 * se_t)
+    assert set(h) == {"se_test", "se_search", "se", "needed"}
     f = R2.headroom(10.0, 2.0, 400, 100, 1000, 100, 1.5, "floor")
     assert f["needed"] == pytest.approx(10.0 - 1.5 * math.hypot(se_t, se_s))
     assert R2.headroom(10.0, 0.0, 400, 100, 1000, 100, 1.5, "floor")["needed"] == 10.0
-    for bad in (dict(direction="both"), dict(j_h4=0), dict(sd_best=-1.0), dict(sd_best=math.nan)):
-        kw = dict(m_best=1.0, sd_best=1.0, n_search=1, n_test=1, j_test=1, j_h4=1, z=1.0, direction="floor")
+    for bad in (dict(direction="both"), dict(j_h4=0), dict(sd=-1.0), dict(sd=math.nan)):
+        kw = dict(m_best=1.0, sd=1.0, n_search=1, n_test=1, j_test=1, j_h4=1, z=1.0, direction="floor")
         kw.update(bad)
         with pytest.raises(ValueError):
             R2.headroom(**kw)
@@ -310,7 +324,7 @@ def test_the_old_headroom_falsely_refuses_and_the_corrected_one_is_at_nominal() 
         D = rng.normal(0.0, 1.0 / math.sqrt(n_t * J), 2000)          # the design's held-out estimate, exactly normal
         for m, s_, d in zip(M, sd, D):
             h = R2.headroom(float(m), float(s_), n_s, n_t, J, nJ, z, "floor")
-            old += int(d < h["needed_w42_r1"])
+            old += int(d < float(m) - z * h["se_test"])
             new += int(d < h["needed"])
         reps += 2000
     nominal = float(stats.norm.sf(z))
@@ -320,6 +334,119 @@ def test_the_old_headroom_falsely_refuses_and_the_corrected_one_is_at_nominal() 
     assert abs(new / reps - nominal) < tol, (new / reps, nominal)
     assert abs(old / reps - predicted_old) < 5 * math.sqrt(predicted_old * (1 - predicted_old) / reps)
     assert old / reps > 5 * nominal
+
+
+def test_sd_star_is_the_largest_of_the_four_baselines_not_the_winners() -> None:
+    """B-1: a non-winner much noisier on net_month_12 (the naive coin, lowest median) supplies sd*; the headroom's
+    terms are at it, not at the winner's (p16's) sd."""
+    rs = T._readings()
+    rx = _net12(rs, law=[(3.9, 80.0), (4.0, 20.0), (4.0, 20.0), (4.05, 20.0)])
+    net = _net(_r2(rx, rs).values)
+    assert net["sd_star_baseline"] == "naive_coin" != net["best"]
+    assert net["sd_star"] == net["sd_per_seed"]["naive_coin"] > 2 * net["sd_per_seed"][net["best"]]
+    n_s = int((T._sl() >= 252).sum())
+    assert net["best_se_search"] == pytest.approx(net["sd_star"] / math.sqrt(T.J0), rel=1e-12)
+    assert net["best_se_test"] == pytest.approx(net["sd_star"] * math.sqrt(n_s / (R.TEST_SEEDS * T.TEST_STARTS[252])),
+                                                rel=1e-12)
+    f = _formula(rx)
+    assert net["value"] == pytest.approx(f["value"], rel=1e-12) and f["sd_star"] == pytest.approx(net["sd_star"])
+
+
+def _rt_config(reps: int, kind: int):
+    """The red team's scenario in the Gaussian form of section 7.2: four tied, the first eight times noisier,
+    independent search noise, the design equal to the noisy first; the real counts."""
+    c = PW.counts()
+    n_s, n_t, j_h4, J = c["n_s_252"], c["n_t_252"], c["j_h4"], c["j_test"]
+    r_t = n_s / (J * n_t)
+    s = np.asarray([8.0, 1.0, 1.0, 1.0])
+    rng = np.random.default_rng(np.random.SeedSequence(ENTROPY, spawn_key=(2, kind)))
+    M = s / math.sqrt(j_h4) * rng.standard_normal((reps, 4))
+    sd_hat = s * np.sqrt(rng.chisquare(j_h4 - 1, (reps, 4)) / (j_h4 - 1))
+    D = s[0] * math.sqrt(r_t) * rng.standard_normal(reps)
+    return M, sd_hat, D, r_t, j_h4, n_s, n_t, J
+
+
+def test_the_red_teams_scenario_holds_c1_under_sd_star_and_fails_under_the_old_forms() -> None:
+    reps = 200000
+    M, sd_hat, D, r_t, j_h4, *_ = _rt_config(reps, 0)
+    v = PW.config_values(M, sd_hat, r_t, j_h4, PW.Z7)
+    p = {f: float(np.mean(D < v[f])) for f in PW.FORMS}
+    bound = PW.c1_bound(PW.T_SELECTION, n=reps)
+    assert p["sd_star"] <= bound, (p, bound)
+    assert p["winner"] > bound and p["w42_r1"] > bound, (p, bound)
+
+
+def test_the_vectorised_form_equals_headroom_and_limit_value() -> None:
+    M, sd_hat, D, r_t, j_h4, n_s, n_t, J = _rt_config(300, 1)
+    v = PW.config_values(M, sd_hat, r_t, j_h4, PW.Z7)
+    for i in range(M.shape[0]):
+        b, w = PW.best_worst("floor", list(M[i]))
+        for f in PW.FORMS:
+            want = PW.form_value(f, "floor", M[i, b], M[i, w], list(sd_hat[i]), b, n_s, n_t, J, j_h4, PW.Z7)
+            assert v[f][i] == pytest.approx(want, rel=1e-9, abs=1e-12), (i, f)
+
+
+def test_the_beside_block_reads_nominal_at_the_held_out_read_and_more_at_f13s_sizes(pair) -> None:
+    for x in pair.r2.values["limits"]["values"]:
+        bs = x["beside"]
+        assert bs["refusal_at_read"]["held_out"] == pytest.approx(float(stats.norm.sf(x["headroom_z"])), rel=1e-12)
+        assert bs["refusal_at_read"]["f13_screen"] > bs["refusal_at_read"]["f13_deciding"] > \
+            bs["refusal_at_read"]["held_out"]
+        lo, hi = bs["sd_star_interval"]
+        assert lo <= x["sd_star"] <= hi and bs["sd_star_interval_level"] == 0.95
+        assert bs["decides"].startswith("nothing")
+    n_s, n_t, j, jh = 800, 400, 1000, 128
+    assert R2.refusal_at_read(2.0, n_s, n_t, j, jh, n_t, j) == pytest.approx(float(stats.norm.sf(2.0)))
+    held, read = math.sqrt(n_s / (j * n_t) + 1 / jh), math.sqrt(n_s / (16 * n_s) + 1 / jh)
+    assert R2.refusal_at_read(2.0, n_s, n_t, j, jh, n_s, 16) == pytest.approx(float(stats.norm.sf(2.0 * held / read)))
+    lo, hi = R2.sd_interval(1.0, jh)
+    k = jh - 1
+    assert lo == pytest.approx(math.sqrt(k / stats.chi2.ppf(0.975, k))) and hi == pytest.approx(
+        math.sqrt(k / stats.chi2.ppf(0.025, k)))
+    assert R2.READS_BESIDE == {"f13_screen": (4, 4), "f13_deciding": (16, 1)}
+
+
+def test_the_namespace_is_built_once_and_again_after_a_change(monkeypatch) -> None:
+    a = R2.namespace()
+    assert R2.namespace() is a and R2.namespace(False) is R2.namespace(False) and R2.namespace(False) is not a
+    monkeypatch.setattr(R, "HELD_OUT_CALENDAR_SHA256", "8" * 64)
+    b = R2.namespace()
+    assert b is not a and b["HELD_OUT_CALENDAR_SHA256"] == "8" * 64
+    monkeypatch.undo()
+    c = R2.namespace()
+    assert c["HELD_OUT_CALENDAR_SHA256"] == R.HELD_OUT_CALENDAR_SHA256 != "8" * 64
+
+
+def test_the_criteria_functions() -> None:
+    assert PW.P0 == pytest.approx((1 - R.POWER_TARGET) / 7)
+    assert PW.c1_bound(1.4, n=4000) == pytest.approx(1.4 * PW.P0 + 3 * math.sqrt(1.4 * PW.P0 * (1 - 1.4 * PW.P0) / 4000))
+    assert PW.c1_bound(1.0, se=0.01) == pytest.approx(PW.P0 + 0.03)
+    assert PW.cluster_se([0.0, 1.0, 0.0, 1.0]) == pytest.approx(float(np.std([0, 1, 0, 1], ddof=1)) / 2)
+    rows = [{"all": {f: k for f in PW.FORMS}, "limit": {"a": {f: k for f in PW.FORMS}}, "headroom": {"a": True}}
+            for k in (4, 3, 4, 4)]
+    agg = PW.aggregate_joint([{"held_out_draws": 4, "per_draw": rows}])
+    assert agg["joint_pass"]["sd_star"] == pytest.approx(15 / 16)
+    assert agg["c2_bound"]["sd_star"] == pytest.approx(R.POWER_TARGET - 3 * PW.cluster_se([1, 0.75, 1, 1]))
+    assert agg["limits"]["a"]["sd_star"]["refusal"] == pytest.approx(1 / 16)
+    low = [{"all": {f: 0 for f in PW.FORMS}, "limit": {"a": {f: 0 for f in PW.FORMS}}, "headroom": {"a": True}}] * 20
+    bad = PW.aggregate_joint([{"held_out_draws": 4, "per_draw": rows + low}])
+    assert not bad["c2_pass"]["sd_star"] and not bad["c1_pass"]["sd_star"] and bad["c6_fails_under_old"]
+
+
+def test_the_declaration_records_the_read_before_the_form_and_its_corrections() -> None:
+    text = DOC.read_text(encoding="utf-8")
+    flat = " ".join(text.split())
+    assert "was ruled (Q-221) after the early look had shown P-14's H4-B search-year readings of that very statistic" in flat
+    assert "E-291" in flat and "journey_measures.YEAR" in flat and "CHARTER 2's objective" in flat
+    assert "F-13's finalists are shown with and without the floor" in flat
+    assert "E-015" not in text                                          # m-3: not E-015 (3)
+    assert "by the rule's intent** (W42-R1 section 6, step 3" in flat   # m-4
+    assert "The nominal rate of section 4 holds at the held-out read only" in flat   # m-1
+    assert "**It is stated and not propagated**" in flat                # m-2
+    assert "Q-189 and DRAFT_F-13 must name `scripts/wave42_r2_apply.py`" in flat       # m-5
+    assert "built once per process" in flat                             # m-6
+    for c in ("C1", "C2", "C3", "C4", "C5", "C6"):
+        assert f"**{c}," in flat, c
 
 
 # ------------------------------------------------------------------------------------------- the document's tables
@@ -431,6 +558,7 @@ def test_a_positive_floor_refuses_the_do_nothing_journey(pair) -> None:
     assert r2b["null_journeys"]["quit_at_first_failure"] == {"net_month_12": -T.FEE, "inside": False}
     assert r2b["parent"]["sha256"] == R2.PARENT_SHA256 and r2b["limits_set"] == 7
     assert r2b["net12_source"] == {"units_files_sha256": UNITS}
+    assert r2b["report_with_and_without_floor"].startswith("F-13's finalists are shown with and without")
 
 
 def test_the_surveys_path_reads_the_added_limit_and_w42_r1s_cannot(pair) -> None:
@@ -636,19 +764,20 @@ def test_the_freeze_reads_w42_r2s_pin_file_and_files_and_refuses_until_pinned() 
 
 # ---------------------------------------------------------------------------------------------- the power check
 def test_the_power_check_at_a_reduced_count() -> None:
-    """The full check's figures are `python tests/w42r2_power.py`'s; here, two search draws by two held-out draws."""
-    d = PW.run_scenario("distinct", search_draws=2, held_out_draws=2)
-    assert d["limits_set"] == 7 and d["test_seeds"] == R.TEST_SEEDS and d["h4_seeds"] == HA.H4_J
-    assert d["power_margin"]["new"] == 1.0 and d["do_nothing_refused"]["new"] == 1.0
-    assert d["false_refusal"]["new"]["equal_to_best"] == 0.0 and d["floor_mean"]["new"] > 0
-    assert d["pass_rate"]["new"]["curve_t-2"] <= d["pass_rate"]["new"]["curve_t+6"] == 1.0
-    assert d["floor_mean"]["new"] == d["floor_mean"]["old"]              # the worst binds: the correction is idle
-    for name in ("identical", "distinct_headroom"):
-        i = PW.run_scenario(name, search_draws=2, held_out_draws=2)
-        assert i["share_binds_headroom"] == {"new": 1.0, "old": 1.0} and i["power_margin"]["new"] == 1.0
-        assert i["floor_mean"]["new"] < i["floor_mean"]["old"] and i["curve_anchor"] == "best"
-    b = PW.run_scenario("behind", search_draws=1, held_out_draws=2)
-    assert b["floor_mean"]["new"] < 0 and b["do_nothing_refused"]["new"] == 0.0 and b["power_margin"]["new"] == 1.0
+    """The machinery of every part at a reduced count (the full check's figures are `tests/w42r2_power.py`'s)."""
+    r = PW.run_size("rt_unequal_sd", reps=40)
+    assert r["reps"] == 40 and r["j_h4"] == HA.H4_J and r["j_test"] == R.TEST_SEEDS and r["tolerance"] == 1.4
+    assert set(r["refusal"]) == set(PW.FORMS) and r["c1_bound"] == PW.c1_bound(1.4, n=40)
+    assert r["share_headroom_bound"]["sd_star"] >= r["share_headroom_bound"]["winner"]
+    assert PW.run_size("lattice", reps=10)["c6_exception"] is True
+    c = PW.run_configs(4, 500)
+    assert set(c["max_ratio"]) == set(PW.FORMS) and c["configs"] == 4
+    j = PW.aggregate_joint([PW.run_joint(0, 1, 1)])
+    assert j["search_draws"] == 1 and set(j["limits"]) == {L.name for L in R2.LIMITS}
+    e = PW.run_e2e("identical", 1, 1)
+    assert e["share_headroom_bound"] == 1.0 and e["c4_pass"] and "c1_pass" in e
+    d = PW.run_e2e("behind", 1, 1)
+    assert d["c6_exception_forms_identical"] and d["c4_pass"] and d["floor_mean"]["sd_star"] < 0
 
 
 def test_the_power_checks_seed_is_derived_from_its_name() -> None:
