@@ -217,3 +217,40 @@ Append-only: a row is never edited here; a correction is made in the decision lo
 |---|---|---|---|---|---|---|---|
 | Q-180 | The lever tables for My Funded Futures and Lucid (each firm its own protocol) | wt-payout | done (E-249) | E-221 | light | 0 | E-246 |
 | Q-181 | /verify-rule for every MFFU and Lucid rule Q-180 lists as unverified | rules-verifier | done for MFFU (E-249); Lucid by the operator | Q-180 | light | 0 | E-246 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-27
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-22 | P-15's U1 start rows reproduced (the identity's 25-point coin, for the 25-point scorecard; as E-010's for P-14 and P-16) | wt-features | done (E-042) | E-010 | heavy | 0 | E-016 |
+| Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | done (E-093) | Q-83 | light | 0 | E-093 |
+| Q-159 | O-7: RD-01, RD-02, RD-03 and RD-05's part F re-declared on the search years as delta declarations (each parent incorporated by its pinned sha256, every window dependency listed and replaced), red team, gatekeeper | wt-firms | done (E-293) | E-221 | light | 0 | E-221 |
+| Q-167 | Wave 3.2: the three-way test's seed-paired runner, nulls, time legs, deciding statistic, planted-shift power, worse-fill stress, and H3's draft declaration (synthetic) | wt-three | done (E-279) | E-213 | light | 0 | E-230 |
+| Q-168 | Wave 3.4: the lever-space sampler, the surrogate, the round proposer and the plateau check (synthetic objectives) | wt-features | done (E-251) | E-211 | light | 0 | E-230 |
+| Q-170 | The declared generator vectorised, bit-identical to the scalar law; with Wave 3.2's corrective cycle 1 | wt-three | done (E-293) | E-237 | light | 1 | E-237 |
+| Q-174 | The fast-tier lock serves two slots when memory allows (arrival order kept) | wt-report | done (E-252) | Q-165 | light | 0 | E-246 |
+| Q-175 | Wave 3.5: the playbook, the one-trade alert and /brief (restored to wt-play after the worktree collision) | wt-play | done (E-273) | E-221 | light | 0 | E-246 |
+| Q-176 | Wave 4.2's setting rule W42-R1 (budgets, composite, delta*, limits) -- red team, then pinned before H4 is read; the three-way note's 4.4 margin text aligned | wt-infra | done (E-283) | E-221, E-230 | light | 0 | E-246 |
+| Q-177 | Wave 2's template and agents -- the red team's final read, then pinned | wt-lit | done (E-284) | E-207 | light | 0 | E-246 |
+| Q-178 | O-7's five deltas RD-06 to RD-10 in pin-time form -- gatekeeper re-check, then pinned (parents superseded) | wt-firms | done (E-293) | Q-159 | light | 0 | E-246 |
+| Q-183 | T7's admission forecast: build (wt-har), then the heavy search-year fit, loaded by lever_space | wt-har | done (E-253) | E-232 | light, then heavy | 0 | E-246 |
+| Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | done (E-287) | Q-176 | light | 0 | E-246 |
+| Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | done (E-281) | Q-167 | light | 0 | E-246 |
+| Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | done (E-281) | Q-168, Q-167 | light | 0 | E-246 |
+| Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | done (E-281) | Q-168 | light | 0 | E-251 |
+| Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | done (E-260) | E-207 | light | 0 | E-251 |
+| Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | done (E-273) | Q-173 | light | 0 | E-254 |
+| Q-195 | T7's label identity (the audit's C1): the admission label re-derived from Stage 2's records on the search years, refusing | wt-har | done (E-262) | E-255 | light, then heavy | 0 | E-255 |
+| Q-196 | Q-172's planted check (the audit's C2): a known exact-run difference planted on synthetic and cut data is found by the count; then the heavy run | wt-user | done (E-264) | E-256 | light, then heavy | 0 | E-256 |
+| Q-197 | The pinned search-year calendar (`results/search_calendar.csv`), bound by sha256 in W42-R1 and H4 | wt-cal | done (E-266) | E-254 | light, then heavy | 0 | E-255 |
+| Q-199 | The commit line keeps a live waiter's ticket by heartbeat and pid, never drops it by age | wt-report | done (E-260) | Q-174 | light | 0 | E-255 |
+| Q-200 | Topstep's lever rows on the per-date sessions (the branch's Q-188b/c) | wt-levels | done (E-261) | E-254 | light | 0 | E-261 |
+| Q-204 | The isolation defect of `tests/test_archive_queue.py` under xdist | wt-report | done (E-273) | Q-193 | light | 0 | E-260 |
+| Q-207 | The main tree's tickets first in the fast-tier line | wt-report | done (E-273) | Q-199 | light | 0 | E-273 |
+| Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | done (E-277) | - | light | 0 | E-274 |
+| Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | done (E-281) | - | light | 0 | E-274 |
+| Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | done (E-282, E-284) | Q-179 | light | 0 | E-275 |
+| Q-213 | The early look, exploratory: RL3's base cell on the journey scorecard through `extended/design_trades.py` (H4's plumbing), search years only | wt-early | done (E-291) | - | light | 0 | E-290 |
+| Q-219 | The speed profile: one unit's replay by stage; the fast tier's serial cause | lead | done (E-292) | - | light | 0 | E-292 |
+| Q-222 | The contract-only screening tier, scouted (`docs/plans/CONTRACT_SCREEN_SCOUT_2026-11-27.md`) | wt-scout | done (E-294) | - | light | 0 | E-294 |
+| Q-227 | The records tidy: queue, rows, branches and board reconciled; done rows archived; the board's state from `scripts/status.py` | lead | done (E-293) | - | light | 0 | E-293 |
