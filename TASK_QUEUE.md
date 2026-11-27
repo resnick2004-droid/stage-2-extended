@@ -81,8 +81,8 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | done (E-287) | Q-176 | light | 0 | E-246 |
 | Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | done (E-281) | Q-167 | light | 0 | E-246 |
 | Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | done (E-281) | Q-168, Q-167 | light | 0 | E-246 |
-| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | running (E-285: H3-0 done; H3-A 6 slots next) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
-| Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | running (E-287: pinned; building H4 runner next) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
+| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | held (E-290: H3-A waits on Q-216) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
+| Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | held (E-289: no H4-B output used until Q-188b closes) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
@@ -107,6 +107,13 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | done (E-277) | - | light | 0 | E-274 |
 | Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | done (E-281) | - | light | 0 | E-274 |
 | Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | done (E-282, E-284) | Q-179 | light | 0 | E-275 |
+| Q-188b | H4's fixes after the audit and the re-check: F-3 (the sigma-rule drops) diagnosed first, B-1, F-2's coin identity, B-2's exact-run classification, tests that can fail, rc-3 disk, labels, the worker-count lever, P-15 p5's re-run | wt-h4fix | running (E-289) | Q-188 | light | 0 | E-289 |
+| Q-213 | The early look, exploratory: RL3's base cell on the journey scorecard through `extended/design_trades.py` (H4's plumbing), search years only | wt-early | running (E-290) | - | light | 0 | E-290 |
+| Q-214 | The first design search's draft, `DRAFT_F-13` (Topstep NQ survey), W42-R1's values blank | wt-fs1 | running (E-290) | - | light | 0 | E-290 |
+| Q-215 | The survey's real-bar route: wire the lever space to `extended/design_trades.py` (after Q-213) | - | queued (E-290) | Q-213 | light | 0 | E-290 |
+| Q-216 | H3-A's report code and runner after BUILD_H3A_REPORT's BLOCK | wt-h3a | running (E-290) | Q-187 | light | 0 | E-290 |
+| Q-217 | The test-encoding defect: `_git` helpers decode `git show` with utf-8 (in Q-188b) | wt-h4fix | running (E-289) | - | light | 0 | E-289 |
+| Q-218 | The seed guards' literal scan: no match inside a decimal value (digit boundary on both sides, '.' included) | - | queued (E-290) | - | light | 0 | E-290 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |

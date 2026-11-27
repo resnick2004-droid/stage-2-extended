@@ -145,7 +145,7 @@ def plan():
 
 
 def _git(*args: str, cwd: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=check)
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, encoding="utf-8", check=check)
 
 
 def _show(commit: str, path: str) -> str:
