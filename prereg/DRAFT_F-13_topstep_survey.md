@@ -15,7 +15,7 @@ held-out test's declaration, drafted on `prereg/TEMPLATE_heldout_test.md` (LF sh
 template's placeholder `<...>` until its source exists; none is invented. **The setting rule is W42-R2** (E-296): W42-R1
 with one added limit, a floor on the median 12-month net cash, and a headroom that counts both noises; W42-R1 is never
 applied. W42-R2 is `docs/plans/WAVE42_SETTING_RULE_R2.md`, `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py`
-(on wt/wt-w42r2 at `8a98066`, in its fix pass), its pin file `config/w42_r2_pin.json` and its one output
+(on wt/wt-w42r2 at `db3cc27`, its second fix pass), its pin file `config/w42_r2_pin.json` and its one output
 `results/w42_r2_values.csv`. When W42-R2 has been applied once to H4's collection result and the lead's pinning row
 cites that output's sha256 (Q-189), each value is copied from the output's key named beside it, never typed from a
 reading, and the red team checks the diff (section 14 step 1).
@@ -37,7 +37,9 @@ reading, and the red team checks the diff (section 14 step 1).
   hash row, its files on the deciding-files line (section 1):
   1. **W42-R2 merged and pinned** (wt/wt-w42r2 after its fix pass, its red-team read, its pinning row before H4 is
      read, E-296), and the survey's objective moved to it: `survey.W42_RULE` and `load_objective` read W42-R2's rule id,
-     module and output, and the limits come only from `extended.wave42_r2`;
+     module and output, and the limits come only from `extended.wave42_r2` -- `limit_estimate`, `limit_check` and
+     `limit_per_seed_sd` imported from it, never from `extended.wave42` -- whose headroom uses sd\*, the largest
+     per-seed sd of the four baselines, for both the test's and the search's noise;
   2. **the parts**, `extended/survey_parts.py`: the space, the gate, the schedule builder, the design runner over
      `extended/design_trades.py` (reviewed under Q-215, E-291) with its identities B-I1 to B-I3, and the playbook writer;
   3. **the two reading sizes** in the engine and the runner (section 6), with a refusing test for each code point named

@@ -551,6 +551,13 @@ def test_b1_w42r2_is_the_rule_everywhere(text: str) -> None:
     for x in ("`extended/wave42_r2.py`", "`scripts/wave42_r2_apply.py`", "`results/w42_r2_values.csv`",
               "`config/w42_r2_pin.json`", "**W42-R2 merged and pinned**"):
         assert x in head, x
+    assert ("`limit_estimate`, `limit_check` and `limit_per_seed_sd` imported from it, never from `extended.wave42`"
+            in head), "the limits' scoring is W42-R2's (the Q-221 worker's report)"
+    assert "wt/wt-w42r2 at `db3cc27`" in head and "sd\\*, the largest per-seed sd of the four baselines" in head
+    tip = _git("show", "db3cc27:extended/wave42_r2.py", check=False)
+    if tip.returncode == 0:                                      # the cited commit holds the three functions
+        for fn in ("limit_estimate", "limit_check", "limit_per_seed_sd"):
+            assert re.search(rf"^def {fn}\(", tip.stdout, re.M), fn
     assert ("so M-5 (c)'s \"a corrected rule ... whose searches never enter this F-HT\" does not reach this search, "
             "whose membership is unaffected") in _flat(_section(text, 9))
 
