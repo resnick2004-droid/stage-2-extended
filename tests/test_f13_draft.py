@@ -58,7 +58,10 @@ DERIVED_USES = (THIS,)
 ROLES = ("tests", "S0", "S1", "S2", "S3", "S4", "S6", "spare", "spare", "spare")
 SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", "node_modules"}
 MARK = "**Declaration kind: design search.**"
-AWAIT = "awaiting W42-R1's application, Q-189"
+AWAIT = "awaiting W42-R2's application, Q-189"
+#: decision rows the draft cites that the lead's records commit adds to master (E-296, E-297): the plain lint may
+#: report them missing only while master lacks them -- the allowance expires by itself once the rows land
+PENDING_ROWS = ("E-296", "E-297")
 #: section 7's inputs that come from W42-R1's applied output, each with the output key the head list names
 W42_ROWS = {
     "**the limits**": "`limits`",
@@ -70,7 +73,7 @@ W42_ROWS = {
     "the **no-harm margin**": "`delta_star`",
     "**the do-nothing floor**": "`null_journeys`",
 }
-TO_BUILD = ("extended/survey_parts.py",)
+TO_BUILD = ("extended/survey_parts.py", "extended/wave42_r2.py", "scripts/wave42_r2_apply.py")
 HELD_FIRST, HELD_LAST, CONFIRM, SEARCH_LAST = "2024-01-02", "2026-07-16", "2026-07-17", "2023-12-29"
 RECORD_DATES_FROM = "2026-11-01"
 UNREAD = re.compile(r"never read|refus|unread|held-out years|confirmation window|read ledger|written after")
@@ -147,7 +150,9 @@ def test_the_scope_fields_read_as_the_reader_reads_them(text: str) -> None:
     for f in files:
         assert (ROOT / f).is_file() or f in TO_BUILD, f"a deciding file that is neither here nor declared to build: {f}"
     for f in TO_BUILD:
-        assert f in files and f"`{f}` is new: it is written by this search's build, before the pin" in _flat(text)
+        assert f in files, f
+    assert ("`extended/survey_parts.py`, `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` are written by the "
+            "build before the pin") in _flat(text)
     # planted controls: each field in another form is a problem
     line = next(ln for ln in text.splitlines() if ln.startswith("- **The market:**"))
     assert R.design_search_problems(text.replace(line, line.replace("NQ --", "ES --", 1)))
@@ -215,7 +220,9 @@ def test_the_spec_block_holds_the_runners_keys_and_section_12s_seeds(text: str) 
     assert sel == list(range(16)) and rer == list(range(16, 80))
     assert not set(sel) & set(rer) and len(rer) >= SS.MIN_REREAD_SEEDS
     assert s["plateau"]["rule"]["margin"] == SV.DELTA_STAR and s["plateau"]["rule"]["side"] == "worse"
-    assert s["objective"]["rule_id"] == SV.W42_RULE
+    assert s["objective"]["rule_id"] == "W42-R2"                 # E-296: W42-R2, never W42-R1
+    if SV.W42_RULE != "W42-R2":                                  # the head's build item 1 moves it
+        assert "`survey.W42_RULE` and `load_objective` read W42-R2's rule id" in _flat(text)
     for b in s["protocol"]["blocks"]:
         assert "2020-01-02" <= b[0] <= b[1] <= SEARCH_LAST
     assert SS.reads_through(s["protocol"]["blocks"], s["protocol"]["horizon"]).isoformat() <= SEARCH_LAST
@@ -250,6 +257,9 @@ def test_the_spec_loads_once_filled_and_is_refused_unfilled(text: str) -> None:
     with pytest.raises(SV.SpecRefused):                    # today's runner refuses the screen key: a build item
         SV.load_spec(f"```survey-spec\n{json.dumps(filled)}\n```\n")
     filled.pop("screen")
+    with pytest.raises(SV.SpecRefused):                    # today's runner refuses W42-R2's rule id: build item 1
+        SV.load_spec(f"```survey-spec\n{json.dumps(filled)}\n```\n")
+    filled["objective"]["rule_id"] = SV.W42_RULE           # the form check only, at today's rule id
     body = json.dumps(filled, indent=2)
     got = SV.load_spec(f"```survey-spec\n{body}\n```\n")
     assert got.survey_n == 512 and got.rounds == 8 and got.candidates == 4 and got.z == 2.0
@@ -424,17 +434,17 @@ def test_no_held_out_read(text: str) -> None:
 
 def test_the_w42_placeholders_stand_until_w42r1_is_applied(text: str) -> None:
     head = _flat(text[:text.index("\n## 0. ")])
-    assert "**Awaiting W42-R1's application (Q-189), and what else stands before the pin.**" in head
+    assert "**Awaiting W42-R2's application (Q-189), and what else stands before the pin.**" in head
     rows = _rows(_section(text, 7))
     for name, key in W42_ROWS.items():
         hit = [r for r in rows if r[0].startswith(name)]
         assert len(hit) == 1, name
-        assert "<...>" in hit[0][1] and AWAIT in hit[0][1], f"{name}: its value is W42-R1's, left blank until Q-189"
+        assert "<...>" in hit[0][1] and AWAIT in hit[0][1], f"{name}: its value is W42-R2's, left blank until Q-189"
         assert key in head, f"{key}: the head's list names the output key"
     s = _spec(text)
     assert s["objective"]["values_row"].startswith("<...>") and "Q-189" in s["objective"]["values_row"]
     assert str(s["no_harm"]["margin"]).startswith("<...>") and str(s["no_harm"]["margin_row"]).startswith("<...>")
-    assert "<...> (awaiting H3-D's declaration" in _flat(_section(text, 9))
+    assert "<...> (**the H3-D placeholder**, awaiting H3-D's declaration" in _flat(_section(text, 9))
 
 
 def test_the_lint_is_clean_and_its_pin_errors_are_the_placeholders(text: str) -> None:
@@ -446,6 +456,9 @@ def test_the_lint_is_clean_and_its_pin_errors_are_the_placeholders(text: str) ->
     errs = [ln for ln in out[:end] if re.match(r"\s*\d+\. ", ln)]
     lines = text.splitlines()
     assert errs, "the pin-mode lint finds the placeholders"
+    master_log = _git("show", "master:DECISIONS.md", check=False).stdout
+    pending = {r for r in PENDING_ROWS if not re.search(rf"^\| {r} \|", master_log, re.M)}
+    errs = [e for e in errs if not any(f"[xref.row] {r} is not a row" in e for r in pending)]
     for e in errs:
         m = re.search(r":(\d+): \[(form\.placeholder|form\.phrase)\] ", e)
         assert m, f"a pin-mode error that is not a placeholder: {e}"
@@ -456,7 +469,14 @@ def test_the_lint_is_clean_and_its_pin_errors_are_the_placeholders(text: str) ->
     assert set(sec7) <= flagged and len(sec7) == len(W42_ROWS)
     plain = subprocess.run([sys.executable, str(LINT), str(DRAFT)], cwd=ROOT, capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=600)
-    assert plain.returncode == 0, plain.stdout + plain.stderr
+    master_log = _git("show", "master:DECISIONS.md", check=False).stdout
+    pending = {r for r in PENDING_ROWS if not re.search(rf"^\| {r} \|", master_log, re.M)}
+    out = plain.stdout.splitlines()
+    end = next((i for i, ln in enumerate(out) if ln.startswith("warnings")), len(out))
+    errs = [ln for ln in out[:end] if re.match(r"\s*\d+\. ", ln)]
+    other = [e for e in errs if not any(f"[xref.row] {r} is not a row" in e for r in pending)]
+    assert not other, plain.stdout + plain.stderr
+    assert plain.returncode == (1 if errs else 0), plain.stdout
 
 
 def test_the_screen_and_the_deciding_size_are_declared(text: str) -> None:
@@ -464,7 +484,9 @@ def test_the_screen_and_the_deciding_size_are_declared(text: str) -> None:
     gives, fixed before any read."""
     s = _spec(text)
     sc = s["screen"]
-    assert sc["seeds"] == [0, 1, 2, 3] and set(sc["seeds"]) < set(s["protocol"]["seeds"])
+    sel, rer, scr = set(s["protocol"]["seeds"]), set(s["finalists"]["reread_seeds"]), set(sc["seeds"])
+    assert sc["seeds"] == [80, 81, 82, 83], "the screen's own indices (B-3)"
+    assert not (scr & sel) and not (scr & rer) and not (sel & rer), "the three index ranges are disjoint (B-3)"
     assert sc["start_stride"] == 4 and sc["start_offset"] == 0 and sc["promote"] == 32
     assert sc["roles"] == ["survey"] + [f"round-{i}" for i in range(1, 5)]
     assert s["rounds"]["count"] == 8 and s["rounds"]["batch"] >= sc["promote"]
@@ -473,10 +495,226 @@ def test_the_screen_and_the_deciding_size_are_declared(text: str) -> None:
               "**the deciding size**, for rounds 5 to 8", "**the promotion**, between round 4 and round 5",
               "**the finalist candidates are ranked only among deciding-size readings**",
               "MDE(n) = (z_0.95 + z_power) sigma / sqrt(n)",
-              "**the screen's MDE is four times the deciding size's**", "**a build requirement:**"):
+              "**the screen's MDE is four times the deciding size's**", "**a build requirement** (the head's item 3):"):
         assert x in sec, x
     # the stated ratio is the arithmetic of the declared sizes: sqrt((16 seeds x every start) / (4 seeds x a quarter))
     full, scr = len(s["protocol"]["seeds"]) * 1.0, len(sc["seeds"]) / sc["start_stride"]
     assert (full / scr) ** 0.5 == 4.0
     assert "never a screen reading, section 6" in _flat(_section(text, 7))
     assert "the promotion: 32 screened cells re-read at the deciding size" in _flat(_section(text, 13))
+
+
+# ------------------------------------------------------------------- text 2: the two reads' findings, each a test
+
+
+#: the words a unit that names W42-R1 must carry beside it: W42-R2 is the rule, W42-R1 only its parent (E-296)
+W42R1_BESIDE = ("W42-R2", "carried", "never applied", "parent")
+W42R1_LIMITS = ("not_paid_within_B", "peak_oop_12_months_p90", "first_payout_days_p50", "orders_max_p90",
+                "accounts_max_p90", "taken_mean_p10")
+NEWS_CALENDARS = ("vendor/stage2/data/release_days_0830_2009_2025.csv",
+                  "vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv")
+SEARCH_YEARS = {"2020", "2021", "2022", "2023"}
+NEEDED_DECIDING = ("extended/design_trades.py", "extended/three_way_runner.py", "extended/three_way_stats.py",
+                   "extended/three_way_s1.py", "extended/features.py", "extended/s1_range.py", "extended/t7_forecast.py",
+                   "extended/family_stats.py", "extended/h4_coin_source.py", "extended/wave42_r2.py",
+                   "scripts/wave42_r2_apply.py", "identity/h4_registered_constants.py",
+                   "config/calendar_fomc_minutes.csv")
+
+
+def _units(t: str) -> list[str]:
+    """The text's units -- list items, table rows, paragraphs -- each flattened (fences out)."""
+    parts = re.split(r"\n(?=\s*(?:- |\| |\d+\. |#))|\n\n", _unfenced(t))
+    return [_flat(u) for u in parts if u.strip()]
+
+
+def _head(t: str) -> str:
+    return _flat(t[:t.index("\n## 0. ")])
+
+
+def test_b1_w42r2_is_the_rule_everywhere(text: str) -> None:
+    from extended import wave42 as W
+
+    for u in _units(text):
+        if "W42-R1" in u:
+            assert any(k in u for k in W42R1_BESIDE), f"W42-R1 named as the rule: {u[:160]}"
+    assert tuple(lim.name for lim in W.LIMITS) == W42R1_LIMITS, "W42-R1's six limits, which W42-R2 carries"
+    lim = next(r for r in _rows(_section(text, 7)) if r[0].startswith("**the limits**"))[1]
+    for n in W42R1_LIMITS + ("net_month_12_p50",):
+        assert f"`{n}`" in lim, n
+    assert "The seven are W42-R2's (`wave42_r2.LIMITS`)" in lim
+    r2 = _git("show", "wt/wt-w42r2:extended/wave42_r2.py", check=False)
+    if r2.returncode == 0:                                       # W42-R2's own text, where its branch is present
+        assert 'LimitSpec("net_month_12_p50", "(12)", NET12_KEY, "floor", YEAR, "p50"' in r2.stdout
+    assert "one for each of W42-R2's seven limits" in _flat(_section(text, 6))
+    assert "the seven limit measures" in _spec(text)["protocol"]["sha256"]
+    head = _head(text)
+    for x in ("`extended/wave42_r2.py`", "`scripts/wave42_r2_apply.py`", "`results/w42_r2_values.csv`",
+              "`config/w42_r2_pin.json`", "**W42-R2 merged and pinned**"):
+        assert x in head, x
+    assert ("so M-5 (c)'s \"a corrected rule ... whose searches never enter this F-HT\" does not reach this search, "
+            "whose membership is unaffected") in _flat(_section(text, 9))
+
+
+def test_b2_the_keep_rule_is_the_point_estimate_and_the_gate_models_the_pipeline(text: str) -> None:
+    order = _flat(next(r for r in _rows(_section(text, 7)) if r[0].startswith("the **finalist order rule**"))[1])
+    assert "**kept only if its re-read point estimate beats each baseline on the composite**" in order
+    assert "printed beside and never deciding; the held-out test, not the search, bounds coin luck" in order
+    assert "by more than delta\\* at the t threshold" not in order
+    gate = _flat(_section(text, 9))
+    assert "**The gate simulates the whole selection pipeline**" in gate
+    for stage in ("the screen at its size with its floors", "the promotion", "the deciding size", "the top-4 cut",
+                  "the point-estimate keep rule", "the plateau", "and then the held-out pass line"):
+        assert stage in gate, stage
+    assert "**the power reported is that whole pipeline's**" in gate and "on the same route" in gate
+    assert "**The keep rule's power**" in _flat(_section(text, 6))
+
+
+def test_b4_the_early_look_is_disclosed_dated_and_counted(text: str) -> None:
+    from datetime import datetime
+
+    assert "Q-213's exploratory early look" in _flat(_section(text, 1))
+    s2 = _flat(_section(text, 2))
+    assert "**The search-year reads before the pin**" in s2 and "| the lead and the operator |" in s2
+    s16 = _section(text, 16)
+    labelled = [r for r in _rows(s16) if r[-1].startswith("**yes")]
+    for x in ("T1 narrowed", "the no-harm margin", "the screen", "`net_month_12_p50`", "this text 2's fixes"):
+        assert any(x in r[0] for r in labelled), x
+    man = json.loads((ROOT / "results" / "early_look_rl3_pd_fade.csv.manifest.json").read_text(encoding="utf-8"))
+    assert man["exploratory"] is True and man["timestamp"][:19] in _flat(s16)
+    side_rule = datetime.fromisoformat(_git("log", "-1", "--format=%cI", "457f577").stdout.strip())
+    assert side_rule < datetime.fromisoformat(man["timestamp"]), "the `fade` rule was fixed before the look"
+    assert "commit `457f577` (2026-11-20)" in _flat(s16)
+    assert "**beside the count, the early look's one cell**" in _flat(_section(text, 13))
+
+
+def test_b5_s1_is_searched_in_every_run(text: str) -> None:
+    row = next(r for r in _rows(_section(text, 3)) if r[0] == "S1")[4]
+    assert "**searched in every run**" in row and "never falling back to `NotComputed`" in row
+    assert "computed with S1 active" in row and "carried as refused" not in row
+    assert re.search(r"raw sha256 `[0-9a-f]{64}`", row)
+    assert "results/s1_range.csv" in _spec(text)["parts"]["space"]["data"]
+    assert "**S1's file in clean runs** (E-297 (3))" in _head(text)
+
+
+def test_b6_the_major_news_list_is_declared_and_its_calendars_cover_the_search_years(text: str) -> None:
+    row = _flat(next(r for r in _rows(_section(text, 4)) if r[0].startswith("**conduct tier 1**"))[1])
+    assert "**the declared reading of \"a scheduled major news event\"**" in row
+    cited = tuple(re.findall(r"`(vendor/stage2/[^`]+\.csv)`", row))
+    assert cited == NEWS_CALENDARS, cited
+    for p in cited:
+        assert _git("ls-files", p).stdout.strip() == p, f"{p} is a tracked file"
+        days = [ln.split(",")[0] for ln in (ROOT / p).read_text(encoding="utf-8").splitlines()
+                if re.match(r"\d{4}-\d{2}-\d{2},", ln)]
+        assert SEARCH_YEARS <= {d[:4] for d in days}, f"{p} covers every search year"
+    assert "BEA's GDP releases, whose calendar exists in neither this repository nor the vendored tree" in row
+    assert "a refusing count on the taken-trade log" in row and "built with a planted violation that fails it" in row
+    assert "**no verified news window reaches Topstep's accounts**" in _flat(_section(text, 4))
+
+
+def test_the_deciding_files_cover_the_import_closure(text: str) -> None:
+    from extended import reader as R, survey as SV
+
+    files = set(R._deciding_files(text))
+    for f in sorted(files):
+        if f.startswith("extended/") and f.endswith(".py") and (ROOT / f).is_file() and not f.endswith("__init__.py"):
+            for src in SV.closure_files(f[:-3].replace("/", ".")).values():
+                rel = Path(src).resolve().relative_to(ROOT.resolve()).as_posix()
+                assert rel in files, f"{f} imports {rel}, which the deciding-files line omits"
+    for need in NEEDED_DECIDING:
+        assert need in files, need
+
+
+def test_the_ledger_carries_h4s_rows_and_every_read_ledger_ref(text: str) -> None:
+    s2 = _flat(_section(text, 2))
+    for x in ("the busiest-day capacity", "the bar store manifest's held-out metadata",
+              "the registered-constants run itself", "U1's `EXACT` horizons"):
+        assert x in s2, x
+    refs = set()
+    for ln in (ROOT / "results" / "read_ledger.jsonl").read_text(encoding="utf-8").splitlines():
+        if ln.strip():
+            refs.add(json.loads(ln)["declaration"].get("ref"))
+    refs.discard(None)
+    assert refs, "the read ledger's rows (a scan that can find nothing is no check)"
+    for r in sorted(refs):
+        assert r in s2, f"the read ledger's {r} has no row in section 2"
+    assert "F-01 (withdrawn, E-007) and F-03 (closed with its judged block not read, E-192)" in _flat(_section(text, 13))
+
+
+def test_the_sizes_are_final_in_the_file(text: str) -> None:
+    f, s6 = _flat(text), _flat(_section(text, 6))
+    assert "**They are sized from compute cost only, never from any reading of an outcome.**" in s6
+    assert "**The sizes never move after the hash:**" in s6 and "the survey's wall-clock T = c U / w" in s6
+    for gone in ("the lead sizes them in the pinning row", "the values below are the drafted ones"):
+        assert gone not in f, gone
+
+
+def test_the_stress_arms_are_defined_and_built_before_the_pin(text: str) -> None:
+    from extended import three_way_journey as J
+
+    s10 = _flat(_section(text, 10))
+    assert "`three_way_journey.ArmSpec(worse_ticks=1)` and `ArmSpec(missed_q=0.10)`" in s10
+    assert "**their code is built, reviewed and merged before the pin**" in s10
+    assert "built after the pin" not in _flat(text)
+    J.ArmSpec(worse_ticks=1), J.ArmSpec(missed_q=0.10)
+    src = (ROOT / "scripts" / "h4_rebaseline.py").read_text(encoding="utf-8")
+    assert "J.ArmSpec(worse_ticks=1)" in src and "J.ArmSpec(missed_q=0.10)" in src
+
+
+def test_k_max_is_the_loaded_spaces(text: str) -> None:
+    """The plateau's largest neighbourhood, recomputed from the space (S1's slot dimension added where this tree lacks
+    its git-ignored file), at the narrowed sources."""
+    from extended import lever_space as LS, search_space as SS
+
+    sources = {"evening": ("p14",), "asia": ("p14",), "london": ("p14",), "ny_am": ("p14", "rl3"), "ny_pm": ("p14",)}
+    sp = SS.from_lever_space(slots={k: 1 for k in sources})
+    total, has_s1 = 0, set()
+    for d in sp.dims:
+        slot = d.name.split(".")[0] if "." in d.name else None
+        part = d.name.rsplit(".", 1)[-1]
+        if slot is None:
+            total += 2 if d.kind != SS.CAT else len(d.values) - 1
+        elif part == "on":
+            total += len(d.values) - 1
+        elif part == "T1":
+            total += len(sources[slot]) - 1
+        elif part in ("T4", "T5"):
+            key = f"{slot}.0.T1"
+            total += max(len(d.cells({key: src})) for src in sources[slot]) - 1
+        else:
+            total += 2
+            if part == "S1":
+                has_s1.add(slot)
+    total += 2 * len(set(sources) - has_s1)                      # S1 where `results/s1_range.csv` is absent
+    assert "S1" in LS.LEVERS and total == 85, total
+    assert "**k_max = 85**" in _flat(_section(text, 7)) and "4 x 85 = 340" in _flat(_section(text, 13))
+    assert "768 + 4 + 340 = 1112" in _flat(_section(text, 13))
+
+
+def test_the_minors_of_both_reads(text: str) -> None:
+    f, s = _flat(text), _spec(text)
+    assert s["parts"]["runner"]["params"]["coin_role"] == "survey_topstep_coins" and "f_xx" not in text
+    s12 = _flat(_section(text, 12))
+    assert "`S1`: the search-year coin role (not the stop-width lever S1)" in s12 and "one role, the pairing" in s12
+    assert "`S4`: proposed for the held-out test's coin field, which F-HT owns" in s12
+    assert "S1's seeds" not in f and "S1's selection seeds" not in f
+    assert "**c_u**, the design note's 2.2 (a) item 4" in _flat(_section(text, 8))
+    assert "the vendored engine's reading" in next(r for r in _rows(_section(text, 3)) if r[0] == "A9")[4]
+    s6 = _flat(_section(text, 6))
+    for x in ("`kappa`, the lower confidence bound's width", "`p_feasible`, its feasibility threshold", "(`centres`)",
+              "(`local`,", "**The protocol's horizon is 0 sessions**",
+              "**A departure from CHARTER 3.3 (d)'s \"constrained, multi-objective\" form, stated**",
+              "**each design is read at the screen size**", "**Its edge cases:** fewer than 32 passers promote every",
+              "**are applied on the deciding-size reading before ranking**",
+              "`survey._keep`", "`survey.finalist_candidates`", "`survey.run_rounds`", "`survey.read_design`"):
+        assert x in s6, x
+    s11 = _flat(_section(text, 11))
+    for x in ("**E-294 (4)'s reporting, deciding nothing:**", "**contract-only**", "**execution-fit block**",
+              "**edge-sensitivity reading**"):
+        assert x in s11, x
+    assert "**the schedule builder reads `day_calendar.day_context` for designs and baselines alike**" in _flat(
+        _section(text, 4))
+    assert "the plateau's power against a spike of twice delta\\* at these 64 indices" in _flat(_section(text, 7))
+    assert "H4 read only through W42-R2's output" in _flat(_section(text, 9))
+    assert "**the H3-D placeholder**" in _head(text)
+    for gone in ("the lead's ruling, Q-214", "the lead's ruling on Q-214", "on this text's first read (Q-214)"):
+        assert gone not in f, gone

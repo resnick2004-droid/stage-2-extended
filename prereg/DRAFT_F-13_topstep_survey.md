@@ -1,23 +1,27 @@
 # F-XX: the Topstep $50K design survey on NQ (Q-190, Wave 5), declared
 
-**Status: declared (text 1, for the scout's challenger brief, the red team and the gatekeeper's form read), drafted on
+**Status: declared (text 2, answering the red team's read (docs/reviews/F-13_DRAFT_REDTEAM_2026-11-27.md) and the
+gatekeeper's form read (docs/reviews/F-13_DRAFT_FORM_2026-11-27.md), both in the main tree), drafted on
 `prereg/TEMPLATE_design_search.md` text v3, whose LF sha256 `876be096402fc7d024037a9a81a2bef1fd2852f7ba1714c3389c23007b4ddc09`
 E-284 pins.** The task is Q-214 (the declaration of Q-190, the Wave 5 Topstep survey over the lever space). The id
 `F-XX` is the gatekeeper's to replace at the pin; the search takes no k (E-204): the held-out test's declaration takes
-the one k of NQ's joint test, k = 13 the next (CHARTER 3.7).
+the one k of NQ's joint test, k = 13 the next (CHARTER 3.7). Its scope is frozen at this round (E-294 (5)).
 
 **Declaration kind: design search.** This file keeps this line. It carries no `Judged-block reads:` line; the
 held-out test's declaration, drafted on `prereg/TEMPLATE_heldout_test.md` (LF sha256
 `33034aee9ca357b523780070996cc1242f09a4b1008b9cdd84fa47d660ab3b00`, E-284), carries it.
 
-**Awaiting W42-R1's application (Q-189), and what else stands before the pin.** Every value below is left as the
-template's placeholder `<...>` until its source exists; none is invented. When W42-R1 has been applied once to H4's
-collection result (`scripts/wave42_apply.py`, its one output `results/w42_r1_values.csv`, written by that clean run)
-and the lead's pinning row cites that output's sha256 (Q-189), each is copied from the output's key named beside it,
-never typed from a reading, and the red team checks the diff (section 14 step 1).
+**Awaiting W42-R2's application (Q-189), and what else stands before the pin.** Every value below is left as the
+template's placeholder `<...>` until its source exists; none is invented. **The setting rule is W42-R2** (E-296): W42-R1
+with one added limit, a floor on the median 12-month net cash, and a headroom that counts both noises; W42-R1 is never
+applied. W42-R2 is `docs/plans/WAVE42_SETTING_RULE_R2.md`, `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py`
+(on wt/wt-w42r2 at `8a98066`, in its fix pass), its pin file `config/w42_r2_pin.json` and its one output
+`results/w42_r2_values.csv`. When W42-R2 has been applied once to H4's collection result and the lead's pinning row
+cites that output's sha256 (Q-189), each value is copied from the output's key named beside it, never typed from a
+reading, and the red team checks the diff (section 14 step 1).
 
-- **From W42-R1's applied output (Q-189):**
-  1. the limits' values (`limits`, each limit's `values`), section 7 row 1;
+- **From W42-R2's applied output (Q-189):**
+  1. the seven limits' values (`limits`, each limit's `values`), section 7 row 1;
   2. the bankroll budgets of measure (24) and B\* (`budgets`, its `primary`), section 7 row 2;
   3. the dimensions' caps lo and hi (`dimensions`), section 7 row 3;
   4. the weights (`weights`), section 7 row 4;
@@ -27,11 +31,33 @@ never typed from a reading, and the red team checks the diff (section 14 step 1)
   8. the do-nothing floor's value (`null_journeys`, its `floor`), section 7 row 11;
   9. the decision row that pins the values file (`values_row` and `margin_row` of the survey-spec block, section 6).
 - **From H3-D's declaration** (`prereg/H3_three_way_deciding.md`, the file H3's text names for it, E-279, written later
-  under its own row): its pinning row and LF sha256, and its replicate counts (section 9). H3-D needs delta\*, so it follows
-  Q-189.
-- **From the build of the survey's parts** (section 14 step 2's pre-pin build, the lead's ruling on Q-214): the
-  survey-spec block's part, engine and objective-code sha256s, the space's built digest, the protocol's sha256, and the
-  plateau steps and tolerance that are computed from the loaded bounds (section 6).
+  under its own row): **the H3-D placeholder** of section 9 -- its pinning row and LF sha256, and its replicate counts.
+  H3-D needs delta\*, so it follows Q-189; it reads H4 only through W42-R2's output.
+- **The build before the pin** (E-297 (2), (3); section 14 step 2), each item built, reviewed and merged before the
+  hash row, its files on the deciding-files line (section 1):
+  1. **W42-R2 merged and pinned** (wt/wt-w42r2 after its fix pass, its red-team read, its pinning row before H4 is
+     read, E-296), and the survey's objective moved to it: `survey.W42_RULE` and `load_objective` read W42-R2's rule id,
+     module and output, and the limits come only from `extended.wave42_r2`;
+  2. **the parts**, `extended/survey_parts.py`: the space, the gate, the schedule builder, the design runner over
+     `extended/design_trades.py` (reviewed under Q-215, E-291) with its identities B-I1 to B-I3, and the playbook writer;
+  3. **the two reading sizes** in the engine and the runner (section 6), with a refusing test for each code point named
+     there;
+  4. **the keep rule at the point estimate** in `survey.beats_baselines` (section 7), the one-sided check beside;
+  5. **the stress arms** of measures (28) and (29) in the design runner, as H4's runner reads them (section 10 (c)),
+     brought forward from Q-224;
+  6. **S1's file in clean runs** (E-297 (3)): `scripts/run_clean.py` supplies `results/s1_range.csv` read in place from
+     the main tree's verified copy, `s1_range.load_range` refusing unless its raw sha256 equals the one cited in section
+     3 and its manifest verifies, and a clean checkout without it refusing, never falling back to `NotComputed`;
+  7. **the major-news floor** (section 4): its refusing count on the taken-trade log, with a planted violation that
+     fails it, and BEA's GDP release calendar, which exists in neither this repository nor the vendored tree: built from
+     BEA's published schedules and verified under its own row (none is invented here);
+  8. **this search's seed block** in `extended/three_way_seeds.py` (section 12);
+  9. **the power gate's whole-pipeline simulation** (section 9);
+  10. **the m-8 experiment** on record (section 5).
+
+  The survey-spec block's part, engine and objective-code sha256s, the space's built digest (computed with S1 active),
+  the protocol's sha256 and the plateau steps and tolerance computed from the loaded bounds are the build's, left as
+  placeholders in the block until it exists (section 6).
 - **The gatekeeper's:** the F-number in place of `F-XX`.
 
 ## 0. In plain words (for the operator)
@@ -43,7 +69,7 @@ London, NY AM, NY PM), each with its own trigger, latency, entry type and bracke
 evaluations and funded seats, steady or flip, the daily stop, the price and payout paths, purchases, payout requests).
 The search reads **only 2020 to 2023**: first a spread-out sample of 512 designs, then 8 rounds of 32 designs each
 chosen by a model of what the first readings showed (the sample and the first 4 rounds read cheaply, on a quarter
-of the start days and 4 coin seeds; the best 32 of them and the last 4 rounds at full size), then a re-read of the best few on fresh coin seeds and a check
+of the start days and 4 coin seeds of their own; the best 32 of them and the last 4 rounds at full size, on other seeds), then a re-read of the best few on fresh coin seeds and a check
 that their neighbours do as well. Every trade's outcome is redrawn with direction removed, so nothing here rewards
 predicting the market; what can win is timing, bracket shape and how the firm's fees and payouts reward an account
 policy.
@@ -52,7 +78,7 @@ What a user would do with a finalist: follow its one-page playbook (which sessio
 bracket, which account takes the trade), entering every order by hand at least L minutes after its alert.
 
 What counts as a pass: a finalist is carried only if, later, on 2024 to mid-2026 (read once, by the separate held-out
-test of every firm's finalists), it beats each of the four baselines on the composite W42-R1 pins, inside every limit
+test of every firm's finalists), it beats each of the four baselines on the composite W42-R2 pins, inside every limit
 at its point estimate, with every floor held (conduct, the do-nothing floor, the long-run gate, the stresses). **What a
 fail means:** the search closes with a closing row; nothing of it is rerun; it spends no k; a new question is a new
 declaration citing this one.
@@ -97,13 +123,20 @@ declaration citing this one.
   | `hold_expiry_days` | this repository's record | **unstated: refused** | A9 (its two readings, section 3) |
   | `payout_request_amount_choice` | this repository's record | **unstated: refused** | A19 (held at `max`, section 3) |
   | `back2funded_fee_by_pricing_path` | this repository's record | **unstated: refused** | the combination A4 `naf` with A12 above zero (section 3) |
-  | `tier1_news_events_restriction`, `economic_releases_list` | this repository's record | **changed: refused** | not read; the news rule reaches the walk through RD-05's adapter (section 4) |
+  | `tier1_news_events_restriction`, `economic_releases_list` | this repository's record | **changed: refused** | not read: no verified news window reaches Topstep's accounts (`extended/modes_news.py`); the major-news floor is section 4's declared list |
   | `reset_rebill_push`, `dll_offer_status` | this repository's record; Stage 2's ledger | verified | the dropped A13, A14 (read only to drop them) |
 
-- **The deciding files:** `extended/reader.py`, `extended/survey.py`, `scripts/survey_run.py`, `extended/survey_parts.py`, `extended/search_space.py`, `extended/surrogate.py`, `extended/proposer.py`, `extended/plateau.py`, `extended/lever_space.py`, `extended/firm_terms.py`, `extended/modes_rules.py`, `extended/modes_terms.py`, `extended/day_calendar.py`, `extended/triggers.py`, `extended/trigger_sides.py`, `extended/components.py`, `extended/router.py`, `extended/walker.py`, `extended/three_way_firm.py`, `extended/three_way_baseline.py`, `extended/three_way_redraw.py`, `extended/three_way_move.py`, `extended/three_way_journey.py`, `extended/three_way_keys.py`, `extended/three_way_fastkeys.py`, `extended/three_way_seeds.py`, `extended/user_beside.py`, `extended/journey_measures.py`, `extended/playbook.py`, `extended/wave42.py`, `extended/search_calendar.py`, `scripts/wave42_apply.py`, `config/rules_extended.yaml`, `vendor/stage2/config/rules.yaml`, `vendor/stage2/config/fills.yaml`
-- `extended/survey_parts.py` is new: it is written by this search's build, before the pin (section 14 step 2), and holds
-  the five part factories the survey-spec block names (the space, the gate, the schedule builder, the design runner and
-  the playbook writer). Every other file of the line exists at this commit. The reader's `go_row_present` holds each
+- **The deciding files:** `extended/reader.py`, `extended/survey.py`, `scripts/survey_run.py`, `extended/survey_parts.py`, `extended/wave42_r2.py`, `scripts/wave42_r2_apply.py`, `scripts/wave42_apply.py`, `scripts/run_clean.py`, `identity/h4_registered_constants.py`, `extended/__init__.py`, `extended/calendar_early_closes.py`, `extended/calendar_fomc_minutes.py`, `extended/campaign.py`, `extended/components.py`, `extended/day_calendar.py`, `extended/design_trades.py`, `extended/family_stats.py`, `extended/features.py`, `extended/firm_terms.py`, `extended/gate.py`, `extended/h4_coin_source.py`, `extended/journey_measures.py`, `extended/lever_space.py`, `extended/lever_space_firms.py`, `extended/levers_path.py`, `extended/lift_bound.py`, `extended/lock_guard.py`, `extended/modes_rules.py`, `extended/modes_terms.py`, `extended/openings.py`, `extended/payout_policy.py`, `extended/pin_order.py`, `extended/place_fields.py`, `extended/place_records.py`, `extended/plateau.py`, `extended/playbook.py`, `extended/price_levels.py`, `extended/proposer.py`, `extended/replay_records.py`, `extended/results.py`, `extended/router.py`, `extended/s1_range.py`, `extended/search_calendar.py`, `extended/search_cut.py`, `extended/search_space.py`, `extended/surrogate.py`, `extended/t7_forecast.py`, `extended/three_way_baseline.py`, `extended/three_way_fastkeys.py`, `extended/three_way_firm.py`, `extended/three_way_journey.py`, `extended/three_way_keys.py`, `extended/three_way_move.py`, `extended/three_way_redraw.py`, `extended/three_way_runner.py`, `extended/three_way_s1.py`, `extended/three_way_seeds.py`, `extended/three_way_stats.py`, `extended/trigger_sides.py`, `extended/triggers.py`, `extended/user_beside.py`, `extended/user_measures.py`, `extended/vol_descriptive.py`, `extended/walker.py`, `extended/wave42.py`, `config/rules_extended.yaml`, `config/calendar_fomc_minutes.csv`, `config/calendar_early_closes.csv`, `vendor/stage2/config/rules.yaml`, `vendor/stage2/config/fills.yaml`, `vendor/stage2/config/instruments.yaml`, `vendor/stage2/config/fv3_corrected_portfolio.yaml`, `vendor/stage2/config/atlas_a3.yaml`, `vendor/stage2/data/release_days_0830_2009_2025.csv`, `vendor/stage2/config/sources/fomc_statements.csv`, `vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv`
+- **How the line is made:** the static import closure (`survey.closure_files`, the binding's own function) of every
+  `extended` module the survey, its parts and their readings use -- the survey and its engine, the design route
+  `extended/design_trades.py`, the three-way runner and its statistics, the power gate's synthetic histories
+  (`extended/three_way_s1.py`), the firm path, the lever space with S1's and T7's loaders, the features, the naive
+  coin's builder, W42-R1's module (which W42-R2 runs) and the calendars -- with the entry scripts, the identity of the
+  registered constants, and the configuration and calendar files they read. `tests/test_f13_draft.py` recomputes the
+  closure of every listed `extended` module and refuses a missing one. `extended/survey_parts.py`,
+  `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` are written by the build before the pin (the head's list,
+  items 1 and 2; the last two on wt/wt-w42r2 now), and the build's closure is re-checked against this line before the
+  hash row; every other file of the line exists at this commit. The reader's `go_row_present` holds each
   file byte-identical at HEAD and at the go row's runner commit and unchanged in the working tree (U-1; section 14
   step 4).
 - **Its own execution protocol** (E-202; never another firm's reused): Topstep's $50K lever table,
@@ -133,15 +166,16 @@ declaration citing this one.
   - **(B-I3) the readings:** the runner's baseline arms, run at H4-B's own keys (the role `h4b_coins` in the part
     H4-B, used only as H4 registers it, section 12), reproduce `results/h4_units_<baseline>.csv` (H4's per-unit
     deciding readings, written by H4's clean runs) on every search-year start and every H4 seed index, every key of
-    `wave42.REQUIRED` in its columns: counts, shares and day counts equal exactly, a dollar key within a millionth of a
+    `wave42_r2.REQUIRED` (W42-R1's keys, which W42-R2 carries, and `net_month_12`) in its columns: counts, shares and day counts equal exactly, a dollar key within a millionth of a
     dollar (MEASURES 1.2's tolerance). A start set that differs from H4's refuses before any comparison.
   - **Each baseline's runner identity reads the search years only; it has no held-out part** (L-1; E-259). The
     registered rows are reported beside.
 - **The measures** are `docs/MEASURES.md`'s, every one by the function that file names, each a distribution over
   start days (median, p10, p90) and over coin seeds, read on the common start set `E_h` at its horizon (MEASURES.md
-  1.1). The composite's six dimensions and the six limits are W42-R1's (`docs/plans/WAVE42_SETTING_RULE.md` sections
-  4.1 and 6, LF sha256 `2179ff4a366d7ba61ecd425674dab8fd361d80a1713d4b8630943c5683662441`, E-283). This search
-  defines no measure of its own.
+  1.1). The composite's six dimensions are W42-R1's (`docs/plans/WAVE42_SETTING_RULE.md` section 4.1, LF sha256
+  `2179ff4a366d7ba61ecd425674dab8fd361d80a1713d4b8630943c5683662441`, E-283), carried unchanged by W42-R2 (not in its
+  `OVERRIDES`); the seven limits are W42-R2's (`docs/plans/WAVE42_SETTING_RULE_R2.md` section 3.1, E-296): W42-R1's six
+  and `net_month_12_p50`. This search defines no measure of its own.
 - **What is new here** against every earlier search, family and RD map: this is the first design search of the
   program. Stage 2's families and F-01 to F-03 searched trades for lift; RD-01 to RD-05 mapped firm levers on the whole
   window (superseded by RD-06 to RD-10, search years only, E-268 to E-272); F-04's grid and RL3 were recast into this
@@ -149,6 +183,13 @@ declaration citing this one.
   of the table is surveyed together, on the search years only, under the zero-edge convention and the journey
   objective, so no earlier reading is repeated: the overlap is the baselines (H4's, reproduced by B-I3) and the
   trigger sources (P-14's breakout, RL3's tickets), whose reads are in section 2's ledger.
+- **One search-year read of a cell in this space already exists, and is declared here:** Q-213's exploratory early
+  look (E-291; job `q213-early-look`, clean checkout of `514f6ad`; `results/early_look_rl3_pd_fade.csv`, exploratory,
+  deciding nothing). Its one cell is RL3's draft base cell -- `rl3` with the side `fade` at the prior session's levels,
+  NY AM, latency-free, Topstep 50K, zero edge, search years only -- read through `extended/design_trades.py`, this
+  survey's design route; that cell lies in this space (T1 `rl3`, T8's `fade` rule). P-14's H4-B readings were placed
+  beside it. **No value in this file comes from it.** Section 2's search-year ledger lists the read and who saw it,
+  section 16 dates every choice against it, and section 13 counts its cell beside the count.
 
 ## 2. Years, the held-out read ledger and the confirmation window
 
@@ -158,7 +199,7 @@ declaration citing this one.
   thresholds, schedules, limits, budgets and weights read these years only. Its starts and every sessions-left count
   come from the pinned search calendar, `results/search_calendar.csv` (raw sha256
   `dfd75dadb697349eea547fc88c1bb18b50828a2e60ac6496366e0e5f4da9a3ba`, E-266), through
-  `extended/search_calendar.py`, as W42-R1 and H4 bind it.
+  `extended/search_calendar.py`, as W42-R1 (so W42-R2) and H4 bind it.
 - **The held-out years** (E-208): 2024-01-02 to 2026-07-16, never read by this search, on the pinned calendar
   `results/q82_judged_sessions.csv` (its session count and sha256 asserted by the held-out runner). "Held out" means
   **unread by the search's code and unused by any choice in this declaration** (CHARTER 3.6 (a)). They are read by the
@@ -166,7 +207,7 @@ declaration citing this one.
 - **The horizon embargo** (CHARTER 3.6 (d); MEASURES.md 1.1): a start is read at horizon h only if h sessions remain
   in its own years; a held-out start reads only held-out sessions for its outcomes; causal look-backs into the search
   years are allowed. The longest horizon read here: **504 sessions**, D-145's horizon, for the long-run gate's
-  search-year history-block reading beside (section 10); the composite's longest is 252 (W42-R1's `bankroll` and
+  search-year history-block reading beside (section 10); the composite's longest is 252 (the dimensions W42-R2 carries, `bankroll` and
   `steady`). The strip it purges at the end of the search years: the last 504 sessions for the gate's reading, the
   last 252 for the twelve-month dimensions, each start's own sessions left on the pinned calendar deciding.
 - **The re-baseline (H4)** reads the search years only, its runner refusing held-out sessions (CHARTER 3.6
@@ -225,9 +266,23 @@ data not yet read (a purchase or the operator's setup).
   | S2's grid | RD-05 2.6's reward-to-risk grid, citing Stage 2 D-429's reference ratios; whether that screen read 2024 to 2026 is not on record, so it is entered | S2 | the lever table, section 6 |
   | the stop floor | the registered stand-aside floor, a Stage 2 constant; whether its derivation read 2024 to 2026 is not on record, so it is entered | S1's lower cap | Stage 2 D-271 (3), D-272 |
   | F-04's parameter table and RL3's declared values | written by researchers who had read the whole window | T5, T6, S5, A3 (F-04 6.1; RL3 6.1) | E-208 |
-  | the ledger constants | W = 126 and the 252-session window, set with the held-out years visible; the 21-session month | every dimension and limit of W42-R1 | Stage 2 D-518, D-620; Q-44 |
-  | W42-R1's own entry | the held-out session calendar's dates only, to count complete starts | the power forecast | E-283 |
+  | the ledger constants | W = 126 and the 252-session window, set with the held-out years visible; the 21-session month; U1's `EXACT` horizons | every dimension and limit of W42-R2; every baseline's windows and exact runs | Stage 2 D-518, D-620 (3)(f); Q-44 |
+  | W42-R1's own entry, which W42-R2 carries unchanged | the held-out session calendar's dates only, to count complete starts | the power forecast | E-283; E-296 |
   | the lead's choice of P-16's shape for the coin | made by a reader of those designs' whole-window journeys | the naive coin | H4's section 7 (E-287) |
+  | the busiest-day capacity | each registered cell's whole-window busiest day | P-14, P-15, P-16 (passed through); the naive coin (through P-16's job) | the registered builders; H4's B-2 |
+  | the bar store manifest's held-out metadata | its `day_list`, `early_end_days` and `day_bounds` entries after 2023-12-29, dropped before they are parsed; no figure | the search calendar; the void calendar | Q-166; Q-197 |
+  | the registered-constants run itself | the on-record whole-window identity run's existing read; it copies the registered marks and capacities by sha256 and computes only the search-year sub-hash | P-14, P-15, P-16 | E-247 rm-4; E-286 |
+  | the identity reads of `results/read_ledger.jsonl` | the registered designs rebuilt over the whole window by `identity/stage2_identity.py` and its routes | P-14, P-15, P-16 | E-010, E-024, E-028, E-055, E-068, E-135, E-205, E-286 |
+  | the `registered_design` reads of `results/read_ledger.jsonl` | the registered designs' whole-window trades and readings | P-14 and P-16 (E-021), P-14, P-15 and P-16 (E-024), P-14 (E-026), P-16 (E-035) | E-021, E-024, E-026, E-035 |
+
+  **The search-year reads before the pin** (no held-out session; listed because they were seen by those who set this
+  search's rules, E-207 (2)):
+
+  | read | what it read | who saw it | row |
+  |---|---|---|---|
+  | Q-213's exploratory early look | RL3's base cell (`rl3`, `fade`, prior-session levels, NY AM) on the search years, at zero edge, Topstep 50K; `results/early_look_rl3_pd_fade.csv` | the lead and the operator | E-290 (4), E-291 |
+  | P-14's H4-B readings beside the look | P-14's 12-month figures on the search years, from H4-B's held readings, unpaired | the lead and the operator (recorded in W42-R2's own text, its section 9) | E-291; E-296 |
+  | H4-S's schedules and identities | the four baselines' search-year schedules, supply counts and identities, no journey outcome | the lead | E-288 |
 
   No range of this search is drawn from a whole-window reading: S1's range is Q-171's search-year reading
   (`results/s1_range.csv`, E-240, E-245), T7's forecast is fitted on the search years (`results/t7_forecast.csv`,
@@ -259,7 +314,7 @@ data not yet read (a purchase or the operator's setup).
 
   | lever | layer (trigger / trade shape / account policy) | what it is, in a phrase | fixed / searched / dropped | value or range | unit | source kind and source |
   |---|---|---|---|---|---|---|
-  | T1 | trigger | the signal source of a component | searched | **narrowed here** to the sources with a playbook side: `p14` in every session, and `rl3` in NY AM, **by the lead's ruling on this text's first read (Q-214)**: the table's `coin` and `p16` are not offered, because no design holding one can be carried (`trigger_sides.NO_SIDE`; `survey.no_harm` fails any design whose side source is not the trigger's), so the survey spends no cell on them | categorical | declared: the table's T1, E-221 O-4, `extended/trigger_sides.py` |
+  | T1 | trigger | the signal source of a component | searched | **narrowed here** to the sources with a playbook side: `p14` in every session, and `rl3` in NY AM, **by the lead's ruling on this text's first read (E-297 (2))**: the table's `coin` and `p16` are not offered, because no design holding one can be carried (`trigger_sides.NO_SIDE`; `survey.no_harm` fails any design whose side source is not the trigger's), so the survey spends no cell on them | categorical | declared: the table's T1, E-221 O-4, `extended/trigger_sides.py` |
   | T2 | trigger | the session of a component | searched (one slot a session, on or off) | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, anchored per date | a session | arithmetic: `trading_hours`, E-231 (3) |
   | T2b | trigger | the NY AM / NY PM boundary | fixed | noon New York, `lever_space.ny_boundary` | a wall-clock time | declared: E-261 |
   | T3 | trigger | a component's offer window inside its session | searched | from its session's anchored start to its shortest span over the search years' weekdays, on the five-minute mark grid | marks after the session start | arithmetic: `trading_hours` and its note |
@@ -268,7 +323,7 @@ data not yet read (a purchase or the operator's setup).
   | T6 | trigger | how long a limit works | fixed | the table's T6 | minutes | declared: F-04 6.1 |
   | T7 | trigger | admission by forecast resolution | searched | `off`, `admit` | a probability's line | a search-year reading: `results/t7_forecast.csv` (E-253), D-212's line by key |
   | T8 | trigger | the side rule | fixed | in the evaluation the coin side (CHARTER 3.2); in the playbook the trigger's side by `trigger_sides.trigger_side` under the rules fixed in section 4 | side rule | declared: CHARTER 3.5, E-221 O-4 |
-  | S1 | trade shape | the stop width, a multiple k of the trailing range | searched (per component) | each session's k range from `results/s1_range.csv` (raw sha256 `a9fb2b6ff616de4c9b1036ee016774313c684e6a7d8d4e26dbe04f9525feffe6`, E-240, E-245), loaded only after `s1_range.load_range` checks its manifest; **in a clean checkout that file is absent (git-ignored, E-245), so S1 is `NotComputed` there and carried as refused, and the space's built digest bound in the survey-spec block is computed on that basis** (the lead's ruling, Q-214) | multiple of `trail20_range_pts` | a search-year reading (Q-171) |
+  | S1 | trade shape | the stop width, a multiple k of the trailing range | searched (per component) | each session's k range from `results/s1_range.csv` (raw sha256 `a9fb2b6ff616de4c9b1036ee016774313c684e6a7d8d4e26dbe04f9525feffe6`, E-240, E-245), loaded only after `s1_range.load_range` checks its manifest; **searched in every run** (E-297 (3)): the file is git-ignored (it carries price levels, E-245), so `scripts/run_clean.py` supplies it to each clean checkout read in place from the main tree's verified copy, `s1_range.load_range` refusing unless its raw sha256 equals the one cited here and its manifest verifies, and a clean checkout without it refuses, never falling back to `NotComputed` (the head's build item 6); the space's built digest bound in the survey-spec block is computed with S1 active | multiple of `trail20_range_pts` | a search-year reading (Q-171) |
   | S2 | trade shape | the reward-to-risk w | searched (per component) | RD-05 2.6's grid ends, continuous | ratio | declared: RD-05 2.6 |
   | S3 | trade shape | dollar risk per trade, evaluation | searched | one micro at the floor stop to `combine_mll`'s room | dollars at the stop | arithmetic: `combine_mll`, `combine_position_size_limit` |
   | S4 | trade shape | dollar risk per trade, funded | searched | one micro at the floor stop to `xfa_mll_start`'s room | dollars at the stop | arithmetic: `xfa_mll_start`, `funded_scaling_plan` |
@@ -285,7 +340,7 @@ data not yet read (a purchase or the operator's setup).
   | A6 | account policy | funded seats held at once | searched | one to `max_active_funded_accounts` | accounts | rule |
   | A7 | account policy | evaluations running at once | searched | the table's A7 range | accounts | declared: RD-03 2.2 |
   | A8 | account policy | banking while a pass waits | searched | `on`, `off` | categorical | declared: RD-03 2.2 |
-  | A9 | account policy | the hold's expiry | fixed (two readings) | U-1's `exp_none` as the deciding reading, `exp_30` beside, never chosen; its key `hold_expiry_days` is unstated, so the loader refuses the row and the runner applies this declared rule | reading | declared: RD-03 U-1 |
+  | A9 | account policy | the hold's expiry | fixed (two readings) | U-1's `exp_none` as the deciding reading, `exp_30` beside, never chosen: `exp_none` decides because it is the vendored engine's reading (a held pass waits, `extended/levers_readings.py`), which every baseline reads through the firm path as H4 runs them, so design and baselines read one expiry; its key `hold_expiry_days` is unstated, so the loader refuses the row and the runner applies this declared rule | reading | declared: RD-03 U-1 |
   | A10 | account policy | the evaluation-purchase rule | searched | `replace`, `house_stop`, `house_zero` | categorical | declared: RD-03 2.3 |
   | A11 | account policy | the evaluation-purchase budget | searched | the table's A11 range | purchases a month | declared: Stage 2 D-501 |
   | A12 | account policy | Back2Funded reactivations | searched | zero to `back2funded_max_reactivations` | reactivations | rule |
@@ -326,7 +381,7 @@ data not yet read (a purchase or the operator's setup).
 
 - **Sessions in the search:** every session the firm allows -- the evening, Asia, London, NY AM and NY PM -- with
   their boundaries read from the verified `trading_hours` and the per-date anchors (E-231 (3), E-261) (**Any hour**:
-  no cap on trading hours, E-202 (2)(b); workload (30) reported, and W42-R1's two workload limits, `orders_max_p90`
+  no cap on trading hours, E-202 (2)(b); workload (30) reported, and W42-R2's two workload limits (W42-R1's, carried), `orders_max_p90`
   and `accounts_max_p90`, are the only workload ceilings, E-221). The overnight sessions enter under H2's row, E-231,
   which admitted the overnight bars (`triggers.overnight_allowed`).
 - **Each component:** one slot a session (the survey-spec block's space parameter `slots`), on or off; its trigger
@@ -350,7 +405,7 @@ data not yet read (a purchase or the operator's setup).
   playbook's** (section 5). In the playbook each design's side comes from **its own trigger**, held by **the
   no-harm floor** against the coin on the real path (CHARTER 3.5; E-221, E-230):
   its composite on the search years is not below the coin side's by more than the margin pinned in section 7
-  (the no-harm margin), decided at the point estimate over S1's seeds, paired on the same fills, as O-5 rules for
+  (the no-harm margin), decided at the point estimate over the search-year coin role's deciding indices, paired on the same fills, as O-5 rules for
   limits (E-230) -- never by a test that fails only on evidence of harm; its held-out reading is reported beside,
   never judged. **A trigger whose side fails the
   no-harm floor offers no playbook side; that design is not carried.** The floor is read on the search years,
@@ -378,9 +433,9 @@ data not yet read (a purchase or the operator's setup).
   | one position at a time per firm, five minutes flat between trades | Stage 2 D-429's strict rule through the router (`extended/router.py`) and the firm path; the per-unit overlap count on the taken-trade log must be zero, refusing |
   | every trade resolving: at most 5 % reach the 15:10 CT flatten (D-212 as D-308 raised it); no time stops | the gate's resolution check (section 6) on every design, overall and in every search year; S6 dropped |
   | realised risk within 10 % on at least 90 % of trades, in its allowance-capped form (E-022 (1), E-032) | the gate's realised-risk check on every design |
-  | no entry before 07:35:00 CT on a BLS 08:30 release day; FOMC days out | the void calendar, `extended/day_calendar.py` (Q-166), in the schedule builder |
-  | no entry and no fill inside a verified news window; a position open at its start flattened (E-202 (2)(a), E-200 R-1); limits cancelled at its start; the closed 08:30-08:59 window for every source (E-223 M-8); **the one news-flatten convention** (E-223 M-4), every source: the flatten books at the adverse extreme of the window's first bar less two ticks, or at the position's resting stop instead if that extreme reaches it (as a stop exit) -- the as-walked and as-traded readings' convention; the deciding reading takes R-10's stopped walk to the window's start | the trigger library's news windows through RD-05's adapter (the record's two news keys are `changed` and are not read), the closed window `triggers.CLOSED_FIRST` to `CLOSED_LAST` refused at sampling (`Space.check`'s `session` class), and E-223 M-4's convention in the walk; the deciding reading by R-10 (section 5) |
-  | **conduct tier 1** (no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into major news, no trade copied across accounts, nothing that conceals a pattern) | one firm; one position at a time, each trade on one account, so none is copied and no two are open at once; the space's fixed `overlap` (`refused`) and `firms` (one); S7 dropped; a flip trade never at the full allowance (RD-05 2.6); nothing in any design conceals a pattern |
+  | no entry before 07:35:00 CT on a BLS 08:30 release day; FOMC days out | the void calendar, `extended/day_calendar.py` (Q-166), in the schedule builder, from the BLS 08:30 ET release days (`vendor/stage2/data/release_days_0830_2009_2025.csv`) and the scheduled FOMC statement days (`vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv`) as `features.load_calendars` reads them; **the schedule builder reads `day_calendar.day_context` for designs and baselines alike**, pairing with H4's coin source, and the share of offers removed for a research-only reason (`day_calendar.RESEARCH_ONLY`, known only after the alert) is reported beside per reading class; the playbook's live alerts use `alert_context` |
+  | no entry and no fill inside a verified news window; a position open at its start flattened (E-202 (2)(a), E-200 R-1); limits cancelled at its start; the closed 08:30-08:59 window for every source (E-223 M-8); **the one news-flatten convention** (E-223 M-4), every source: the flatten books at the adverse extreme of the window's first bar less two ticks, or at the position's resting stop instead if that extreme reaches it (as a stop exit) -- the as-walked and as-traded readings' convention; the deciding reading takes R-10's stopped walk to the window's start | **no verified news window reaches Topstep's accounts** (`tier1_news_events_restriction` and `economic_releases_list` are `changed`, `extended/modes_news.py` reaches no Topstep account), so R-10's news-window row arises for none; what holds is the BLS and FOMC exclusions of the row above, which are Topstep's enforcement here, the closed window `triggers.CLOSED_FIRST` to `CLOSED_LAST` refused at sampling (`Space.check`'s `session` class), and E-223 M-4's convention in the walk; the deciding reading by R-10 (section 5) |
+  | **conduct tier 1** (no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into major news, no trade copied across accounts, nothing that conceals a pattern) | one firm; one position at a time, each trade on one account, so none is copied and no two are open at once; the space's fixed `overlap` (`refused`) and `firms` (one); S7 dropped; a flip trade never at the full allowance (RD-05 2.6); nothing in any design conceals a pattern. **No maximum size into major news** (`prohibited_strategy_max_size_into_major_news`, whose page names no list): **the declared reading of "a scheduled major news event"** is every BLS 08:30 ET release in `vendor/stage2/data/release_days_0830_2009_2025.csv` at its release minute (a stricter reading than `features.BLS_MAJOR_RELEASES`), every scheduled FOMC statement in `vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv` at its statement minute, and BEA's GDP releases, whose calendar exists in neither this repository nor the vendored tree and is a build item before the pin (the head's item 7), never invented here; **its check** is a refusing count on the taken-trade log -- no position at the full maximum position size of its account's state open across any declared release minute, computed from the calendars, not from the accounts a rule reaches -- built with a planted violation that fails it |
   | conduct tier 2 modelled and off in the base case (D-289); tier 3 priced, 0 % denial in the verdict | the verdict settings `wave42.VERDICT` (0 % denial, the placement off, the Focused Trader Program off); the denial ladder beside (section 11) |
   | firm rules only verified (section 1) | every key in section 1's table through the loader, which refuses any key not `verified` |
   | no automated or API order entry; designs for one user's own accounts | the output is a hand-executable playbook; nothing here places an order |
@@ -458,89 +513,127 @@ data not yet read (a purchase or the operator's setup).
 
 - **The gates read before any outcome**, per surveyed design, each refusing (the gate part, its declared keys in the
   survey-spec block): supply (trades per session in every search year, counted; a design with no scheduled trade in
-  some search year cannot be read there and fails; the supply floor that ranks is W42-R1's `taken_mean_p10` limit),
+  some search year cannot be read there and fails; the supply floor that ranks is W42-R2's `taken_mean_p10` limit),
   resolution (the unresolved share at most 5 % overall and in every year, D-212), realised risk (D-212,
   D-308), the stop band (section 4), and the pair rule's cap (section 5). A design that fails a gate is counted and its
   measures are not read.
-- **The sizes of this section and the survey-spec block** (the survey's N, the rounds and their batch, the selection and
-  re-read seed counts, the candidates) **are to be sized from H4-B's measured cost before the pin**: the lead sizes
-  them in the pinning row (the lead's ruling, Q-214); the values below are the drafted ones.
-- **The screen and the deciding size** (the lead's addition on Q-214; neither the template nor the survey runner fixes
-  them: the engine reads every survey and round cell on one ledger protocol, and the finalists on the re-read seeds,
-  `search_space.CellLedger.protocol_for`). Declared before any read:
-  - **the screen size**, for the survey and rounds 1 to 4: the selection seed indices **0 to 3** (4 seeds) and **every
-    4th start** of the pinned search calendar (`results/search_calendar.csv`), its starts taken in calendar order from
-    the first (start stride 4, offset 0), each start read at its own horizons on W42-R1's sessions-left rule;
-  - **the deciding size**, for rounds 5 to 8, the promotion and every finalist rule: the selection seed indices **0 to
-    15** (16 seeds) and **every start** (stride 1); the candidates' re-read stays at the 64 re-read indices, every start;
-  - **the promotion**, between round 4 and round 5: the **32** screened cells with the best screen composite among those
-    passing the floors on their screen reading (the order rule's floors, section 7) are re-read at the deciding size,
-    counted as readings of existing cells, never new designs;
+- **The sizes are declared here and in the survey-spec block, final at the hash** (the form read's B-5; never left to
+  the pinning row): the survey's 512 designs, 8 rounds of 32, the screen's 4 seed indices on every 4th start, the
+  deciding size's 16 seed indices on every start, the 64 re-read indices, the promotion of 32 and the 4 candidates.
+  **They are sized from compute cost only, never from any reading of an outcome.** H4-B's measured cost per unit is
+  not yet a collected file on master, so the cost is declared as a formula, printed by the build from H4-B's collected
+  manifests in the pin row's citation of the build: the survey's wall-clock T = c U / w, where c is the measured
+  seconds of one unit (one start and one seed index) of one design with its four paired baselines and every arm the
+  reading carries, w = 2 workers (H4's count, E-294 (2)), and U the units read -- the screen's (512 plus 4 times 32
+  readings, each on 4 seed indices times a quarter of the starts), the deciding size's (32 promoted plus 4 times 32
+  readings, each on 16 seed indices times every start), and the re-reads' (the 4 candidates, their at most 4
+  five-minute twins and their plateau neighbours, at most 4 times k_max, each on 64 indices times every start). The
+  survey runs in clean parts split by disjoint start ranges, each part within the house's 8 h cap at 2 workers (E-287's
+  cut rule, E-288 (3)). **The sizes never move after the hash:** were T unacceptable, the search is re-declared before
+  its pin, never re-sized at the pin row.
+- **The screen and the deciding size** (E-292 (4), E-297 (2); neither the template nor the survey runner fixes them:
+  the engine reads every survey and round cell on one ledger protocol, and the finalists on the re-read seeds,
+  `search_space.CellLedger.protocol_for`). Declared before any read, every index a seed index of the search-year coin
+  role (section 12), **the three ranges disjoint** (the red team's B-3: a promoted cell must not keep its screen luck):
+  - **the screen size**, for the survey and rounds 1 to 4: the seed indices **80 to 83** (4 indices of its own, above
+    the re-read range) and **every 4th start** of the pinned search calendar (`results/search_calendar.csv`), its
+    starts taken in calendar order from the first (start stride 4, offset 0), each start read at its own horizons on
+    W42-R1's sessions-left rule, which W42-R2 carries; starts may overlap the deciding size's, since the history is
+    common to every design and only the coin draws carry selection luck;
+  - **the deciding size**, for rounds 5 to 8, the promotion's re-read and every finalist rule: the seed indices **0 to
+    15** (16 indices) and **every start** (stride 1); the candidates' re-read stays at the 64 re-read indices **16 to
+    79**, every start;
+  - **the promotion**, between round 4 and round 5: the **32** screened cells with the best screen composite among
+    those passing the floors on their screen reading (section 7's floors) are re-read at the deciding size, counted as
+    readings of existing cells, never new designs. **Its edge cases:** fewer than 32 passers promote every passer;
+    none closes the search by `every-design-failed-a-gate` (the held-out template's closed list); the rounds 5 to 8
+    surrogate needs at least one deciding-size reading, which one promoted cell gives, and is fitted on those readings
+    only;
   - **what each size feeds:** the surrogate of rounds 1 to 4 is fitted on screen readings only; the surrogate of rounds
     5 to 8 on deciding-size readings only (the promoted cells and rounds 5 to 8); **the finalist candidates are ranked
-    only among deciding-size readings**, so no screen reading is ever compared with a deciding one;
+    only among deciding-size readings**, so no screen reading is ever compared with a deciding one, and no deciding
+    reading reuses a screen index. **The floors that decide** -- the no-harm floor, the `not_paid_within_B` limit and the
+    do-nothing floor -- **are applied on the deciding-size reading before ranking** (section 7); the screen reading's
+    floors decide only the promotion;
   - **the precision each size gives**, declared now as formulas on calendar counts and a priori bounds, never on a
     reading: for two designs read paired on n units (a unit a start and a seed index), every per-unit composite
     difference lies in [-1, 1], so its coin-noise standard deviation sigma is at most one, and the smallest composite
-    difference resolvable at power `wave42.POWER_TARGET` by a one-sided comparison at level 0.05 is
-    MDE(n) = (z_0.95 + z_power) sigma / sqrt(n). The screen's n is 4 seeds times a quarter of the starts, the deciding
-    size's 16 seeds times every start, so **the screen's MDE is four times the deciding size's** at every horizon (the
-    square root of 16 over 1, against 4 over 4). The build prints both MDEs at sigma = 1 (the a priori bound) and at
-    H4-B's search-year sigma (W42-R1's output, `power`) from the pinned calendar's E_h counts, beside delta\*, in the
-    pinning row's citation of the build; a screen that cannot resolve delta\* only screens, and the deciding size,
-    not the screen, ranks the candidates;
-  - **a build requirement:** the engine and the runner read a cell on the protocol of its role (the screen's for the
-    survey and rounds 1 to 4, the deciding one after), each protocol bound in the declaration's protocol sha256; the
-    survey-spec block's `screen` key is refused by today's `survey.load_spec` (its keys are `survey.SPEC_KEYS`
-    exactly), so it is built and reviewed with the parts before the pin (section 14 step 2).
+    difference resolvable at power `wave42.POWER_TARGET` (W42-R1's, carried unchanged by W42-R2) by a one-sided
+    comparison at level 0.05 is MDE(n) = (z_0.95 + z_power) sigma / sqrt(n). The screen's n is 4 seed indices times a
+    quarter of the starts, the deciding size's 16 times every start, so **the screen's MDE is four times the deciding
+    size's** at every horizon (the square root of 16 over 1, against 4 over 4). **The keep rule's power** (section 7's
+    point-estimate rule) at a true gap of delta\* against one baseline is Phi(delta\* sqrt(n_r) / sigma), n_r the
+    re-read's 64 indices times every start, and against the four at least one less the sum of the four misses. The
+    build prints both MDEs and the keep rule's power at sigma = 1 (the a priori bound) and at H4-B's search-year sigma
+    (W42-R2's output, `power`) from the pinned calendar's E_h counts, beside delta\*, in the pinning row's citation of
+    the build; a screen that cannot resolve delta\* only screens, and the deciding size, not the screen, ranks the
+    candidates;
+  - **a build requirement** (the head's item 3): the engine and the runner read a cell on the protocol of its role (the
+    screen's for the survey and rounds 1 to 4, the deciding one after), each protocol bound in the declaration's
+    protocol sha256; the survey-spec block's `screen` key is refused by today's `survey.load_spec` (its keys are
+    `survey.SPEC_KEYS` exactly). **The code points today's runner gets wrong for two sizes, each a refusing test of the
+    build** (the red team's m-2): `survey._keep`'s `ctx.selection.setdefault` and `survey.finalist_candidates`'s
+    `seen.setdefault` keep a cell's first reading, which is a promoted cell's screen reading (the deciding one must
+    govern); `survey.run_rounds` passes every reading to `propose`, mixing the sizes; `survey.read_design`'s memo key,
+    the design id and the seeds, omits the start stride; and the ledger declares one protocol, on which
+    `search_space.admit_one` and `plateau.check` read.
 - **The survey:** the survey size **512 designs**, a **space-filling** sample of the lever space: a scrambled Sobol
   sequence (`search_space.Sampler`, `method="sobol"`, power-of-two blocks used in order), seeded by S0 (section 12),
-  on the search years only, each design read on every measure of section 1 at every seed of the protocol's 16
-  selection seed indices at the deciding size (the survey itself at the screen size, above); at most 64 x 512 = 32768 proposals, every proposal counted, the refused ones included (the
-  engine's default cap, written out). The size is a power of two (the Sobol sequence's balance) near ten points a
-  dimension of the space at this commit (one slot a session in five sessions, with S1's slot dimension; the build prints the
-  dimension count beside), the computer-experiment rule of thumb for a Gaussian-process start.
+  on the search years only; **each design is read at the screen size** on every measure of section 1; at most
+  64 x 512 = 32768 proposals, every proposal counted, the refused ones included (the engine's default cap, written
+  out). The size is a power of two (the Sobol sequence's balance) near ten points a dimension of the space at this
+  commit (one slot a session in five sessions, with S1's slot dimension; the build prints the dimension count beside),
+  the computer-experiment rule of thumb for a Gaussian-process start.
 - **The surrogate:** `extended/surrogate.py`'s Gaussian process, a **fixed procedure** named so (the red team's n-4 on
   Wave 3.4): the Matern 5/2 kernel with one length-scale a continuous lever times a categorical-overlap kernel, the
   SAAS prior (`surrogate.PRIOR_TAU`), the constant mean's prior variance (`surrogate.MEAN_VAR`), its bounds and start
   (`surrogate.BOUNDS`, `surrogate.START`) as merged at the engine commit `3452952` (E-281), and 4 restarts from S2's fit
-  stream; one surrogate for the composite and one for each of W42-R1's six limits, every one fitted through the one
+  stream; one surrogate for the composite and one for each of W42-R2's seven limits, every one fitted through the one
   door (`search_space.admit`). It predicts every measure the rounds need from the levers; which levers move which
   measures and where the ruin chance jumps are reported beside from its length-scales and the readings.
 - **The rounds:** **8 rounds of 32 designs each**, proposed **inside the limits** by `extended/proposer.py`: expected
-  improvement below the incumbent multiplied by the probability that every limit holds (`acquisition="ei"`, `xi` 0;
-  constrained, single-objective under limits, the engine's reading of CHARTER 3.3 (d)), the batch by the kriging
-  believer, from a Sobol pool of 4096 points and 64 local perturbations (scale 0.05 on the unit cube) around each of
-  the 4 read designs with the lowest predicted composite, seeded by S2. **The number of rounds is fixed here and never
-  extended after a look**; there is no stopping rule: every round runs. A pool with fewer valid candidates than the
-  batch refuses its round (the budget is never shrunk after a look), and the survey closes with that refusal on
-  record.
+  improvement below the incumbent multiplied by the probability that every limit holds (`acquisition="ei"`, `xi` 0, the
+  improvement's offset), the batch by the kriging believer, from a Sobol pool of 4096 points (`pool`) and 64 local
+  perturbations (`local`, scale 0.05 on the unit cube, `local_scale`) around each of the 4 read designs with the lowest
+  predicted composite (`centres`), seeded by S2. `kappa`, the lower confidence bound's width, and `p_feasible`, its
+  feasibility threshold, are the `lcb` acquisition's: unused under `ei` and written because `proposer.RoundSpec`
+  requires them. **A departure from CHARTER 3.3 (d)'s "constrained, multi-objective" form, stated** (the form read's
+  m-4), as Wave 3.4's m-10 remedy allows: the composite is optimised, the seven limits are constraints by probability of
+  feasibility on the same protocol, and the frontier over every measure is reported from the readings (section 11).
+  **The number of rounds is fixed here and never extended after a look**; there is no stopping rule: every round runs.
+  A pool with fewer valid candidates than the batch refuses its round (the budget is never shrunk after a look), and
+  the survey closes with that refusal on record.
+- **The protocol's horizon is 0 sessions** past its one block, which ends on the search years' last session, so no
+  outcome reads past 2023-12-29; each start's own horizons come from its sessions left on the pinned calendar
+  (W42-R1's rule, which W42-R2 carries).
 - **The plateau rule** (CHARTER 3.3 (e)): a finalist's neighbours must also do well -- its metric and radius pinned in
   section 7.
 - **The finalist order rule:** declared before the survey and pinned in section 7 (`survey.finalist_candidates` and
-  `survey.choose_finalists`); the list itself pinned in the lead's row before the held-out read (section 14).
+  `survey.choose_finalists`, with the keep rule rebuilt as the head's item 4); the list itself pinned in the lead's
+  row before the held-out read (section 14).
 - **Every design tried** is logged in `results/variants.jsonl` with its manifest (CHARTER 3.3 (f)), through the
   vendored `VariantCounter`, only by the clean run; the map and the ledger persist for the next firm, lever or model.
   **No held-out result** is written to either.
 - **The reverse reading** (choose on the held-out years, judge on the search years) is not run before the held-out
   test; afterwards only as a described reading (CHARTER 3.6 (g)).
 - **The survey-spec block** -- the survey runner's one input (`extended/survey.py`'s `load_spec`; nothing is injected,
-  F-2). Its keys are `survey.SPEC_KEYS` exactly. A value written `<...>` is one of the list at the head of this file
-  (W42-R1's application, or the build's hashes); until each is filled the block is not JSON the runner accepts
-  (`SpecRefused`), which is the refusal intended. The seeds in it are section 12's, by role.
+  F-2). Its keys are `survey.SPEC_KEYS` and the `screen` key the build adds (the head's item 3). A value written
+  `<...>` is one of the list at the head of this file (W42-R2's application, or the build's hashes); until each is
+  filled the block is not JSON the runner accepts (`SpecRefused`), which is the refusal intended. The seeds in it are
+  section 12's, by role.
 
 ```survey-spec
 {
   "prereg_id": "F-XX",
   "survey": {"n": 512, "method": "sobol", "seed": 20264511, "max_proposals": 32768},
-  "screen": {"seeds": [0, 1, 2, 3], "start_stride": 4, "start_offset": 0,
+  "screen": {"seeds": [80, 81, 82, 83], "start_stride": 4, "start_offset": 0,
              "roles": ["survey", "round-1", "round-2", "round-3", "round-4"], "promote": 32},
   "rounds": {"count": 8, "seed": 20264513, "batch": 32, "pool": 4096, "acquisition": "ei", "kappa": 2.0,
              "xi": 0.0, "centres": 4, "local": 64, "local_scale": 0.05, "restarts": 4, "p_feasible": 0.5},
   "protocol": {"measure": "composite", "blocks": [["2020-01-02", "2023-12-29"]],
                "seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "horizon": 0,
-               "sha256": "<...> the build's: search_space.protocol_sha256 of this protocol, the re-read seeds and the six limit measures"},
-  "objective": {"rule_id": "W42-R1", "values_row": "<...> W42-R1's application row (Q-189)",
+               "sha256": "<...> the build's: search_space.protocol_sha256 of this protocol, the re-read seeds, the screen and the seven limit measures"},
+  "objective": {"rule_id": "W42-R2", "values_row": "<...> W42-R2's application row (Q-189)",
                 "code_sha256": "<...> the build's: survey.objective_code_sha at the runner commit"},
   "baselines": {"names": ["naive_coin", "p14", "p15", "p16"], "seed": 20264512},
   "finalists": {"candidates": 4,
@@ -549,9 +642,9 @@ data not yet read (a purchase or the operator's setup).
                                  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
                                  64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
                 "z": 2.0},
-  "no_harm": {"margin": "<...> delta_star of W42-R1's output (Q-189)", "margin_row": "<...> W42-R1's application row (Q-189)"},
+  "no_harm": {"margin": "<...> delta_star of W42-R2's output (Q-189)", "margin_row": "<...> W42-R2's application row (Q-189)"},
   "plateau": {"rule": {"steps": "<...> the build's: one sixteenth of each real lever's loaded range, one step of each integer lever, cells for each categorical",
-                       "radius": 1, "tolerance_se": "<...> the build's: plateau.critical_value(0.05, k_max, 64)",
+                       "radius": 1, "tolerance_se": "<...> the build's: plateau.critical_value(0.05, 85, 64)",
                        "margin": "delta_star", "side": "worse", "min_share": 1.0, "min_neighbours": 4,
                        "min_per_lever": 1, "neighbourhood": "axes", "draws": 0},
               "seed": 20264514, "box_seed": null},
@@ -567,7 +660,7 @@ data not yet read (a purchase or the operator's setup).
     "schedule_builder": {"id": "extended.survey_parts:make_schedule", "params": {},
                          "data": "<...> the build's", "sha256": "<...> the build's"},
     "runner": {"id": "extended.survey_parts:make_runner",
-               "params": {"coin_role": "f_xx_coins", "side_rules": {"p14": "with_breakout", "rl3": "fade"}},
+               "params": {"coin_role": "survey_topstep_coins", "side_rules": {"p14": "with_breakout", "rl3": "fade"}},
                "data": "<...> the build's: results/search_calendar.csv and results/h4_registered_constants.csv by sha256",
                "sha256": "<...> the build's"},
     "playbook": {"id": "extended.survey_parts:make_playbook", "params": {}, "data": "<...> the build's",
@@ -579,26 +672,27 @@ data not yet read (a purchase or the operator's setup).
 
 ## 7. The pinning row: every input of 3.8 and 3.9, in one row, before the survey
 
-*Every input below is set from **the search years only** (H4's search-year outputs through W42-R1, the lever table, the
+*Every input below is set from **the search years only** (H4's search-year outputs through W42-R2, the lever table, the
 verified rules), in one lead's row, **before the survey** runs; none is changed after a search-year result except by
 re-declaring the search. This section is **never pinned alone**: the whole renamed file is frozen by its LF sha256 at
-the pin (section 14), with this table filled, and every later row cites that one hash.*
+the pin (section 14), with this table filled, and every later row cites that one hash. A constant cited as
+`wave42.<NAME>` is W42-R1's, carried unchanged by W42-R2 (not in `wave42_r2.OVERRIDES`).*
 
 | input | value | its direction or form | source (search years only) and row |
 |---|---|---|---|
-| **the limits**, each a floor or a ceiling, and any workload ceiling | <...> (awaiting W42-R1's application, Q-189: the output's `limits`, each limit's value). The six are W42-R1's, by name: `not_paid_within_B` (ceiling, mean, horizon 126), `peak_oop_12_months_p90` (ceiling, p90, 252), `first_payout_days_p50` (ceiling, p50, 126), `orders_max_p90` and `accounts_max_p90` (the workload ceilings, p90, 126), `taken_mean_p10` (the supply floor, p10, 126) | each limit's direction as W42-R1 section 6 writes it; the point estimate governs (E-221, the lead's O-5 ruling, E-230): a design passes the limit when its point estimate is inside it, fails it when outside, never a second margin; the one-sided check's level, reported beside each limit, never deciding: `wave42.LIMIT_CHECK_LEVEL` | the lead's, from H4's search-year results by a rule declared before H4 is read (E-221): W42-R1 (E-283), applied once (Q-189) |
-| **the bankroll budgets** of measure (24) | <...> (awaiting W42-R1's application, Q-189: the output's `budgets`, B\* its `primary`) | in fee units of `subscription_fee`, rounded up to the fee lattice (W42-R1 section 3); B\* the budget of P_B, ruin and `not_paid_within_B` | the lead's, as the limits (E-221): W42-R1 section 3 |
-| the **dimension** definitions, their normalisers or loadings, and their **caps** (lo, hi) with the cap margin | the six dimensions of W42-R1 section 4.1 (money, bankroll, speed, cost, steady, ruin), the caps' rule of its 4.2 (`CAP_QUANTILES`, `CAP_MARGIN`); the caps' values <...> (awaiting W42-R1's application, Q-189: the output's `dimensions`, each `lo` and `hi`) | the composite is clipped to [0, 1] (the design note's 1.3) | H4's measure-structure analysis (Wave 4.1) through W42-R1 section 4 |
-| **the weights** | <...> (awaiting W42-R1's application, Q-189: the output's `weights`; equal over the kept dimensions by W42-R1 section 4.3) | non-negative, summing to one | the lead's, from H4's search-year results by a rule declared before H4 is read (E-221): W42-R1 section 4.3 |
-| **the composite** or **the fallback** -- **one, never both** | <...> (awaiting W42-R1's application, Q-189: the output's `form`, `composite` or `fallback`, decided by W42-R1 section 4.4 before the survey) | the fallback is P under the bankroll stop (`P_B`, MEASURES.md section 2), pinned in place of the composite, never tried after it | W42-R1 section 4.4 |
-| **the size that matters** (O-3) and the **power target** | delta\* <...> (awaiting W42-R1's application, Q-189: the output's `delta_star`); the power target `wave42.POWER_TARGET` (`family_stats.MDL_POWER`) | on the composite's scale: the smallest difference that would change which design a user should run, with the power reported (the output's `power`) | the lead's, from the baselines' search-year results (E-221): W42-R1 section 5 |
+| **the limits**, each a floor or a ceiling, and any workload ceiling | <...> (awaiting W42-R2's application, Q-189: the output's `limits`, each limit's value). The seven are W42-R2's (`wave42_r2.LIMITS`), by name: `not_paid_within_B` (ceiling, mean, horizon 126), `peak_oop_12_months_p90` (ceiling, p90, 252), `first_payout_days_p50` (ceiling, p50, 126), `orders_max_p90` and `accounts_max_p90` (the workload ceilings, p90, 126), `taken_mean_p10` (the supply floor, p10, 126), and `net_month_12_p50` (measure (12) at month 12, a floor, p50, 252) | each limit's direction as W42-R2 section 3.1 and W42-R1 section 6 write it; the point estimate governs (E-221, the lead's O-5 ruling, E-230): a design passes the limit when its point estimate is inside it, fails it when outside, never a second margin; the one-sided check's level, reported beside each limit, never deciding: `wave42.LIMIT_CHECK_LEVEL` | the lead's, from H4's search-year results by a rule declared before H4 is read (E-221): W42-R2 (E-296), applied once (Q-189) |
+| **the bankroll budgets** of measure (24) | <...> (awaiting W42-R2's application, Q-189: the output's `budgets`, B\* its `primary`) | in fee units of `subscription_fee`, rounded up to the fee lattice (W42-R1 section 3, carried by W42-R2); B\* the budget of P_B, ruin and `not_paid_within_B` | the lead's, as the limits (E-221): W42-R2 |
+| the **dimension** definitions, their normalisers or loadings, and their **caps** (lo, hi) with the cap margin | the six dimensions of W42-R1 section 4.1 (money, bankroll, speed, cost, steady, ruin), carried by W42-R2, the caps' rule of its 4.2 (`wave42.CAP_QUANTILES`, `wave42.CAP_MARGIN`); the caps' values <...> (awaiting W42-R2's application, Q-189: the output's `dimensions`, each `lo` and `hi`) | the composite is clipped to [0, 1] (the design note's 1.3) | H4's measure-structure analysis (Wave 4.1) through W42-R2 |
+| **the weights** | <...> (awaiting W42-R2's application, Q-189: the output's `weights`; equal over the kept dimensions by W42-R1 section 4.3, carried by W42-R2) | non-negative, summing to one | the lead's, from H4's search-year results by a rule declared before H4 is read (E-221): W42-R2 |
+| **the composite** or **the fallback** -- **one, never both** | <...> (awaiting W42-R2's application, Q-189: the output's `form`, `composite` or `fallback`, decided by W42-R1 section 4.4's rule, carried by W42-R2, before the survey) | the fallback is P under the bankroll stop (`P_B`, MEASURES.md section 2), pinned in place of the composite, never tried after it | W42-R2 |
+| **the size that matters** (O-3) and the **power target** | delta\* <...> (awaiting W42-R2's application, Q-189: the output's `delta_star`); the power target `wave42.POWER_TARGET` (`family_stats.MDL_POWER`) | on the composite's scale: the smallest difference that would change which design a user should run, with the power reported (the output's `power`) | the lead's, from the baselines' search-year results (E-221): W42-R2 |
 | the **regimes** (the volatility threshold's rule) and **most years** (n_Y) with the minimum group size | regimes: v(t) the start's `trail20_range_pts` (the lever table's S1 unit, RD-04's), read on bars closed before the start's first decision moment; **v\* the median of v over the search-year starts of the pinned search calendar**, computed by the build from the search years and printed in the pinning row's citation of the build, never read on a held-out bar; most years: **n_Y = all of Y_ok** and **n_min = 21** (a month of starts, the design note's 3.4 proposal) | (Y) every start-year group with at least n_min complete starts positive; (R) every regime with at least n_min complete starts positive; a condition of stated size at least one half labelled vacuous | a rule fixed in advance on the search years (CHARTER 3.6 (f) (ii)); the design note 3.4 |
-| the **finalist order rule** and the **plateau rule** (metric, radius) | **the order rule:** the floors first (`survey.passes_floors`: the no-harm floor, the `not_paid_within_B` limit, the do-nothing floor, in that order, on each cell's selection reading; a cell failing one recorded and never ranked); then the deciding-size cells (the promoted cells and rounds 5 to 8; never a screen reading, section 6) by their selection composite, best first, ties by cell id; the first 4 are candidates; each re-read on the 64 fresh re-read seed indices and kept only if it beats each baseline by more than delta\* at the t threshold of z = `wave42.RESOLVE_Z` on the re-read (`survey.beats_baselines`), every limit's re-read point estimate inside, both floors again, and the plateau accepting it; **the finalists are the kept candidates in their selection order**. **The plateau rule:** `extended/plateau.py`'s paired re-read form, the axes neighbourhood at radius one step (one sixteenth of a real lever's loaded range, one step of an integer lever, every other cell of a categorical), every active lever stepped; side `worse`; margin delta\*; a neighbour holds when its z is at most `plateau.critical_value(0.05, k_max, 64)`, k_max the most neighbours a design of this space can have; accepted when every neighbour read holds, at least 4 are read and every steppable lever has one | the order is fixed by this rule before the survey and pinned in the finalists' row before any held-out read | the survey runner (E-281) and Wave 3.4's plateau check (E-251, E-281) |
+| the **finalist order rule** and the **plateau rule** (metric, radius) | **the order rule:** the floors first (`survey.passes_floors`: the no-harm floor, the `not_paid_within_B` limit, the do-nothing floor, in that order, on each cell's deciding-size reading; a cell failing one recorded and never ranked); then the deciding-size cells (the promoted cells and rounds 5 to 8; never a screen reading, section 6) by their selection composite, best first, ties by cell id; the first 4 are candidates; each re-read on the 64 fresh re-read seed indices and **kept only if its re-read point estimate beats each baseline on the composite** (CHARTER 2's convention: the point estimate governs; the one-sided check of the gap, at z = `wave42.RESOLVE_Z`, printed beside and never deciding; the held-out test, not the search, bounds coin luck), every limit's re-read point estimate inside, both floors again, and the plateau accepting it; **the finalists are the kept candidates in their selection order**. The keep rule replaces today's `survey.beats_baselines` (delta\* plus about two standard errors, the red team's B-2), rebuilt before the pin (the head's item 4). **The plateau rule:** `extended/plateau.py`'s paired re-read form, the axes neighbourhood at radius one step (one sixteenth of a real lever's loaded range, one step of an integer lever, every other cell of a categorical), every active lever stepped; side `worse`; margin delta\*; a neighbour holds when its z is at most `plateau.critical_value(0.05, 85, 64)`, where **k_max = 85**, the most neighbours a design of this space can have (16 account and shape levers giving 24 neighbours, four `p14`-only slots giving 12 each, the NY AM slot 13 with its second source: 24 + 4 x 12 + 13 = 85; the build recomputes it from the loaded space and refuses another value); accepted when every neighbour read holds, at least 4 are read and every steppable lever has one; **the build prints** the tolerance, `size_bound` and the plateau's power against a spike of twice delta\* at these 64 indices (the red team's m-9) | the order is fixed by this rule before the survey and pinned in the finalists' row before any held-out read | the survey runner (E-281) and Wave 3.4's plateau check (E-251, E-281) |
 | **the gate's quantile** and the **minimum count of held-out starts** complete over its horizon | the quantile **0.05** over coin seeds (D-145's one-sided 95 % form carried); the minimum **21** held-out starts complete over D-145's horizon of 504 sessions (n_min's calendar rule) | over coin seeds on the held-out years; the search years' history-block reading beside, as a consistency condition (CHARTER 3.8 (c); E-221, O-6) | declared here; the design note's 4.4; Stage 2 D-145 |
-| the **no-harm margin** for the playbook's trigger sides (E-221) and for as-traded resting triggers (one margin for both, unless two are named) | **one margin for both: delta\***, so its value is <...> (awaiting W42-R1's application, Q-189: the output's `delta_star`) | a design's trigger-side (or as-traded) composite on the search years not below its coin-side (reflected) composite by more than the margin, at the point estimate over S1's selection seeds (`survey.no_harm`) | the lead's (E-221), ruled delta\* on this text's first read (Q-214): a side worse by less than a difference a user would act on does no harm a user would see |
-| **the do-nothing floor** (E-255) | W42-R1's do-nothing composite and `DO_NOTHING_EPS`, cited from W42-R1 at its pinning row (`extended/wave42.py`); its value <...> (awaiting W42-R1's application, Q-189: the output's `null_journeys`, its `floor`) | a design's search-year composite above it by more than `DO_NOTHING_EPS`, applied before ranking; a design not above it is no finalist; the finalist's held-out composite above it by the same margin at the verdict | E-255; W42-R1 at its pinning row |
+| the **no-harm margin** for the playbook's trigger sides (E-221) and for as-traded resting triggers (one margin for both, unless two are named) | **one margin for both: delta\***, so its value is <...> (awaiting W42-R2's application, Q-189: the output's `delta_star`) | a design's trigger-side (or as-traded) composite on the search years not below its coin-side (reflected) composite by more than the margin, at the point estimate over the search-year coin role's deciding indices (`survey.no_harm`) | the lead's (E-221), ruled delta\* (E-297 (2)): a side worse by less than a difference a user would act on does no harm a user would see |
+| **the do-nothing floor** (E-255) | W42-R1's do-nothing composite and `wave42.DO_NOTHING_EPS`, carried unchanged by W42-R2, at W42-R2's pinning row; its value <...> (awaiting W42-R2's application, Q-189: the output's `null_journeys`, its `floor`) | a design's search-year composite on its deciding-size reading above it by more than `DO_NOTHING_EPS`, applied before ranking (and on the screen reading for the promotion only); a design not above it is no finalist; the finalist's held-out composite above it by the same margin at the verdict | E-255; W42-R2 at its pinning row |
 | **the L values** in the lever space | 5, 3 and 2 minutes for `p14`; one latency-free cell for `rl3` | five the reference; three and two counted | E-202 (2)(c) |
-| the deciding bound's form, J (seed sets) and m (seeds per set), and the seed keying | **2.2 (a)**, McDiarmid's bound over every start-seed term, which admits W42-R1's composite and its fallback by construction (each dimension an unconditional mean of a clipped per-unit value over its E_h, W42-R1 section 4.1); **J = `wave42.TEST_SEEDS`**; m does not arise under 2.2 (a) (each seed's units are the terms); a composite with a dimension 2.2 (a) does not admit is refused, never switched to 2.2 (b); the keying is the design note's choice 3 (section 8) | by the composite's form (section 8) | the design note's 2.2, 2.5; W42-R1 section 5.3 |
+| the deciding bound's form, J (seed sets) and m (seeds per set), and the seed keying | **2.2 (a)**, McDiarmid's bound over every start-seed term, which admits W42-R2's composite and its fallback by construction (each dimension an unconditional mean of a clipped per-unit value over its E_h, W42-R1 section 4.1); **J = `wave42.TEST_SEEDS`**; m does not arise under 2.2 (a) (each seed's units are the terms); a composite with a dimension 2.2 (a) does not admit is refused, never switched to 2.2 (b); the keying is the design note's choice 3 (section 8) | by the composite's form (section 8) | the design note's 2.2, 2.5; W42-R1 section 5.3, carried by W42-R2 |
 
 ## 8. The three-way test
 
@@ -612,7 +706,11 @@ adopted, because this search refuses overlap (section 5).
   fixed held-out history. The hypothesis, per baseline: on the held-out years the design beats it in expectation over
   coin draws. The statistic, fixed here: **the 2.2 (a) lower limit**, LB = Delta-hat - sqrt(ln(1/alpha) x (the sum of
   c_u^2 over every unit) / 2), McDiarmid's bounded differences over every start-seed term of the composite (or the
-  fallback), H0 rejected when LB > 0; no t decides. **The level bounds coin luck given the held-out history; it does
+  fallback), H0 rejected when LB > 0; no t decides. **c_u**, the design note's 2.2 (a) item 4: changing one unit u's
+  coin field moves the composite difference by at most c_u = the sum over the dimensions d of 1[u in E_{h_d}] times
+  w_d times 2 r_d / ((hi_d - lo_d) times J times |E_{h_d}|), w_d the pinned weight, [lo_d, hi_d] the pinned caps, r_d
+  the per-unit range (one for the clipped z) and |E_{h_d}| the held-out complete starts at the dimension's horizon; for
+  the fallback, c_u = 2 / (J |E_63|). **The level bounds coin luck given the held-out history; it does
   not bound a favourable history**: the history null's false-pass rate is read for that (section 9).
 - **(ii) The time leg, a declared consistency condition**, not a test at the level: the difference holds in **most
   years** (n_Y, section 7) and in both volatility regimes (threshold from the search years), with start-year groups and
@@ -635,8 +733,8 @@ they read only what this file fixed. H3's earlier runs are design checks only.*
   roles `h3d_histories`, `h3d_coins`, `h3d2_history_null` and `h3d3_plants` of `extended/three_way_seeds.py` (H3's
   declaration, E-279, section 15), used only as H3-D's declaration registers them; the R-10 estimator, `EPS` and
   `WALK_MAX` (section 5); the deciding statistic (section 8); J and m (section 7); the plants' grid, the synthetic
-  generator and its fitted parameters' source (search years only), and the replicate counts: **H3-D's, by its
-  declaration** <...> (awaiting H3-D's declaration, `prereg/H3_three_way_deciding.md`, and its pinning row: its LF
+  generator and its fitted parameters' source (search years only, H4 read only through W42-R2's output), and the
+  replicate counts: **H3-D's, by its declaration** <...> (**the H3-D placeholder**, awaiting H3-D's declaration, `prereg/H3_three_way_deciding.md`, and its pinning row: its LF
   sha256 cited here before this file's pin). Nothing of them is chosen after a calibration or gate output.
 - **Their outputs, pinned afterwards in E-115's calibration-plan form:** each run's result file with its manifest, and
   a record `docs/calibration/<F-NN>_calibration.md` citing those files' sha256 and the verdict, pinned by its own
@@ -644,13 +742,16 @@ they read only what this file fixed. H3's earlier runs are design checks only.*
   record's verdict; it is never re-run with another seed. **A declaration that follows one closed by a failed
   calibration or power gate cites that record, reports it beside, and uses a fresh seed block**; a failed seed block
   is never reused. **A failed limit clause or power gate is never a free retry** (M-5 (c);
-  E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's limits, bankroll budgets, weights and size that matters are
-  never changed for any search of the line -- every search, of any firm, whose section 7 applies W42-R1 -- after any
+  E-258 (the lead's CHARTER 3.7 reading row)): W42-R2's limits, bankroll budgets, weights and size that matters are
+  never changed for any search of the line -- every search, of any firm, whose section 7 applies W42-R2 -- after any
   calibration or gate that read them; a defect found in them goes through the failure protocol as a defect on record,
   and a corrected rule is a new rule under a new row whose searches never enter this F-HT. A successor search inherits
   them unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed block, and
   never enters this F-HT (its candidates are tested only on data this line has never read, a later purchase, under its
-  own k); every closed attempt of the line is counted and printed beside the verdict.
+  own k); every closed attempt of the line is counted and printed beside the verdict. **W42-R2 replaced W42-R1 before
+  any calibration or gate read W42-R1's values** (E-296: W42-R1 is never applied), so M-5 (c)'s "a corrected rule ...
+  whose searches never enter this F-HT" does not reach this search, whose membership is unaffected; M-5 (c) binds
+  W42-R2's limits, budgets, weights and delta\* from here.
 - **The whole pinned rule is calibrated as a whole** (E-007 (f)): the composite or the fallback, the limit checks, the
   time leg's conditions and the floors, all on the martingale-outcome reading.
 - **Same-design nulls:** a design against its **antithetic twin** (every coin draw u replaced by 1 - u, for the
@@ -663,7 +764,7 @@ they read only what this file fixed. H3's earlier runs are design checks only.*
   every verdict. History blocks are at least as long as the composite's longest horizon (252 sessions; 504 for the
   long-run gate's reading).
 - **The power gate**, before the go row: the whole pass line's power at the level it assumes, **the do-nothing floor
-  included: a planted design not above the floor, at the search-year screen or at the held-out verdict (section 10
+  included: a planted design not above the floor, at the search-year deciding-size screen or at the held-out verdict (section 10
   (c)'s two points), counts as a fail and never leaves the count** (E-255; section 7; B-1; n6)
   -- F-HT's level 0.05 / (k (k + 1)) with k = 13 next, the
   power at every k from 14 to 20 reported beside, so a re-statement at another k is a lookup, never a new run (m-e;
@@ -671,8 +772,14 @@ they read only what this file fixed. H3's earlier runs are design checks only.*
   seeds -- a re-statement only, closing nothing, exit (B) citing it; without it the pass line is refused (n-c) -- on
   synthetic paths carrying NQ's dependence, with design pairs drawn from H4's baselines and from synthetic plants, at
   a planted improvement of **the size that matters** (the lead's, from the baselines' search-year results; E-221,
-  O-3), at the **power target**, under the horizon embargo; in the same run, a design equal to the best baseline on
-  every limit passes every limit check, in the form in force, with at least the power target (E-015's condition); and
+  O-3), at the **power target**, under the horizon embargo. **The gate simulates the whole selection pipeline** (the
+  red team's B-2; the head's item 9): on synthetic worlds, the planted design (the best baseline plus delta\*) among
+  synthetic designs equal to the best baseline in expectation, at the survey's declared counts, goes through every
+  declared search-year stage -- the screen at its size with its floors, the promotion, the deciding size, the top-4
+  cut, the point-estimate keep rule and the plateau -- and then the held-out pass line; **the power reported is that
+  whole pipeline's**, per stage and in all, no stage left unmodelled, and the go row requires the power target on it.
+  In the same run, on the same route, a design equal to the best baseline on every limit passes every limit check, in
+  the form in force, with at least the power target (E-015's condition); and
   **the count of held-out starts complete over D-145's horizon** reaches its pinned minimum. If any fails, **the
   search goes no further** -- no go row, no survey: CHARTER 3.7's "the search does not pin" read on this template's
   order, the file closed by a row, its k unspent (it is assigned only at a held-out row) -- and exit (B) states the
@@ -697,8 +804,9 @@ martingale-outcome reading for the finalist and every baseline alike.*
   leg on the held-out years, the time leg's conditions met. Every comparison states the finalist's L and each
   baseline's L.
 - **(c) The floors:** verified rules; **conduct tier 1**; CHARTER section 4's constraints, every trade resolving among
-  them; **the do-nothing floor** (E-255; W42-R1 at its pinning row): on the search years at the screen, before ranking
-  and before the finalists' row, a design's composite above W42-R1's do-nothing composite by more than
+  them; **the do-nothing floor** (E-255; W42-R2 at its pinning row): on the search years on the deciding-size
+  reading (section 6), before ranking and before the finalists' row, a design's composite above the do-nothing
+  composite (W42-R1's, carried by W42-R2) by more than
   `DO_NOTHING_EPS` (a design not above it is no finalist), and on the held-out years at the verdict, the finalist's
   held-out composite above it by the same margin (else a fail at its place, whatever its test statistic, the held-out
   template's section 8); hand entry at least L minutes from alert to order; **the zero-edge long-run gate** -- the
@@ -708,7 +816,12 @@ martingale-outcome reading for the finalist and every baseline alike.*
   the tier-2 consequences and D-145's tier-3 denial applied (the 0 % reading beside), on starts complete under the
   horizon embargo whose count reaches the pinned minimum; **the fill and supply stress** -- at **+1 tick** of worse
   fills (29) and with **10 % of signals missed** (28) the finalist still beats each baseline on the composite at the
-  point estimate, both under the same stress, inside every limit in the form in force; **the playbook side's no-harm
+  point estimate, both under the same stress, inside every limit in the form in force -- **the stress defined now**:
+  the arms `worse_1` and `missed_0.1`, `three_way_journey.ArmSpec(worse_ticks=1)` and `ArmSpec(missed_q=0.10)`, exactly
+  as H4's runner reads them (`scripts/h4_rebaseline.py`), the missed draw keyed apart under the coin role; **their code
+  is built, reviewed and merged before the pin** in the design runner (`extended/survey_parts.py`, the head's item 5,
+  brought forward from Q-224), so it is on the deciding-files line and bound at the go row; the search-year stress
+  readings decide nothing, and the held-out stress floor runs this bound code; **the playbook side's no-harm
   floor** (CHARTER 3.5; E-221, E-230): the trigger side's composite on the search years not below the coin side's by
   more than the pinned margin, read before the finalists' row -- a trigger whose side fails it offers no playbook side
   and that design is not carried; **the as-traded floors** for resting triggers traded as their real orders -- **the
@@ -744,7 +857,15 @@ martingale-outcome reading for the finalist and every baseline alike.*
 - The five-minute cell beside every finalist; the registered rows of the baselines; the coin-seed spread.
 - Per year and per regime, each difference with its coin-noise standard error; each time-leg condition's stated size.
 - A9's `exp_30` reading and A19's `half` reading beside every finalist, each labelled with its unstated key.
-- W42-R1's `inactivity_guards` and each limit's vacuous flag, beside the candidates.
+- W42-R2's `inactivity_guards` and each limit's vacuous flag, beside the candidates.
+- **E-294 (4)'s reporting, deciding nothing:** every finalist and every baseline in three columns -- **contract-only**
+  (the bracket's driftless odds alone, no path), **martingale-outcome** (the deciding reading) and **as-traded** (the
+  real side, unreflected) -- with the gaps labelled; the as-traded gap read in both periods, the search years here and
+  the held-out years under F-HT's `heldout_stress`; the **edge-sensitivity reading** beside; measures (28) and (29)'s
+  stress arms on the finalists (section 10 (c)'s definition); and an **execution-fit block** on each finalist's
+  playbook page. Ordering passing finalists by an as-traded statistic is not adopted here (E-294 (4)).
+- W42-R2's disclosure beside the verdict: the operator and the lead saw P-14's early-look 12-month figures (section 2's
+  search-year ledger), and W42-R2 chose nothing from them (its section 9).
 - Not modelled, said wherever a scorecard appears: the user's time, taxes.
 
 ## 12. Seeds -- by role, found nowhere else
@@ -753,10 +874,10 @@ martingale-outcome reading for the finalist and every baseline alike.*
 |---|---|
 | 20264510 | the unit tests of this search's build (synthetic toys only), in a part of their own |
 | 20264511 | `S0`: the survey's space-filling sample (the Sobol scramble, `search_space.Sampler`) |
-| 20264512 | `S1`: the coin field on the search years -- the reflection coin, the race, R-10's stopped walk, missed-signal draws (28) -- one draw kind each, for every design and every baseline alike (the pairing), at the selection seed indices 0 to 15 and the re-read seed indices 16 to 79; also the baselines' role seed in the cell ledger |
+| 20264512 | `S1`: the search-year coin role (not the stop-width lever S1) -- the reflection coin, the race, R-10's stopped walk, missed-signal draws (28) -- one draw kind each, for every design and every baseline alike, at three disjoint ranges of seed indices: the deciding indices 0 to 15, the re-read indices 16 to 79 and the screen indices 80 to 83; one role, the pairing: the cell ledger's baseline role is begun under it because the baselines read this same coin field |
 | 20264513 | `S2`: the surrogate's fitting and the round proposer's optimiser (the fit starts, the Sobol pool, the local perturbations) |
 | 20264514 | `S3`: the plateau rule's ledger seed; the axes neighbourhood draws nothing |
-| 20264515 | `S4`: the held-out test's coin field -- disjoint from every seed drawn on the search years; drawn by nothing in this search, cited by the held-out test's declaration |
+| 20264515 | `S4`: proposed for the held-out test's coin field, which F-HT owns (it is joint over the firms, E-238) and may adopt, checking it disjoint from every member's search-year roles, this search's screen indices included; drawn by nothing in this search |
 | H3's deciding roles | `S5`: the deciding calibration and the power gate -- not this block: H3's `h3d_histories`, `h3d_coins`, `h3d2_history_null`, `h3d3_plants` (owner: `prereg/H3_three_way.md`, E-279, its section 15; registered by H3-D's declaration) |
 | 20264516 | `S6`: spare, drawn by nothing |
 | 20264517 | spare, drawn by nothing |
@@ -774,7 +895,7 @@ martingale-outcome reading for the finalist and every baseline alike.*
 - **Keys of fixed length per draw kind**, passed to a counter-based generator (the design note's 1.5; numpy reads
   `default_rng([a, b])` and `default_rng([a, b, 0, 0])` as one stream); other streams are children of a named seed,
   never the seed plus an offset (E-171). The build adds this block to `extended/three_way_seeds.py` with its roles
-  (the runner's coin role is named `f_xx_coins` in the survey-spec block until the F-number is assigned), statuses,
+  (the runner's coin role is named `survey_topstep_coins` in the survey-spec block, a name that does not depend on the F-number), statuses,
   `ROLE_USE` and part ids of its own, as H4's block was added, so a literal typed elsewhere cannot draw
   (`ProvenanceRefused`).
 - The design and every baseline read the same keys (the pairing). A seed chosen after a result is a variant. Inherited
@@ -804,15 +925,21 @@ martingale-outcome reading for the finalist and every baseline alike.*
   - the survey and the rounds: the rounds' 8 x 32 = 256 designs, so `k_cells` = 512 + 256 = 768 designs read;
   - the promotion: 32 screened cells re-read at the deciding size (readings of counted cells, no new design);
   - the five-minute twins of the candidates, read beside: at most 4 more cells;
-  - the plateau checks: at most 4 candidates' neighbourhoods, each at most k_max cells (section 7), counted by the
-    ledger under `plateau:<id>` as they are proposed;
+  - the plateau checks: at most 4 candidates' neighbourhoods, each at most k_max = 85 cells (section 7), so at most
+    4 x 85 = 340 cells, counted by the ledger under `plateau:<id>` as they are proposed;
+  - **the bound on every design cell of this search:** 768 + 4 + 340 = 1112;
   - the survey's refused proposals: at most 64 x 512 = 32768 proposals in all, every refusal counted with its class;
-  - the baselines: 4, read once each on the protocol, not designs.
+  - the baselines: 4, read once each on the protocol, not designs;
+  - **beside the count, the early look's one cell** (Q-213, E-291; section 1): read on the search years before this
+    file's pin, exploratory, under its own seed block and its own manifest (`exploratory: true`), never a cell of this
+    search's ledger; it is counted here so that the reads of this space on these years are all on record.
 - The program's honesty sentence: Stage 2's programs read these bars over the whole window -- its signal search, the
-  registered designs' choice and nine families of program U, each on the late block -- and this repository's F-01 to
-  F-03, RD-01 to RD-05 and Q-17 read parts of 2024-2026 for the baselines and levers this search inherits (section 2's
-  ledger); so the level is nominal while the ledger is not empty, and the decision is carried by one confirmation on
-  unread data (section 15).
+  registered designs' choice and nine families of program U, each on the late block -- and this repository's RD-01 to
+  RD-05, Q-17, the identity runs and the `registered_design` reads read parts of 2024-2026 for the baselines and levers
+  this search inherits (section 2's ledger, row by row). F-01 (withdrawn, E-007) and F-03 (closed with its judged block
+  not read, E-192) spent their ks without reading the held-out years: no line of `results/read_ledger.jsonl` is
+  either's, so neither has a ledger row. The level is nominal while the ledger is not empty, and the decision is carried by one
+  confirmation on unread data (section 15).
 
 ## 14. The run order -- refusals first
 
@@ -820,11 +947,11 @@ martingale-outcome reading for the finalist and every baseline alike.*
    gatekeeper read the final text with section 7's values filled in; every blocking finding answered. A value filled
    in after a read is a change: the red team checks its diff, or re-reads the draft if the value bears on a blocking
    finding. After the pin a change is a new declaration.
-2. **The pin**: after H4 and Wave 4.2's inputs (the lead's, E-221) are written into section 7 -- W42-R1 applied once to
-   H4's collection result (Q-189) -- and after **H3-D's declaration is pinned** (section 9), **the survey's parts and the design runner are
-   built, reviewed and merged** (the lead's ruling, Q-214: the spec binds code hashes, and the pin row cites them) (`extended/survey_parts.py`, the design runner with its identities B-I1 to B-I3, this block in
-   the seed module) so that the survey-spec block's hashes can be filled, and **the m-8 experiment's result is on
-   record** (section 5), the lead's row pins **the whole renamed file** by its LF sha256 (the gatekeeper renames and
+2. **The pin**: after H4 and Wave 4.2's inputs (the lead's, E-221) are written into section 7 -- W42-R2 applied once
+   to H4's collection result (Q-189) -- and after **H3-D's declaration is pinned** (section 9) and **every item of the
+   head's build list is built, reviewed and merged** (E-297 (2), (3): the spec binds code hashes, and the pin row
+   cites them; the list's items 1 to 10, W42-R2's merge and pin first), so that the survey-spec block's hashes can be
+   filled and the deciding-files line re-checked against the built closure, the lead's row pins **the whole renamed file** by its LF sha256 (the gatekeeper renames and
    replaces `F-XX` first, then hashes). Section 7 is never pinned alone; the calibration's and gate's inputs are inside
    the frozen file. Q-158, the reader's held-out guard, is merged (E-222). **No search pins before E-258 (the lead's
    CHARTER 3.7 reading row) exists** in `DECISIONS.md`, its bolded title beginning `CHARTER's "pin" read`
@@ -935,13 +1062,32 @@ the denial ladder, the playbook trigger side's held-out reading and the fill-tim
 
 ## 16. Anything chosen after seeing results
 
-*(Empty at the pin. Anything added after a reading is exploratory, reported apart, `exploratory=True` in its manifest,
-and recorded in its own decision row -- never added to this file once pinned.)*
+*(Nothing of this search's own readings: none exists. One search-year read of a cell in this space precedes the pin,
+and is disclosed here, as the red team's B-4 and the form read's B-3 ask; anything added after a reading of this
+search is exploratory, reported apart, `exploratory=True` in its manifest, recorded in its own decision row, and never
+added to this file once pinned.)*
+
+**The read:** Q-213's exploratory early look (E-290 (4), E-291): RL3's base cell, `rl3` with the side `fade` at the
+prior session's levels, NY AM, latency-free, Topstep 50K, zero edge, on the search years, its result file
+`results/early_look_rl3_pd_fade.csv` written at the timestamp its manifest records (2026-11-27T14:13:43 UTC), P-14's
+H4-B readings beside it; seen by the lead and the operator (section 2's search-year ledger). **No value in this file
+is taken from it.** Every choice it could touch, dated against it:
+
+| choice | fixed by, and when | before the look's result | labelled |
+|---|---|---|---|
+| RL3's level kinds, its ticket times (published 08:30 CT, live 09:00 CT) and its NY AM component | E-204, E-208 (2026-11-18) | yes | no |
+| the `rl3` side rule `fade` (`trigger_sides.RULES`) | commit `457f577` (2026-11-20); this file's text 1 | yes | no |
+| T1 narrowed to `p14` and `rl3` | proposed in this file's text 1, handed back to the lead before the look's result was written; accepted after it (E-297 (2)) | proposed before, ruled after | **yes: the accepting ruling came after the look and could have been informed by it** |
+| the no-harm margin set to delta\* | proposed in text 1; ruled after the look (E-297 (2)) | proposed before, ruled after | **yes, the same** |
+| the screen, its seed indices and stride, the promotion and every size of section 6 | added after the look (E-292 (4), E-297 (2)); the sizes from compute arithmetic only (section 6) | no | **yes: declared after the look; no figure of it enters them** |
+| W42-R2's added limit `net_month_12_p50` | ruled after the operator and the lead saw P-14's early-look 12-month figures (E-296); W42-R2 records that it chose nothing from them (its section 9) | no | **yes, with W42-R2's own disclosure beside the verdict (section 11)** |
+| this text 2's fixes: W42-R2 throughout, the point-estimate keep rule, the screen's own indices, S1 in every run, the major-news list and check, the deciding-files closure, the ledger rows, the stress arms before the pin | the two reads of text 1 (both 2026-11-27), after the look | no | **yes: made after the look, each answering a review finding, none using the look's figures** |
+| every other choice of this file | text 1 | yes | no |
 
 ---
 
 *Sources: `CHARTER.md` sections 2-5 (E-210); `prereg/TEMPLATE_design_search.md` text v3 (E-284);
 `prereg/TEMPLATE_heldout_test.md` (E-284); `docs/MEASURES.md`; `docs/plans/LEVER_TABLE_topstep50k.md`;
-`docs/plans/WAVE42_SETTING_RULE.md` (E-283); `docs/plans/THREE_WAY_TEST_design.md`; `prereg/H3_three_way.md` (E-279);
+`docs/plans/WAVE42_SETTING_RULE.md` (E-283); W42-R2 (E-296); `docs/plans/THREE_WAY_TEST_design.md`; `prereg/H3_three_way.md` (E-279);
 `prereg/H4_rebaseline.md` (E-287); `extended/survey.py` and the Wave 3.4 engine (E-281); E-204, E-208, E-211, E-221,
-E-230, E-255, E-257, E-258, E-259.*
+E-230, E-255, E-257, E-258, E-259, E-290, E-291, E-292, E-294, E-296, E-297.*
