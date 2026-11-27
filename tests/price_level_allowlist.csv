@@ -93,3 +93,4 @@ results/h4_0_probe.csv,level,synthetic_lane_trades,"synthetic lane-trade count (
 results/h4_0_probe.csv,pair,100*tb_race_trades/tb_race_seeds,"ratio of synthetic trade count to seed count from H4-0 synthetic timing probe; not a price level (E-288)"
 results/h4_supply.csv,pair,100*trades/trades_per_session,"identity 100 * sessions (trade count over trades per session) in H4-S supply summary; not a price level (E-288)"
 results/h4_supply.csv,pair,100*sessions/realised_risk_within_10pct_share,"ratio of search-year session count to realised-risk gate share in H4-S supply summary; not a price level (E-288)"
+results/early_look_rl3_pd_fade.csv,level,n_finite,"the count of finite per-unit values a reading is taken over (scripts/h4_rebaseline.py:1851, int(fin.size)): a count, not a price"

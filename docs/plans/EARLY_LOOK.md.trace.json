@@ -1,0 +1,272 @@
+[
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_pass_days",
+  "text": "19.0",
+  "value": 19.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_pass_days",
+  "text": "2.0",
+  "value": 2.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_pass_days",
+  "text": "2.0",
+  "value": 2.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "cash_to_first_pass",
+  "text": "$441",
+  "value": 441.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "cash_to_first_pass",
+  "text": "$343",
+  "value": 343.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "cash_to_first_pass",
+  "text": "$343",
+  "value": 343.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_payout_days",
+  "text": "not reached",
+  "value": 127.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p3.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_payout_days",
+  "text": "16.0",
+  "value": 16.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "days",
+  "measure": "first_payout_days",
+  "text": "17.0",
+  "value": 17.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "spent_before_first_payout",
+  "text": "$1,919",
+  "value": 1919.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "spent_before_first_payout",
+  "text": "$1,827",
+  "value": 1827.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p2.csv",
+  "horizon": 126,
+  "kind": "usd",
+  "measure": "spent_before_first_payout",
+  "text": "$1,874",
+  "value": 1874.0
+ },
+ {
+  "column": "r1_share",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 21,
+  "kind": "share",
+  "measure": "paid_by_21",
+  "text": "0.0 %",
+  "value": 0.0
+ },
+ {
+  "column": "r1_share",
+  "file": "h4_readings_p14_p2.csv",
+  "horizon": 21,
+  "kind": "share",
+  "measure": "paid_by_21",
+  "text": "81.1 %",
+  "value": 0.8113321520618557
+ },
+ {
+  "column": "r1_share",
+  "file": "h4_readings_p14_p4.csv",
+  "horizon": 21,
+  "kind": "share",
+  "measure": "paid_by_21",
+  "text": "85.0 %",
+  "value": 0.8499540441176471
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 252,
+  "kind": "rate",
+  "measure": "payouts_per_month",
+  "text": "0.17",
+  "value": 0.1666666666666666
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 252,
+  "kind": "rate",
+  "measure": "payouts_per_month",
+  "text": "3.50",
+  "value": 3.5
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p3.csv",
+  "horizon": 252,
+  "kind": "rate",
+  "measure": "payouts_per_month",
+  "text": "3.67",
+  "value": 3.6666666666666665
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "monthly_net_4_12_median",
+  "text": "-$147",
+  "value": -147.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p5.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "monthly_net_4_12_median",
+  "text": "$2,757",
+  "value": 2756.8822500109677
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p3.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "monthly_net_4_12_median",
+  "text": "$3,011",
+  "value": 3010.6945625022054
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "-$1,071",
+  "value": -1071.0977500006557
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p5.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "$31,528",
+  "value": 31527.87717190385
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p3.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "$34,218",
+  "value": 34217.61139066517
+ },
+ {
+  "column": "r1_p10",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "-$3,124",
+  "value": -3123.5200000032783
+ },
+ {
+  "column": "r1_p10",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "$18,960",
+  "value": 18960.19030004144
+ },
+ {
+  "column": "r1_p10",
+  "file": "h4_readings_p14_p3.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "net_month_12",
+  "text": "$21,100",
+  "value": 21099.947906263173
+ },
+ {
+  "column": "r1_p50",
+  "file": "early_look_rl3_pd_fade.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "peak_oop_12_months",
+  "text": "$2,166",
+  "value": 2166.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "peak_oop_12_months",
+  "text": "$1,874",
+  "value": 1874.0
+ },
+ {
+  "column": "r1_p50",
+  "file": "h4_readings_p14_p1.csv",
+  "horizon": 252,
+  "kind": "usd",
+  "measure": "peak_oop_12_months",
+  "text": "$1,874",
+  "value": 1874.0
+ }
+]

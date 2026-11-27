@@ -37,6 +37,8 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
 | temporary output in a temp folder | `results/` (results come only from a clean run), `DECISIONS.md`, `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md` |
 | the bars and atlas through the worktree's junctions, read-only, **if the brief allows heavy work** | a copy of the bars or atlas; any write through a junction |
 
+**Reading the big records** (token economy, 2026-11-27): never open `DECISIONS.md` (over 500 KB) or `docs/MEASURES.md` whole. Print one row with `grep -E '^\| E-289 \|' DECISIONS.md` (one row per E-id), a measure with `grep -n '<name>' docs/MEASURES.md`, then Read only that line range.
+
 ## 3. How a worker works
 
 1. Read the brief, the rows it names, `CLAUDE.md`, and the skills it names (always `feature-rules` for anything that
