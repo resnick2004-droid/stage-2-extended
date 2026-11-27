@@ -16,6 +16,7 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 | 9 | **Memory for heavy runs** | a campaign or a full identity needs about 3 GB; on 2026-11-15 the machine had about 1.7 GB available, the rest held by other applications | light work runs; a heavy run waits until the memory is there (the session checks before it starts) | open -- see below |
 | 10 | **Two written questions to other firms** (optional) -- DayTraders.com on its Terms s.26 item 3.c, TradeDay on its multiple-users sentence -- text below | the other-firms reading (`prereg/DRAFT_RD_firms.md`) names each question as open on its plan's rows | the reading runs as declared, those rows labelled | open |
 | 11 | **Alpha Futures' $50K terms, and Lucid's $50K prices, read by hand** (E-197) -- screenshots of public pages, saved unedited | Alpha's terms forbid automated access (E-020 (2)), and Lucid's, as modified on 2026-11-13, forbid copying or monitoring its content "by automated or unauthorized means", and an agent driving the operator's browser is still automated access, so no session reads Alpha's site | Alpha is carried as unread: no contract, no zero-edge map, no sizing grid; Lucid stays on Stage 2's verified LucidFlex record, unpriced for the other plans | open |
+| 12 | **The Mac as a second run host** (Apple M4, 16 GB; the operator's choice, E-298) | a second machine runs heavy parts beside this one, if its results match this machine's digit for digit | every heavy run on this machine, one at a time | open -- see below |
 
 ## Item 6 -- the repository outside OneDrive
 
@@ -117,3 +118,27 @@ The pages (the full list with what each must show is section "Pages for the lead
 Lucid's Terms of Use ("Last Modified: November 13, 2026") forbid anyone to "copy or monitor its content by automated or unauthorized means", so no session reads lucidtrading.com or its help centre from now on. By hand, as you did on 2026-11-05 (Stage 2 D-574): open https://lucidtrading.com/, and save unedited screenshots of the $50K pricing cards -- list and reset prices, and any activation, data or monthly fee line -- for LucidFlex (all four configurations), LucidPro (daily loss limit on and off), LucidDaily (each daily-loss-limit, drawdown and 30/40/50 % option) and LucidDirect, into `docs/rules/lucid_2026-11-18/`. Tell any session "Lucid screenshots saved".
 
 **Also needed for Lucid's own design search (added E-246; optional, only when convenient):** on the same site and help centre, screenshots of the pages that state, for **LucidFlex 50K**: (1) the trading hours and any daily maintenance break; (2) how long a payout request or a held account stays open before it expires; (3) any limit on how many accounts can be started in a period; (4) how the payout request amount is chosen (all available, or a choice); (5) any payout fee; (6) the funded account's monthly fee. Save them in the same folder. Without them, Lucid's search runs with those levers switched off, which is safe but narrower.
+
+## Item 12 -- the Mac as a second run host (E-298)
+
+The licence: you are the licensee and have decided a private copy on your own Mac is within it (E-298 records your
+decision). Five steps, about half an hour; the sessions do the rest.
+
+1. **Tools** (Terminal): install Homebrew from brew.sh if it is not there, then
+   `brew install python@3.12 git gh` and `gh auth login` (sign in to GitHub yourself, in the browser it opens).
+2. **The repository**, outside iCloud Drive (iCloud locks files as OneDrive does):
+   `mkdir -p ~/stage2x && cd ~/stage2x && gh repo clone resnick2004-droid/stage-2-extended && cd stage-2-extended`
+   then `python3.12 -m venv ~/stage2x/venv && source ~/stage2x/venv/bin/activate && python -m pip install numpy==2.5.2 scipy==1.18.1 pandas==3.0.5 pyarrow==25.0.1 PyYAML==6.0.3 pytest==9.1.1 pytest-xdist==3.6.1`
+3. **The data, directly between your two machines on the home network** -- never through OneDrive, iCloud, GitHub,
+   e-mail or a chat (the licence: private use, no redistribution). On the Mac: System Settings > General > Sharing >
+   Remote Login on. On this PC, in a terminal in the repository, type one encrypted copy of the two folders (about 64 MB)
+   into the Mac's copy: `scp -r vendor/stage2/data/bars vendor/stage2/data/atlas <mac-user>@<mac-name>.local:~/stage2x/stage-2-extended/vendor/stage2/data/`
+   Then Remote Login off again. Nothing is left anywhere else; this PC's copy is only read. Never screenshot them.
+4. **Check** (Terminal, in the repository, with `source ~/stage2x/venv/bin/activate` first):
+   `python scripts/vendor_stage2.py --verify` then
+   `OMP_NUM_THREADS=1 python identity/stage2_identity.py --paths 4 > ~/identity_mac.txt 2>&1`
+   (a few minutes).
+5. **Send** the file `~/identity_mac.txt` to any session here (paste its text). The sessions decide from it whether the
+   Mac's numbers match this machine's to the last digit; if any digit differs, the Mac is not used for results (that is
+   expected on a different processor and costs nothing).
+
