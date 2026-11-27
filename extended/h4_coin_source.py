@@ -25,7 +25,10 @@ Two modes on one shared walk (`extended.walker.STAGE2`, FV3's breakeven move ON)
 Also provides `alert_sigma_cross_session` (F4-1): the standard deviation of one-minute close-to-close changes, in ticks
 per root minute, over the last 60 bars closed at or before the alert, crossing session breaks into previous sessions
 with the gap return across any session break excluded; returns `None` when fewer than two changes exist behind an
-alert (counted beside and dropped from supply).
+alert (counted beside and dropped from supply) **and also when two or more changes exist but every one is zero**
+(sigma = 0, which the firm path's walk refuses and the declaration does not treat). `alert_sigma_detail` says which
+(F-3, Q-188b); the builders count the two apart (`dropped_sigma_lt_2`, `dropped_sigma_zero`) and list each dropped
+alert's date and time (`dropped_sigma_rows`), never a price.
 
 Zero raw H4 seed literals appear here; every H4 seed is issued by role through `extended.three_way_seeds.issue`.
 """
@@ -77,22 +80,50 @@ def slot_ct(slot: int) -> str:
 # --------------------------------------------------------------------------------------------- F4-1: alert volatility
 
 
-def alert_sigma_cross_session(
+#: F-3 (Q-188b): why an alert's volatility is missing -- the declared case and the undeclared one, kept apart
+SIGMA_OK = "ok"
+SIGMA_LT_2 = "lt_2_changes"          # the declared drop (section 7): fewer than two changes behind the alert
+SIGMA_ZERO = "zero_dispersion"       # two or more changes behind the alert, every one zero: sigma = 0, not declared
+SIGMA_REASONS = (SIGMA_OK, SIGMA_LT_2, SIGMA_ZERO)
+
+
+@dataclass(frozen=True)
+class SigmaReading:
+    """F4-1's reading at one alert, with the counts behind it (F-3, Q-188b): `sigma` is None unless `reason` is
+    `SIGMA_OK`; `n_bars` the closes read, `n_changes` the within-session changes formed from them, `n_nonzero` the
+    changes that are not zero, `sessions_read` the sessions the window reached (1: the alert's own), `rms_fallback`
+    True where the sample standard deviation was zero and the root mean square was returned instead (the builder's
+    form since `31c507e`; never reached unless every change is the same non-zero value)."""
+
+    sigma: float | None
+    reason: str
+    n_bars: int
+    n_changes: int
+    n_nonzero: int
+    sessions_read: int
+    rms_fallback: bool = False
+
+
+def alert_sigma_detail(
     day_closes: Sequence[np.ndarray],
     day_idx: int,
     decision: int,
     *,
     lookback: int = SIGMA_LOOKBACK_BARS,
     tick: float = W.TICK,
-) -> float | None:
-    """F4-1: standard deviation of 1-minute close-to-close changes (ticks per root minute) over the last `lookback`
-    bars closed at or before `decision` on `day_idx`, crossing session breaks into prior sessions (`day_idx - 1`, ...)
-    with every break's gap return excluded.
+) -> SigmaReading:
+    """F4-1 with its reason (F-3, Q-188b): the standard deviation of 1-minute close-to-close changes (ticks per root
+    minute) over the last `lookback` bars closed at or before `decision` on `day_idx`, crossing session breaks into
+    prior sessions (`day_idx - 1`, ...) with every break's gap return excluded.
 
     `day_closes[d]` is a 1-D array indexed by Stage 2's bar-end minute (0 unused, 1..1440 valid, NaN where no bar).
     Strictly causal: reads ONLY `day_closes[day_idx][:decision + 1]` and earlier days `d < day_idx`.
-    Returns `None` when fewer than two within-session close changes exist behind the alert (or std is non-positive).
-    """
+
+    Two different refusals, never merged (the audit's F-3): **`SIGMA_LT_2`** -- fewer than two within-session changes
+    behind the alert, the one case section 7 declares a drop for (the store's first minutes); **`SIGMA_ZERO`** -- two or
+    more changes, every one of them zero (a market that printed one price for the whole window, e.g. a locked limit),
+    where the declared estimator gives sigma = 0, which the firm path's walk refuses (`three_way_redraw.walk_step`
+    needs sigma > 0) and the declaration does not treat. The builders count the two apart."""
     n_need = int(lookback)
     if n_need < 2:
         raise ValueError(f"lookback must be >= 2, got {lookback}")
@@ -104,6 +135,7 @@ def alert_sigma_cross_session(
         raise ValueError(f"decision slot must be >= 0, got {dec}")
 
     collected = 0
+    sessions = 0
     # Store per-session chunks of (bar_ends, closes) in chronological order within each session;
     # gap returns across different session chunks are never formed.
     changes: list[np.ndarray] = []
@@ -121,23 +153,55 @@ def alert_sigma_cross_session(
                 bars = idx + 1
                 cs = arr[bars]
                 collected += int(bars.size)
+                sessions = d - cur_d + 1
                 if bars.size >= 2:
                     dt = np.diff(bars).astype(float)
                     dx = np.diff(cs) / float(tick)
                     changes.append(dx / np.sqrt(dt))
         cur_d -= 1
 
-    if not changes:
-        return None
-    all_ch = np.concatenate(changes)
-    if all_ch.size < 2:
-        return None
+    all_ch = np.concatenate(changes) if changes else np.zeros(0)
+    n_ch = int(all_ch.size)
+    n_nz = int(np.count_nonzero(all_ch))
+    if n_ch < 2:
+        return SigmaReading(None, SIGMA_LT_2, collected, n_ch, n_nz, sessions)
     sd = float(np.std(all_ch, ddof=1))
     if not (math.isfinite(sd) and sd > 0.0):
-        # Fallback to RMS if all changes are non-zero constant, else None
+        # Fallback to RMS if all changes are the same non-zero value, else zero dispersion (F-3)
         rms = float(math.sqrt(float(np.mean(all_ch * all_ch))))
-        return rms if (math.isfinite(rms) and rms > 0.0) else None
-    return sd
+        if math.isfinite(rms) and rms > 0.0:
+            return SigmaReading(rms, SIGMA_OK, collected, n_ch, n_nz, sessions, rms_fallback=True)
+        return SigmaReading(None, SIGMA_ZERO, collected, n_ch, n_nz, sessions)
+    return SigmaReading(sd, SIGMA_OK, collected, n_ch, n_nz, sessions)
+
+
+def alert_sigma_cross_session(
+    day_closes: Sequence[np.ndarray],
+    day_idx: int,
+    decision: int,
+    *,
+    lookback: int = SIGMA_LOOKBACK_BARS,
+    tick: float = W.TICK,
+) -> float | None:
+    """F4-1: `alert_sigma_detail(...).sigma` -- the volatility at the alert, or None where the alert has fewer than
+    two changes behind it **or** a zero dispersion (the reason is `alert_sigma_detail`'s; F-3). Unchanged in value
+    from `31c507e`: every alert it returned a sigma for, it still does, bit for bit."""
+    return alert_sigma_detail(day_closes, day_idx, decision, lookback=lookback, tick=tick).sigma
+
+
+def sigma_drop_row(date_str: str, decision: int, reading: SigmaReading) -> dict[str, Any]:
+    """One dropped alert for the record (F-3): its trading day, its alert minute (as minutes after 17:00 CT and as CT
+    time), the reason and the counts behind it -- dates, times and counts only, never a price."""
+    return {
+        "date": str(date_str),
+        "decision_slot_minutes": int(decision),
+        "decision_ct": slot_ct(int(decision)),
+        "reason": str(reading.reason),
+        "n_bars": int(reading.n_bars),
+        "n_changes": int(reading.n_changes),
+        "n_nonzero_changes": int(reading.n_nonzero),
+        "sessions_read": int(reading.sessions_read),
+    }
 
 
 def vendored_move_bar(o: np.ndarray, entry_bar: int, walk_end_bar: int) -> int | None:
@@ -351,6 +415,11 @@ def build_naive_coin_trades(
     offers_admitted = 0
     offers_unfilled = 0
     offers_dropped_sigma = 0
+    offers_dropped_sigma_zero = 0
+    sigma_rms_fallback = 0
+    dropped_sigma_rows: list[dict[str, Any]] = []
+    data_defect_dates: list[str] = []
+    limit_differs_dates: list[str] = []
     limit_differs_from_last_bar = 0
 
     for sess_idx, d_str in enumerate(sorted_dates):
@@ -360,6 +429,7 @@ def build_naive_coin_trades(
             dv = data_void_fn(d_obj)
             if any(r.startswith("no_bar_at_") or r in ("early_end", "data_defect") for r in dv):
                 days_data_defect_lookahead += 1
+                data_defect_dates.append(d_str)
         if ctx.void or ctx.fomc:
             days_voided += 1
 
@@ -397,6 +467,7 @@ def build_naive_coin_trades(
             clock_limit = int(er.walk_end)
             if last_b < clock_limit:
                 limit_differs_from_last_bar += 1
+                limit_differs_dates.append(d_str)
             eff_end = W.walk_end(o, er)
             if eff_end is None:
                 offers_unfilled += 1
@@ -412,10 +483,16 @@ def build_naive_coin_trades(
                 offers_unfilled += 1
                 continue
             fb = int(pres[0])
-            sig = alert_sigma_cross_session(day_closes, sess_idx, int(off.decision), tick=tick)
+            sr = alert_sigma_detail(day_closes, sess_idx, int(off.decision), tick=tick)
+            sig = sr.sigma
             if sig is None:
-                offers_dropped_sigma += 1
+                if sr.reason == SIGMA_ZERO:
+                    offers_dropped_sigma_zero += 1
+                else:
+                    offers_dropped_sigma += 1
+                dropped_sigma_rows.append(sigma_drop_row(d_str, int(off.decision), sr))
                 continue
+            sigma_rms_fallback += int(sr.rms_fallback)
             sd = schedule_side_for(sess_idx, int(off.decision), seed=seed, part=part)
             grp = by_rules.setdefault(clock_limit, (er, []))
             grp[1].append((int(off.decision), fb, sd, clock_limit, sig))
@@ -474,7 +551,14 @@ def build_naive_coin_trades(
         "offers_filled": int(len(trades)),
         "offers_unfilled": offers_unfilled,
         "offers_dropped_sigma_lt_2": offers_dropped_sigma,
+        # F-3 (Q-188b): zero dispersion kept apart from the declared "fewer than two changes" drop
+        "offers_dropped_sigma_zero": offers_dropped_sigma_zero,
+        "sigma_rms_fallback": sigma_rms_fallback,
+        "dropped_sigma_rows": dropped_sigma_rows,
         "limit_differs_from_last_bar": limit_differs_from_last_bar,
+        # F-6 (Q-188b): the dates behind the beside counts, so a year's count is computed, never printed as 0
+        "limit_differs_dates": limit_differs_dates,
+        "data_defect_lookahead_dates": data_defect_dates,
         "multi_moment_alerts": multi_moment_alerts,
         "refused_by_reason": dict(sorted(refused_counts.items())),
     }
@@ -576,6 +660,13 @@ __all__ = [
     "all_marks",
     "slot_ct",
     "alert_sigma_cross_session",
+    "alert_sigma_detail",
+    "SigmaReading",
+    "SIGMA_OK",
+    "SIGMA_LT_2",
+    "SIGMA_ZERO",
+    "SIGMA_REASONS",
+    "sigma_drop_row",
     "vendored_move_bar",
     "schedule_side_for",
     "CoinBuildResult",

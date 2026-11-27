@@ -66,7 +66,12 @@ from extended import walker as W  # noqa: E402
 from extended import wave42 as W42  # noqa: E402
 
 SCRIPT = "scripts/h4_rebaseline.py"
+#: the declared worker cap (H4 section 7's part-cap row: "at most 2 workers, one BLAS thread"); H4-A keeps it
 MAX_WORKERS = 2
+#: the lead's ruling on the sizing scout (Q-188b, 2026-11-27): H4-B's worker count is a run flag up to 4 -- an execution
+#: resource, not a rule of the result (batches are submitted and collected in order, each batch's keys only its own
+#: (start, seed index)), recorded under the lead's row once the units identity at the new count holds
+H4B_MAX_WORKERS = 4
 BATCH_STARTS = 21
 EXACT_HORIZONS = (21, 63, 90, 126)
 EXACT_EVERY = 21
@@ -79,6 +84,22 @@ ARM_SPECS: tuple[tuple[str, str, str, J.ArmSpec, bool], ...] = (
     ("worse_1", W42.READING, "race", J.ArmSpec(worse_ticks=1), False),
     ("missed_0.1", W42.READING, "race", J.ArmSpec(missed_q=0.10), False),
 )
+#: m-i (Q-188b): each arm's label, written beside every reading row (no colon: the results' timestamp scan reads cells)
+READING_LABELS: dict[str, str] = {
+    "off": "deciding - the martingale race on the firm path, response off",
+    "off_as_walked": (
+        "as-walked, beside - the historical outcome reflected by the side coin; the rc-11 clamp bounds the mirror AND "
+        "the unflipped side within [-stop, +G] with G the need-capped target where the need caps it, so a need-capped "
+        "trade's as-walked long side books at most the capped target (m-i)"
+    ),
+    "worse_1": "stress, beside - one extra tick of cost a side",
+    "missed_0.1": "stress, beside - each signal missed with chance 0.10",
+}
+#: m-8 (Q-188b; section 12 "the record each horizon read"): every reading at every horizon reads the unit's long run
+#: (one replay of min(252, sessions left) closes); the exact-length runs at `EXACT_HORIZONS` are compared beside it and
+#: their differences classified by kind in each part's manifest (`exact_differs_by_kind`). The treatment rule for a
+#: difference is the lead's (B-2), not this runner's.
+RECORD_READ: str = "long_run"
 #: Latency in minutes per baseline (for measure (30) screen_hours)
 BASELINE_LATENCY: dict[str, float] = {"naive_coin": 5.0, "p14": 5.0, "p15": 0.0, "p16": 0.0}
 #: Trade log CSV columns (ticks & times only, NO prices, NO historical u/mae/at_need/rr_used/exit_kind on race arms)
@@ -128,6 +149,9 @@ TRADE_LOG_COLS: tuple[str, ...] = (
     "move_down2",
     "race_need",
     "out",
+    # m-e (Q-188b): the engine's need for the trade (blank where it had none), so the oracle re-derives G
+    "need",
+    "need_logged",
 )
 
 
@@ -156,13 +180,20 @@ def _setup_vendor() -> Path:
     return VENDOR_STAGE2
 
 
-def _rss_mb() -> float:
-    try:
-        import psutil
+def _peak_mb() -> float:
+    """The lead's ruling (Q-188b): this process's peak working set since it started, in MB -- Windows' psapi through
+    `extended.procmem` (psutil is not installed here); NaN on another platform."""
+    from extended import procmem as PM
 
-        return float(psutil.Process().memory_info().rss) / (1024.0 * 1024.0)
-    except Exception:
-        return float("nan")
+    return float(PM.working_set_mb(peak=True))
+
+
+def _rss_mb() -> float:
+    """This process's working set now, in MB. F-4 (Q-188b): psutil is not installed on this machine, so the psutil
+    form returned NaN and H4-0's three memory columns were blank; `extended.procmem` reads Windows' psapi."""
+    from extended import procmem as PM
+
+    return float(PM.working_set_mb(peak=False))
 
 
 def _extract_day_arrays_search(dates: Sequence[str], cfg: Mapping[str, Any]) -> dict[str, tuple[np.ndarray, ...]]:
@@ -196,7 +227,11 @@ def _build_facts_for_trades(
     be_vends: list[int | None] = []
     limits: list[int] = []
     limit_differs = 0
+    limit_differs_dates: list[str] = []
     dropped_sigma = 0
+    dropped_sigma_zero = 0
+    rms_fallback = 0
+    dropped_rows: list[dict[str, Any]] = []
 
     # Pre-compute sigma, limit, be_vendored per row
     for idx_r in range(len(trades)):
@@ -216,14 +251,23 @@ def _build_facts_for_trades(
             lim = max(ent, int(W.FLAT_ENTRY))
             if last_b is not None and last_b < lim:
                 limit_differs += 1
-            sig_opt = CS.alert_sigma_cross_session(day_closes, d_i, dec, tick=tick)
+                limit_differs_dates.append(d_str)
+            # F-3 (Q-188b): the reading's reason, so the declared drop (< 2 changes) and a zero dispersion are
+            # counted apart; which trades are kept is unchanged from 31c507e
+            sr = CS.alert_sigma_detail(day_closes, d_i, dec, tick=tick)
+            sig_opt = sr.sigma
             if sig_opt is None:
                 keep_mask[idx_r] = False
-                dropped_sigma += 1
+                if sr.reason == CS.SIGMA_ZERO:
+                    dropped_sigma_zero += 1
+                else:
+                    dropped_sigma += 1
+                dropped_rows.append(CS.sigma_drop_row(d_str, dec, sr))
                 sigmas.append(float("nan"))
                 be_vends.append(None)
                 limits.append(lim)
                 continue
+            rms_fallback += int(sr.rms_fallback)
             sig = float(sig_opt)
             eff_end = int(W.walk_end(o, W.STAGE2) or lim)
             bv = CS.vendored_move_bar(o, ent, eff_end)
@@ -345,10 +389,25 @@ def _build_facts_for_trades(
 
     stats = {
         "dropped_sigma_lt_2": dropped_sigma,
+        # F-3 (Q-188b): alerts with two or more changes behind them, every one zero (sigma = 0): dropped as before,
+        # never again counted as "fewer than two changes"; their treatment is the lead's (not declared)
+        "dropped_sigma_zero": dropped_sigma_zero,
+        "sigma_rms_fallback": rms_fallback,
+        "dropped_sigma_rows": dropped_rows,
         "limit_differs_from_last_bar": limit_differs,
+        "limit_differs_dates": limit_differs_dates,
         "facts_count": len(facts),
+        # F-3: the schedule the firm path actually consumes (after the sigma drop), hashed in the I-1 form
+        "kept_trades": int(len(kept_trades)),
+        "kept_trades_sha256": SC.trades_subhash(kept_trades) if len(kept_trades) else None,
     }
     return kept_trades, facts, stats
+
+
+def needs_block_rebuild(f_stats: Mapping[str, Any]) -> bool:
+    """F-3 (Q-188b): the DayBlocks are rebuilt from the kept trades whenever the sigma drop removed any trade, for
+    either reason -- so the blocks' trade indices stay one to one with the facts."""
+    return int(f_stats.get("dropped_sigma_lt_2", 0)) + int(f_stats.get("dropped_sigma_zero", 0)) > 0
 
 
 def build_registered_bundle(
@@ -453,8 +512,9 @@ def build_registered_bundle(
         entry_ticks=float(cfg["slip_ticks"]),
         rr_cols=rr_cols,
     )
-    if f_stats["dropped_sigma_lt_2"] > 0:
-        # Rebuild DayBlocks from kept_trades so block trade indices align 1-to-1 with `facts`!
+    if needs_block_rebuild(f_stats):
+        # Rebuild DayBlocks from kept_trades so block trade indices align 1-to-1 with `facts`! (either reason: F-3
+        # split the count, never the set of trades dropped)
         blocks_kept, n_used = gf.gate_blocks(kept_trades, days, tv, list(rr_cols), require_sides=True, require_exits=True)
         if n_used != len(kept_trades):
             raise HA.H4AuditRefused(f"{design}: gate_blocks used {n_used} != {len(kept_trades)}")
@@ -569,8 +629,13 @@ def build_naive_coin_bundle(
         "capacity": cap,
         **f_stats,
         "dropped_sigma_lt_2": int(res.counts.get("offers_dropped_sigma_lt_2", 0)) + int(f_stats["dropped_sigma_lt_2"]),
+        "dropped_sigma_zero": int(res.counts.get("offers_dropped_sigma_zero", 0)) + int(f_stats["dropped_sigma_zero"]),
+        "sigma_rms_fallback": int(res.counts.get("sigma_rms_fallback", 0)) + int(f_stats["sigma_rms_fallback"]),
+        "dropped_sigma_rows": list(res.counts.get("dropped_sigma_rows", [])) + list(f_stats["dropped_sigma_rows"]),
         "limit_differs_from_last_bar": int(res.counts.get("limit_differs_from_last_bar", 0))
         + int(f_stats["limit_differs_from_last_bar"]),
+        "limit_differs_dates": list(res.counts.get("limit_differs_dates", [])) + list(f_stats["limit_differs_dates"]),
+        "data_defect_lookahead_dates": list(res.counts.get("data_defect_lookahead_dates", [])),
     }
     raw_blks = list(job["blocks"])
     return BaselineBundle(
@@ -765,7 +830,10 @@ def _synthetic_h4_0_probe(probe_seed: Any, probe_part: int, *, j_tb: int = 16, h
         log=True,
     )
     tb_s = time.perf_counter() - t_tb0
-    tb_trades = max(1, sum(len(lg) for lg in rec_tb.logs))
+    # m-b (Q-188b): the raw count and the laws logged, so a test can fail (the max(1, ...) below only guards a division)
+    tb_rows_raw = int(sum(len(lg) for lg in rec_tb.logs))
+    tb_laws = sorted({str(r.get("law", "")) for lg in rec_tb.logs for r in lg})
+    tb_trades = max(1, tb_rows_raw)
     tb_ms_per_trade = (tb_s * 1000.0) / tb_trades
     tb_sec_per_seed_252 = (tb_s / max(1, int(j_tb))) * (252.0 / max(1, int(h_tb)))
     return {
@@ -775,6 +843,8 @@ def _synthetic_h4_0_probe(probe_seed: Any, probe_part: int, *, j_tb: int = 16, h
         "tb_race_seeds": int(j_tb),
         "tb_race_horizon": int(h_tb),
         "tb_race_trades": int(tb_trades),
+        "tb_race_log_rows_raw": tb_rows_raw,
+        "tb_race_laws": ";".join(tb_laws),
         "tb_race_seconds": round(tb_s, 4),
         "tb_race_ms_per_trade": round(tb_ms_per_trade, 4),
         "tb_race_sec_per_seed_252_est": round(tb_sec_per_seed_252, 4),
@@ -862,6 +932,7 @@ def run_h4_0(*, root: Path = ROOT, results_dir: Path | None = None, sealed_dir: 
         "sealed_p14_first21_sha256": sealed_sha,
         "sealed_note": "outputs written sealed (hash recorded, file unopened); H4-A must reproduce this hash",
         "preconditions": pre,
+        "threads": thread_env(),  # F-13 (Q-188b)
         "cut": bundle_p14.meta["cut"],
     }
     csv_p, man_p = RES.write_result(
@@ -910,10 +981,32 @@ def _schedule_overlap_count(trades: pd.DataFrame, rr_cols: Sequence[float]) -> i
     return overlaps
 
 
+#: m-h (Q-188b): the `test`-kind id of I-3's uniforms under the `h4_tests` role (an id, not a seed; no other H4 key
+#: uses it -- `tests/test_h4_build.py` checks)
+I3_TEST_ID: int = 43
+
+
+def i3_regime_seed(role_seed: Any, regime: int) -> int:
+    """m-h: I-3's integer seed for one regime -- the first word of numpy's `SeedSequence` of the `h4_tests` role's
+    `test` key (`I3_TEST_ID`, replicate = the regime), refused unless the role seed was issued by
+    `three_way_seeds.issue` (`seed_key`'s provenance check)."""
+    if not (S.is_issued(role_seed) and role_seed.role == "h4_tests"):
+        raise S.ProvenanceRefused("REFUSED (m-h): I-3's uniforms come from the issued h4_tests role seed only")
+    key = K.seed_key(role_seed, "test", test=I3_TEST_ID, replicate=int(regime))
+    return int(K.key_state(key, 1)[0])
+
+
 def _check_i3_race_vs_binarydraw() -> dict[str, Any]:
     """M-2 / I-3: firm path's zero-cost race (`three_way_redraw.race_dollars` + zero-cost `RaceOver`) matches
     Stage 2 `adapter.BinaryDraw` / `p_race` across deep (`room > risk`) and cushion-bound (`room < risk`) regimes
-    on identical uniforms, without touching any H4 block seed."""
+    on identical uniforms.
+
+    m-h (Q-188b): the uniforms' seeds come by role, never as literals. The declaration names no seed for I-3 (its
+    section 15 block has none, and section 16 item 3 says only "on the same uniforms"), and its `h4_tests` role is "the
+    unit tests, H4's T-0 and H4's build (synthetic toys only; the part H4-T)" -- I-3 is a build identity on synthetic
+    toys, so its uniforms are that role's `test`-kind children (`I3_TEST_ID`, one replicate a regime), each turned into
+    the integer `BinaryDraw` takes by `three_way_keys.key_state` (numpy's own `SeedSequence` of the key). The identity
+    must hold on any uniforms, so no result depends on which."""
     _setup_vendor()
     from extended import three_way_redraw as RD
     from propedge.contract.adapter import BinaryDraw, Policy, Rules, p_race, theta_from_edge
@@ -927,9 +1020,10 @@ def _check_i3_race_vs_binarydraw() -> dict[str, Any]:
     rules = Rules(floor_mode="truncate", edge_mode="drift")
     total_compared = 0
     diffs = 0
+    role_seed = S.issue("h4_tests")
 
     for r_idx, (risk, rr, room) in enumerate(regimes):
-        seed_i3 = 70001 + r_idx
+        seed_i3 = i3_regime_seed(role_seed, r_idx)
         pol = Policy(rr=rr, risk=risk)
         bd = BinaryDraw(pol, edge=0.0, seed=seed_i3, rules=rules)
         cush = np.full(n_check, room, dtype=float)
@@ -1050,49 +1144,175 @@ def _check_i5_coin_vs_p16(root: Path, p16_bundle: BaselineBundle) -> dict[str, A
     }
 
 
-def _same_dayblock(a: Any, b: Any) -> bool:
-    if not np.array_equal(np.asarray(a.pnl, float), np.asarray(b.pnl, float), equal_nan=True):
-        return False
-    if not np.array_equal(np.asarray(a.entry_t, float), np.asarray(b.entry_t, float), equal_nan=True):
-        return False
-    if (a.r_by_rr is None) != (b.r_by_rr is None):
-        return False
-    if a.r_by_rr is not None:
-        if set(map(float, a.r_by_rr)) != set(map(float, b.r_by_rr)):
+def _same_value(a: Any, b: Any) -> bool:
+    """Exact equality of two field values (arrays element for element, NaN equal to NaN; dicts by float key; tuples
+    and lists element for element; floats bit for bit up to NaN)."""
+    if a is None or b is None:
+        return a is None and b is None
+    if isinstance(a, Mapping) or isinstance(b, Mapping):
+        if not (isinstance(a, Mapping) and isinstance(b, Mapping)):
             return False
-        for k in a.r_by_rr:
-            if not np.array_equal(
-                np.asarray(a.r_by_rr[k], float), np.asarray(b.r_by_rr[float(k)], float), equal_nan=True
-            ):
+        ka = {float(k): v for k, v in a.items()}
+        kb = {float(k): v for k, v in b.items()}
+        return set(ka) == set(kb) and all(_same_value(ka[k], kb[k]) for k in ka)
+    if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        xa, xb = np.asarray(a), np.asarray(b)
+        if xa.shape != xb.shape:
+            return False
+        if xa.dtype.kind in "fc" or xb.dtype.kind in "fc":
+            try:
+                return bool(np.array_equal(xa.astype(float), xb.astype(float), equal_nan=True))
+            except (TypeError, ValueError):
                 return False
-    return True
+        return bool(np.array_equal(xa, xb))
+    if isinstance(a, (tuple, list)) or isinstance(b, (tuple, list)):
+        if not (isinstance(a, (tuple, list)) and isinstance(b, (tuple, list))) or len(a) != len(b):
+            return False
+        return all(_same_value(x, y) for x, y in zip(a, b))
+    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
+        return True
+    return bool(a == b)
 
 
-def _check_i2_nested_cuts(bundles_full: Mapping[str, BaselineBundle], root: Path) -> list[dict[str, Any]]:
-    """M-3 / I-2 (section 4 & 16): day blocks built on nested cuts 2022-12-30, 2023-06-30, 2023-09-29 must equal
-    2023-12-29's identically constructed raw blocks block-for-block up to each cut's last day."""
+def _record_fields(x: Any) -> list[str]:
+    import dataclasses as _dc
+
+    if _dc.is_dataclass(x):
+        return [f.name for f in _dc.fields(x)]
+    return sorted(k for k in vars(x) if not k.startswith("_"))
+
+
+def dayblock_differences(a: Any, b: Any) -> list[str]:
+    """m-g (Q-188b): the names of every DayBlock field on which two blocks differ -- every field of the vendored
+    `DayBlock` (pnl, risked, exit_reasons, risk_per_contract, mae, entry_t, exit_t, r_by_rr, mae_by_rr, markets, fee,
+    sides, exit_by_rr, ...), never only pnl, entry_t and r_by_rr."""
+    names = sorted(set(_record_fields(a)) | set(_record_fields(b)))
+    return [n for n in names if not _same_value(getattr(a, n, None), getattr(b, n, None))]
+
+
+def _same_dayblock(a: Any, b: Any) -> bool:
+    return not dayblock_differences(a, b)
+
+
+def facts_differences(a: TB.TradeFacts, b: TB.TradeFacts) -> list[str]:
+    """The `TradeFacts` fields on which two trades' facts differ (every field: sigma, limit, the move bars, costs, the
+    historical and mirror gross at every R, ...)."""
+    return dayblock_differences(a, b)
+
+
+def nested_cut_differences(full: BaselineBundle, sub: BaselineBundle) -> dict[str, Any]:
+    """I-2's comparison, one nested cut (section 4; F-2, F-3, F-10, m-g; Q-188b): `sub` built on a cut ending before
+    `full`'s must equal `full` day for day on every day it holds -- **the raw DayBlocks** (every field), **the schedule
+    the firm path consumes** (the kept trades after the sigma drop, row for row and column for column; the kept
+    DayBlocks, every field) and **the trades' facts** (`TradeFacts`, every field: sigma, limit, move bars, costs,
+    historical and mirror gross). Returns the days compared, the days differing on any part, and each part's count."""
+    n_sub = len(sub.dates)
+    out: dict[str, Any] = {"days": n_sub, "differing_days": 0,
+                           "by_part": {"dates": 0, "raw_blocks": 0, "blocks": 0, "trades": 0, "facts": 0},
+                           "fields": {}}
+    if list(sub.dates) != list(full.dates[:n_sub]):
+        out["by_part"]["dates"] = n_sub
+        out["differing_days"] = n_sub
+        return out
+    bad_days: set[int] = set()
+
+    def _note_fields(names: Sequence[str]) -> None:
+        for nm in names:
+            out["fields"][nm] = out["fields"].get(nm, 0) + 1
+
+    full_raw = full.raw_blocks if full.raw_blocks is not None else full.blocks
+    sub_raw = sub.raw_blocks if sub.raw_blocks is not None else sub.blocks
+    for part, fb, sb in (("raw_blocks", full_raw, sub_raw), ("blocks", full.blocks, sub.blocks)):
+        if len(sb) != n_sub or len(fb) < n_sub:
+            out["by_part"][part] = n_sub
+            bad_days.update(range(n_sub))
+            continue
+        for i in range(n_sub):
+            dif = dayblock_differences(sb[i], fb[i])
+            if dif:
+                out["by_part"][part] += 1
+                bad_days.add(i)
+                _note_fields([f"{part}.{d}" for d in dif])
+
+    last = str(sub.dates[-1]) if n_sub else ""
+    ft = full.trades[full.trades["date"].astype(str) <= last] if len(full.trades) else full.trades
+    st = sub.trades
+    d_idx = {str(d): i for i, d in enumerate(sub.dates)}
+    if list(ft.columns) != list(st.columns):
+        out["by_part"]["trades"] = n_sub
+        bad_days.update(range(n_sub))
+    else:
+        f_by = {str(d): g.reset_index(drop=True) for d, g in ft.groupby(ft["date"].astype(str), sort=False)} if len(ft) else {}
+        s_by = {str(d): g.reset_index(drop=True) for d, g in st.groupby(st["date"].astype(str), sort=False)} if len(st) else {}
+        for d in sorted(set(f_by) | set(s_by)):
+            a, b = f_by.get(d), s_by.get(d)
+            if a is None or b is None or not a.equals(b):
+                out["by_part"]["trades"] += 1
+                bad_days.add(d_idx.get(d, -1))
+
+    fk = {k for k in full.facts if int(k[0]) < n_sub}
+    sk = set(sub.facts)
+    for k in sorted(fk | sk):
+        if k not in full.facts or k not in sub.facts:
+            out["by_part"]["facts"] += 1
+            bad_days.add(int(k[0]))
+            continue
+        dif = facts_differences(sub.facts[k], full.facts[k])
+        if dif:
+            out["by_part"]["facts"] += 1
+            bad_days.add(int(k[0]))
+            _note_fields([f"facts.{d}" for d in dif])
+    out["differing_days"] = len(bad_days)
+    return out
+
+
+def _i2_rows(bname: str, cut_d: str, cmp: Mapping[str, Any], mode: str) -> list[dict[str, Any]]:
+    """Two rows a (cut, baseline): `I-2@cut` (the raw DayBlocks, every field: the form E-288 recorded, widened by m-g)
+    and `I-2s@cut` (the schedule consumed: kept trades, facts and kept DayBlocks; F-3, F-10)."""
+    bp = cmp["by_part"]
+    raw_bad = int(bp["dates"]) + int(bp["raw_blocks"])
+    sched_bad = int(cmp["differing_days"])
+    fields = ",".join(f"{k}={v}" for k, v in sorted(cmp["fields"].items())) or "none"
+    return [
+        {"identity": f"I-2@{cut_d}", "baseline": bname, "compared": int(cmp["days"]), "differing": raw_bad,
+         "tolerance": 0.0, "holds": raw_bad == 0,
+         "note": f"nested cut {cut_d} vs {W42.SEARCH_LAST} ({cmp['days']} days, raw DayBlocks, every field; {mode})"},
+        {"identity": f"I-2s@{cut_d}", "baseline": bname, "compared": int(cmp["days"]), "differing": sched_bad,
+         "tolerance": 0.0, "holds": sched_bad == 0,
+         "note": (f"nested cut {cut_d} vs {W42.SEARCH_LAST}: the schedule consumed (kept trades, facts, kept DayBlocks; "
+                  f"{mode}); days differing by part {dict(bp)}; fields {fields}")},
+    ]
+
+
+def _check_i2_nested_cuts(
+    bundles_full: Mapping[str, BaselineBundle],
+    root: Path,
+    *,
+    baselines: Sequence[str] = REGISTERED,
+    builder: Any = None,
+) -> list[dict[str, Any]]:
+    """M-3 / I-2 (section 4 & 16): every baseline's schedule built on the nested cuts 2022-12-30, 2023-06-30 and
+    2023-09-29 must equal 2023-12-29's on every day it holds (`nested_cut_differences`). The registered baselines are
+    rebuilt **with their facts** (the sigma drop included, so the schedule H4-B consumes is checked, F-3/F-10); the naive
+    coin **in its run mode** (L = 5, the clock grid, the void calendar, its own sigma and schedule side; F-2) by
+    `build_naive_coin_bundle`. `builder(bname, last_day)` replaces the builders (the synthetic tests)."""
     rows: list[dict[str, Any]] = []
+
+    def _build(bname: str, last_day: str) -> BaselineBundle:
+        if builder is not None:
+            return builder(bname, last_day)
+        if bname == "naive_coin":
+            return build_naive_coin_bundle(last_day=last_day, root=root)
+        return build_registered_bundle(bname, last_day=last_day, verify_i1=False, with_facts=True, root=root)
+
     for cut_d in HA.H4_NESTED_CUTS:
-        for bname in REGISTERED:
+        for bname in baselines:
             full = bundles_full[bname]
-            full_raw = full.raw_blocks if full.raw_blocks is not None else full.blocks
-            sub = build_registered_bundle(bname, last_day=cut_d, verify_i1=False, with_facts=False, root=root)
-            n_sub = len(sub.blocks)
-            if list(sub.dates) != list(full.dates[:n_sub]):
-                diffs = n_sub
-            else:
-                diffs = sum(1 for i in range(n_sub) if not _same_dayblock(sub.blocks[i], full_raw[i]))
-            rows.append(
-                {
-                    "identity": f"I-2@{cut_d}",
-                    "baseline": bname,
-                    "compared": n_sub,
-                    "differing": diffs,
-                    "tolerance": 0.0,
-                    "holds": diffs == 0,
-                    "note": f"nested cut {cut_d} vs {W42.SEARCH_LAST} ({n_sub} days, raw DayBlocks)",
-                }
-            )
+            sub = _build(bname, cut_d)
+            mode = "run mode (L=5, clock grid, void calendar, own sigma)" if bname == "naive_coin" else "with facts"
+            rows.extend(_i2_rows(bname, cut_d, nested_cut_differences(full, sub), mode))
+            del sub
+            gc.collect()
     return rows
 
 
@@ -1121,17 +1341,23 @@ def _load_nq_stop_band(root: Path) -> dict[str, float]:
 
 def _realised_risk_gate(sub: pd.DataFrame, bundle: BaselineBundle) -> tuple[float, bool]:
     """m-6: D-212 realised-risk gate (realised risk within 10% of intended risk on >= 90% of trades) evaluated at
-    each baseline's stop distribution under its fresh Combine sizing rule (`resolved_coin.width_sizing`)."""
+    each baseline's stop distribution under its fresh Combine sizing rule (`resolved_coin.width_sizing`).
+
+    m-f (Q-188b): a gate never passes on missing input -- a job without its sizing rule or protocol is REFUSED
+    (`H4AuditRefused`), and a scope with no trades does not pass (share NaN, `False`; the supply gate labels it)."""
     if sub.empty:
-        return float("nan"), True
+        return float("nan"), False
+    draws = bundle.args.get("draws", {}) if isinstance(bundle.args, Mapping) else {}
+    srule = draws.get("sizing") if isinstance(draws, Mapping) else None
+    proto = draws.get("protocol") if isinstance(draws, Mapping) else None
+    if srule is None or proto is None:
+        raise HA.H4AuditRefused(
+            f"REFUSED (m-f): {bundle.name}'s realised-risk gate needs the job's sizing rule and protocol "
+            f"(draws.sizing={srule is not None}, draws.protocol={proto is not None}); a gate never passes on missing input"
+        )
     _setup_vendor()
     from propedge.research import resolved_coin as rc
 
-    draws = bundle.args.get("draws", {})
-    srule = draws.get("sizing")
-    proto = draws.get("protocol")
-    if srule is None or proto is None:
-        return float("nan"), True
     stops_vc = sub["S"].astype(int).value_counts()
     leaves = [("combine", "fresh", float(proto.combine_risk), float(proto.combine_rr))]
     ws = rc.width_sizing(srule, leaves, sorted(stops_vc.index.tolist()), tick_value=0.5)
@@ -1144,6 +1370,59 @@ def _realised_risk_gate(sub: pd.DataFrame, bundle: BaselineBundle) -> tuple[floa
     n_ok = sum(int(cnt) for st, cnt in stops_vc.items() if ok_by_stop.get(int(st), False))
     share = float(n_ok) / float(len(sub))
     return share, bool(share >= 0.90 - 1e-12)
+
+
+def _scope_count(dates: Sequence[str], scope: str) -> int:
+    """F-6 (Q-188b): how many of the dated records fall in `scope` ("all", or a calendar year "YYYY") -- a year's beside
+    count computed from the records, never a typed zero."""
+    if scope == "all":
+        return int(len(dates))
+    return int(sum(1 for d in dates if str(d)[:4] == str(scope)))
+
+
+#: F-8 (Q-188b): each H4-S gate's label, written beside its counts in `h4_supply.csv` (section 11: "a comparator failing
+#: one kept and labelled"; section 3's rows for the band and the resolution). No colon and no dollar figure in a
+#: label: the results' price-level and timestamp scans read every cell.
+GATE_LABELS: dict[str, str] = {
+    "resolution": "fails the resolution gate (over 5 pct of trades at the session flatten at some R) - kept and "
+                  "labelled, never dropped",
+    "realised_risk": "fails the realised-risk gate (under 90 pct of trades within 10 pct) - kept and labelled",
+    "no_trades": "no trades in this scope - the supply gate fails here",
+    "stop_band": "trades outside the Combine stop band (stop_band.csv state combine, the trades' own S column) - "
+                 "counted beside",
+    "funded_band": "trades outside the funded_below_2000 stop band (the trades' own S column) - counted beside",
+    "cost_floor": "trades below the cost-drag floor - counted beside",
+    "sigma_zero": "alerts with zero dispersion behind them dropped (sigma 0, not a declared drop, F-3) - counted beside",
+}
+
+
+def supply_gate_labels(row: Mapping[str, Any]) -> str:
+    """F-8: the labels of every gate a supply row fails or counts beside, `;`-joined (blank when none)."""
+    out: list[str] = []
+    if int(row.get("trades", 0)) == 0:
+        out.append(GATE_LABELS["no_trades"])
+    if int(row.get("trades", 0)) > 0 and not bool(row.get("resolves_5pct", True)):
+        out.append(GATE_LABELS["resolution"])
+    if int(row.get("trades", 0)) > 0 and not bool(row.get("passes_realised_risk_90pct", False)):
+        out.append(GATE_LABELS["realised_risk"])
+    if int(row.get("outside_stop_band", 0)) > 0:
+        out.append(GATE_LABELS["stop_band"])
+    if int(row.get("outside_funded_below_2000_band", 0)) > 0:
+        out.append(GATE_LABELS["funded_band"])
+    if int(row.get("below_cost_drag_floor", 0)) > 0:
+        out.append(GATE_LABELS["cost_floor"])
+    if int(row.get("dropped_sigma_zero", 0)) > 0:
+        out.append(GATE_LABELS["sigma_zero"])
+    return "; ".join(out)
+
+
+#: F-13 (Q-188b): the thread settings every H4 manifest records (the process's own environment at the write)
+THREAD_ENV_KEYS: tuple[str, ...] = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+def thread_env() -> dict[str, str | None]:
+    """F-13: the BLAS/OpenMP thread variables as this process sees them (None where unset)."""
+    return {k: os.environ.get(k) for k in THREAD_ENV_KEYS}
 
 
 def run_h4_s(*, root: Path = ROOT, results_dir: Path | None = None) -> dict[str, Any]:
@@ -1176,7 +1455,9 @@ def run_h4_s(*, root: Path = ROOT, results_dir: Path | None = None) -> dict[str,
                 }
             )
 
-    ident_rows.extend(_check_i2_nested_cuts(bundles, root))
+    # I-2 on every baseline: the registered three with their facts (the schedule consumed, F-3/F-10) and the naive
+    # coin in its run mode (F-2, Q-188b)
+    ident_rows.extend(_check_i2_nested_cuts(bundles, root, baselines=(*REGISTERED, "naive_coin")))
     ident_rows.append(_check_i3_race_vs_binarydraw())
     ident_rows.append(_check_i5_coin_vs_p16(root, bundles["p16"]))
 
@@ -1264,11 +1545,15 @@ def run_h4_s(*, root: Path = ROOT, results_dir: Path | None = None) -> dict[str,
                     "below_cost_drag_floor": below_floor,
                     "multi_trade_moments": multi_m,
                     "schedule_overlaps_beside": _schedule_overlap_count(sub, rr_cols),
-                    "dropped_sigma_lt_2": int(b.meta.get("dropped_sigma_lt_2", 0)) if scope == "all" else 0,
-                    "limit_differs_from_last_bar": int(b.meta.get("limit_differs_from_last_bar", 0)) if scope == "all" else 0,
-                    "days_data_defect_lookahead": int(b.meta.get("coin_counts", {}).get("days_data_defect_lookahead", 0))
-                    if (bname == "naive_coin" and scope == "all")
-                    else 0,
+                    # F-6 (Q-188b): every year's beside count computed from the dated records, never a typed 0
+                    "dropped_sigma_lt_2": _scope_count(
+                        [r["date"] for r in b.meta.get("dropped_sigma_rows", []) if r["reason"] == CS.SIGMA_LT_2], scope
+                    ),
+                    "dropped_sigma_zero": _scope_count(
+                        [r["date"] for r in b.meta.get("dropped_sigma_rows", []) if r["reason"] == CS.SIGMA_ZERO], scope
+                    ),
+                    "limit_differs_from_last_bar": _scope_count(b.meta.get("limit_differs_dates", []), scope),
+                    "days_data_defect_lookahead": _scope_count(b.meta.get("data_defect_lookahead_dates", []), scope),
                     "cov_offered_asia": cov["offered_asia"],
                     "cov_offered_london": cov["offered_london"],
                     "cov_offered_us": cov["offered_us"],
@@ -1276,16 +1561,29 @@ def run_h4_s(*, root: Path = ROOT, results_dir: Path | None = None) -> dict[str,
                     "no_signal_idle_max": idl["no_signal_max"],
                 }
             )
+    # F-8 (Q-188b): a comparator failing a gate is kept and labelled (section 11), the label beside its counts
+    for row_s in supply_rows:
+        row_s["gate_labels"] = supply_gate_labels(row_s)
 
     sched_hashes = {bname: bundles[bname].trades_sha256 for bname in BASELINES}
     params = {
         "part": "H4-S",
-        "seed_roles": ["h4s_schedule_side"],
+        "seed_roles": ["h4s_schedule_side", "h4_tests (I-3's synthetic uniforms only, part H4-T; m-h)"],
         "schedules_sha256": sched_hashes,
+        # F-3 (Q-188b): the schedule H4-B consumes (after the sigma drop), its count and hash beside the registered one
+        "kept_schedules_sha256": {bname: bundles[bname].meta.get("kept_trades_sha256") for bname in BASELINES},
+        "kept_trades": {bname: bundles[bname].meta.get("kept_trades") for bname in BASELINES},
+        "dropped_sigma": {bname: {"lt_2_changes": int(bundles[bname].meta.get("dropped_sigma_lt_2", 0)),
+                                  "zero_dispersion": int(bundles[bname].meta.get("dropped_sigma_zero", 0)),
+                                  "rms_fallback": int(bundles[bname].meta.get("sigma_rms_fallback", 0))}
+                          for bname in BASELINES},
+        # F-9 (Q-188b): each schedule's cut summary (the last day, the files read and cut, what was passed through)
+        "cut": {bname: bundles[bname].meta.get("cut") for bname in BASELINES},
         "nq_stop_band": nq_band,
         "preconditions": pre,
         "nested_cuts": list(HA.H4_NESTED_CUTS),
         "coin_counts": bundles["naive_coin"].meta.get("coin_counts", {}),
+        "threads": thread_env(),
     }
     sup_p, _ = RES.write_result(
         pd.DataFrame(supply_rows),
@@ -1312,6 +1610,89 @@ def run_h4_s(*, root: Path = ROOT, results_dir: Path | None = None) -> dict[str,
         description="H4-S pre-outcome identities I-1 (search sub-hashes), I-2 (nested cuts), I-3 (race vs BinaryDraw), and I-5 (coin source vs P-16).",
     )
     return {"supply_csv": str(sup_p), "identities_csv": str(id_p), "schedules_sha256": sched_hashes}
+
+
+# --------------------------------------------------------------------------------------------- H4-S checks (Q-188b)
+
+
+def run_h4_s_checks(
+    baselines: Sequence[str] = BASELINES,
+    *,
+    nested: bool = True,
+    tag: str = "",
+    root: Path = ROOT,
+    results_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Q-188b's heavy checks, one slot (F-2, F-3, F-10): for each of `baselines`, its search-year schedule as H4-B
+    builds it, then (`nested`) I-2 on the three nested cuts -- the registered baselines with their facts (the schedule
+    consumed), the naive coin in its run mode -- and every alert its volatility dropped (date, alert minute, reason, the
+    bars, changes and non-zero changes behind it; never a price). Writes `results/h4_sigma_drops[_tag].csv` and, with
+    `nested`, `results/h4_identities_i2[_tag].csv`. One bundle held at a time (memory)."""
+    from extended import RESULTS_DIR
+    from extended import results as RES
+
+    bad = [b for b in baselines if b not in BASELINES]
+    if bad or not baselines:
+        raise ValueError(f"baselines must be among {BASELINES}, got {list(baselines)}")
+    rdir = Path(results_dir) if results_dir is not None else RESULTS_DIR
+    pre = HA.assert_h4_preconditions(root, require_clean=True, require_lock=True, require_disk=False)
+    drop_rows: list[dict[str, Any]] = []
+    ident_rows: list[dict[str, Any]] = []
+    summary: dict[str, Any] = {}
+    t0 = time.perf_counter()
+    for bname in baselines:
+        b = build_bundle(bname, last_day=W42.SEARCH_LAST, root=root)
+        for r in b.meta.get("dropped_sigma_rows", []):
+            drop_rows.append({"baseline": bname, **r})
+        summary[bname] = {
+            "schedule_sha256": b.trades_sha256,
+            "kept_trades": b.meta.get("kept_trades"),
+            "kept_trades_sha256": b.meta.get("kept_trades_sha256"),
+            "dropped_sigma_lt_2": int(b.meta.get("dropped_sigma_lt_2", 0)),
+            "dropped_sigma_zero": int(b.meta.get("dropped_sigma_zero", 0)),
+            "sigma_rms_fallback": int(b.meta.get("sigma_rms_fallback", 0)),
+            "cut": b.meta.get("cut"),
+        }
+        if nested:
+            ident_rows.extend(_check_i2_nested_cuts({bname: b}, root, baselines=(bname,)))
+        print(f"  [H4-S checks] {bname}: {len(b.meta.get('dropped_sigma_rows', []))} dropped alerts, "
+              f"{time.perf_counter() - t0:.0f}s", flush=True)
+        del b
+        gc.collect()
+    suf = f"_{tag}" if tag else ""
+    params = {
+        "part": f"H4-S-checks{suf}",
+        "baselines": list(baselines),
+        "nested_cuts": list(HA.H4_NESTED_CUTS) if nested else [],
+        "summary": summary,
+        "sigma_reasons": list(CS.SIGMA_REASONS),
+        "seed_roles": ["h4s_schedule_side"] if "naive_coin" in baselines else [],
+        "elapsed_s": round(time.perf_counter() - t0, 2),
+        "peak_wset_mb": round(_peak_mb(), 1),
+        "preconditions": pre,
+        "threads": thread_env(),
+    }
+    # `sessions_read` stays out of the file: 100 x n_bars / sessions_read (60 / 1) lands on the price-level guard's band
+    # and grid, a false "level" pair; the manifest's rows are the dates and minutes alone
+    cols = ["baseline", "date", "decision_slot_minutes", "decision_ct", "reason", "n_bars", "n_changes",
+            "n_nonzero_changes"]
+    d_p, _ = RES.write_result(
+        pd.DataFrame(drop_rows, columns=cols), f"h4_sigma_drops{suf}", script=SCRIPT, seed=None, require_seed=False,
+        exploratory=False, prereg_id="H4", results_dir=rdir, parameters=params,
+        description="Q-188b F-3: every search-year alert whose F4-1 volatility was refused -- its date, alert minute and "
+                    "reason (fewer than two changes, or zero dispersion), with the counts behind it; no price.",
+    )
+    out = {"sigma_drops_csv": str(d_p), "summary": summary}
+    if nested:
+        i_p, _ = RES.write_result(
+            pd.DataFrame(ident_rows), f"h4_identities_i2{suf}", script=SCRIPT, seed=None, require_seed=False,
+            exploratory=False, prereg_id="H4", results_dir=rdir, parameters=params,
+            description="Q-188b F-2/F-10/m-g: I-2 on the nested cuts for every baseline named -- raw DayBlocks (every "
+                        "field) and the schedule consumed (kept trades, facts, kept DayBlocks); the naive coin in run mode.",
+        )
+        out["identities_csv"] = str(i_p)
+        out["failed"] = [r for r in ident_rows if not r["holds"]]
+    return out
 
 
 # --------------------------------------------------------------------------------------------- H4-A: as-traded replays
@@ -1447,6 +1828,7 @@ def run_h4_a(
         "h4_0_sealed_hash_matched": h40_matched,
         "i4_identities": i4_rows,
         "preconditions": pre,
+        "threads": thread_env(),  # F-13 (Q-188b)
     }
     csv_p, man_p = RES.write_result(
         pd.DataFrame(all_rows),
@@ -1563,6 +1945,8 @@ def _format_sampled_trade_rows(
             else float(r["move_down2"]),
             "race_need": int(bool(r.get("need_hit", False))),
             "out": float(r["out"]),
+            "need": "" if (r.get("need") is None or not math.isfinite(float(r["need"]))) else float(r["need"]),
+            "need_logged": 1,
         }
         out_rows.append(row)
     return out_rows
@@ -1595,6 +1979,8 @@ def _h4b_start_chunk(starts_chunk: list[int]) -> dict[str, Any]:
     trade_rows: list[dict[str, Any]] = []
     exact_checked = 0
     exact_differs = 0
+    exact_tally = HA.new_exact_tally()
+    exact_units: list[list[Any]] = []
     oracle_checked = 0
     rung_alerts_sum = 0
     guard = K.KeyGuard.sampled(starts_chunk, seed_indices)
@@ -1657,6 +2043,12 @@ def _h4b_start_chunk(starts_chunk: list[int]) -> dict[str, Any]:
                             arr_ex = [(int(d), round(float(c), 6)) for d, c in rec_ex.arrivals[j_lane] if int(d) <= h_ex]
                             if (fp_long, fy_long) != (fp_ex, fy_ex) or rel_diff > 1e-6 or arr_long != arr_ex:
                                 exact_differs += 1
+                        # B-2 (Q-188b): each lane's difference classified by kind, by arm and horizon, starts counted
+                        kinds_h = _exact_kinds(rec, rec_ex, h_ex, len(seed_indices))
+                        HA.tally_exact(exact_tally, arm_name, h_ex, kinds_h)
+                        for j_lane, k_h in enumerate(kinds_h):
+                            if k_h != "same":
+                                exact_units.append([arm_name, int(s_idx), int(seed_indices[j_lane]), int(h_ex), k_h])
 
             for j_lane, c_idx in enumerate(seed_indices):
                 lg = rec.logs[j_lane]
@@ -1718,7 +2110,12 @@ def _h4b_start_chunk(starts_chunk: list[int]) -> dict[str, Any]:
                     )
                     if outcome_mode == "race":
                         for tr in trows:
-                            HA.verify_race_trade_row(tr, seed=coin_seed, part=part_id, history=0)
+                            HA.verify_race_trade_row(
+                                tr, seed=coin_seed, part=part_id, history=0,
+                                allowed_R=list(facts[(int(tr["day_idx"]), int(tr["trade_idx"]))].kinds),
+                                worse_ticks=float(arm_spec.worse_ticks), require_inputs=True,
+                                cost_ticks=ctx.get("cost_ticks"),
+                            )
                             oracle_checked += 1
                     trade_rows.extend(trows)
 
@@ -1727,10 +2124,57 @@ def _h4b_start_chunk(starts_chunk: list[int]) -> dict[str, Any]:
         "trades": trade_rows,
         "exact_checked": exact_checked,
         "exact_differs": exact_differs,
+        "exact_tally": exact_tally,
+        "exact_units": exact_units,
         "oracle_checked": oracle_checked,
         "rung_alerts_sum": rung_alerts_sum,
         "keys_checked": guard.checked,
+        # the lead's ruling (Q-188b): which process ran the batch and its peak working set when the batch ended
+        "pid": int(os.getpid()),
+        "peak_wset_mb": _peak_mb(),
     }
+
+
+def _worker_peaks(chunks: Sequence[Mapping[str, Any]]) -> dict[str, float]:
+    """Each worker process's largest reported peak working set (MB) over the batches it ran, keyed by its pid."""
+    out: dict[str, float] = {}
+    for ch in chunks:
+        pid, mb = ch.get("pid"), ch.get("peak_wset_mb")
+        if pid is None or mb is None or not math.isfinite(float(mb)):
+            continue
+        out[str(pid)] = round(max(out.get(str(pid), 0.0), float(mb)), 1)
+    return out
+
+
+def subs_of(facts: Mapping[tuple[int, int], TB.TradeFacts]) -> dict[tuple[int, int], int]:
+    """Each trade's `sub` (F4-14): two trades at one moment numbered 0, 1, ... in index order (`_Unit`'s rule)."""
+    subs: dict[tuple[int, int], int] = {}
+    at: dict[tuple[int, int], int] = {}
+    for i, j in sorted(facts):
+        m = (int(i), int(facts[(i, j)].decision))
+        subs[(int(i), int(j))] = at.get(m, 0)
+        at[m] = at.get(m, 0) + 1
+    return subs
+
+
+def _exact_kinds(rec: Any, rec_ex: Any, h: int, n_lanes: int) -> list[str]:
+    """B-2: each lane's `HA.classify_exact_difference` kind between the long run `rec` and the exact run `rec_ex` of
+    `h` closes (records of `TB.simulate`)."""
+    out: list[str] = []
+    for j in range(int(n_lanes)):
+        c = HA.classify_exact_difference(
+            int(h),
+            first_pass_long=int(rec.first_pass[j]),
+            first_pay_long=int(rec.first_pay[j]),
+            rel_long=rec.rel[j],
+            arrivals_long=rec.arrivals[j],
+            first_pass_exact=int(rec_ex.first_pass[j]),
+            first_pay_exact=int(rec_ex.first_pay[j]),
+            rel_exact=rec_ex.rel[j],
+            arrivals_exact=rec_ex.arrivals[j],
+        )
+        out.append(str(c["kind"]))
+    return out
 
 
 def summarise_baseline_readings(
@@ -1916,7 +2360,8 @@ def summarise_baseline_readings(
                 eh = g[g["sessions_left"].astype(int) >= hz]
                 if eh.empty:
                     continue
-                unit_accs = [HA.decode_funded_accounts(v) for v in eh["funded_lifetimes"].tolist()]
+                # B-1 (Q-188b): each account's ending re-read at the reading's own window hz (open at hz: censored)
+                unit_accs = [HA.decode_funded_accounts(v, window=hz) for v in eh["funded_lifetimes"].tolist()]
                 fl = JM.funded_lifetime(unit_accs, hz)
                 for kind_lbl, curve_k in (("funded_lifetime_payouts", "curve_payouts"), ("funded_lifetime_sessions", "curve_sessions")):
                     curve = fl[curve_k]
@@ -1940,7 +2385,12 @@ def summarise_baseline_readings(
                         }
                     )
 
-    return pd.DataFrame(rows)
+    out_df = pd.DataFrame(rows)
+    if len(out_df):
+        # m-i and m-8 (Q-188b): every reading row carries its arm's label and the record it read, beside
+        out_df["reading_label"] = out_df["arm"].astype(str).map(lambda a: READING_LABELS.get(a, ""))
+        out_df["record_read"] = RECORD_READ
+    return out_df
 
 
 def run_h4_b(
@@ -1962,9 +2412,16 @@ def run_h4_b(
 
     rdir = Path(results_dir) if results_dir is not None else RESULTS_DIR
     pre = HA.assert_h4_preconditions(root, require_clean=True, require_lock=True, require_disk=True)
+    # rc-3 (Q-188b): beside the declared 5.51 GB refusal, the disk sized from the log's true row cost (231 B, not
+    # Appendix A's 128 B): two copies (a part's and the merge's) of all four baselines' declared rows
+    disk_rc3 = HA.check_trade_log_disk(
+        root, len(BASELINES) * HA.H4_TRADE_ROWS_PER_BASELINE, copies=2,
+        what="H4-B's audit-sample trade logs (four baselines, each part's copy and the merge's)",
+    )
 
     bundle = build_bundle(baseline, last_day=W42.SEARCH_LAST, root=root)
     HA.check_job_ends_search_window(bundle.dates, f"H4-B {baseline}")
+    HA.check_cost_ticks(bundle.facts)          # m-e: the oracle's declared cost ticks, checked at the part's start
     n_sess = len(bundle.dates)
     lo = max(0, int(start_lo))
     hi = n_sess if start_hi is None else min(n_sess, int(start_hi))
@@ -1972,12 +2429,7 @@ def run_h4_b(
         raise ValueError(f"invalid start range [{lo}, {hi}) for {n_sess} sessions")
 
     # Pre-compute sub-indices per (day, trade) matching three_way_baseline._Unit
-    subs: dict[tuple[int, int], int] = {}
-    at: dict[tuple[int, int], int] = {}
-    for i, j in sorted(bundle.facts):
-        m = (int(i), int(bundle.facts[(i, j)].decision))
-        subs[(int(i), int(j))] = at.get(m, 0)
-        at[m] = at.get(m, 0) + 1
+    subs = subs_of(bundle.facts)
 
     arms = ARM_SPECS if arms_filter == "all" else tuple(a for a in ARM_SPECS if a[0] in arms_filter.split(","))
     if not arms:
@@ -2006,7 +2458,9 @@ def run_h4_b(
     }
 
     t0 = time.perf_counter()
-    w = max(1, min(int(workers), MAX_WORKERS))
+    if not 1 <= int(workers) <= H4B_MAX_WORKERS:
+        raise ValueError(f"H4-B's worker count is 1 .. {H4B_MAX_WORKERS}, got {workers}")
+    w = int(workers)
     results_chunks: list[dict[str, Any]] = []
     if w == 1 or len(chunks) <= 1:
         _init_h4b_worker(ctx)
@@ -2039,11 +2493,28 @@ def run_h4_b(
         "schedules_sha256": bundle.trades_sha256,
         "exact_checked": int(sum(ch["exact_checked"] for ch in results_chunks)),
         "exact_differs": int(sum(ch["exact_differs"] for ch in results_chunks)),
+        # B-2 (Q-188b): the exact-run differences by arm, horizon and kind (lanes), with the starts checked and the
+        # starts differing (section 12's "count of starts where they differ"), and every differing unit listed
+        "exact_differs_by_kind": HA.merge_exact_tallies([ch.get("exact_tally", {}) for ch in results_chunks]),
+        "exact_differing_units_fields": ["arm", "start", "seed", "h", "kind"],
+        "exact_differing_units": [u for ch in results_chunks for u in ch.get("exact_units", [])],
+        # m-8 (section 12): the record every reading of this file reads, and what was compared beside it
+        "record_read": {"readings": RECORD_READ, "exact_horizons": list(EXACT_HORIZONS),
+                        "exact_every_start_arms": [a[0] for a in arms if a[4]], "exact_every": EXACT_EVERY},
         "oracle_checked_trades": int(sum(ch["oracle_checked"] for ch in results_chunks)),
         "rung_alerts_sum": int(sum(ch["rung_alerts_sum"] for ch in results_chunks)),
         "keys_checked": int(sum(ch["keys_checked"] for ch in results_chunks)),
         "elapsed_s": round(time.perf_counter() - t0, 2),
+        # the lead's ruling on the sizing scout (Q-188b): the worker count run, and each worker's peak working set
+        "workers": int(w),
+        "workers_declared_cap": MAX_WORKERS,
+        "worker_peak_wset_mb": _worker_peaks(results_chunks),
+        "parent_peak_wset_mb": round(_peak_mb(), 1),
         "preconditions": pre,
+        "threads": thread_env(),  # F-13 (Q-188b)
+        # rc-3 (Q-188b): the trade log's measured size beside the disk check made at the part's start
+        "trade_log": {"rows": int(len(trades_df)), "row_bytes_assumed": HA.H4_TRADE_ROW_BYTES,
+                      "declared_rows_per_baseline": HA.H4_TRADE_ROWS_PER_BASELINE, "disk_check": disk_rc3},
         "bundle_meta": {k: v for k, v in bundle.meta.items() if k != "cut"},
     }
 
@@ -2113,6 +2584,10 @@ def merge_h4_b_parts(
     agg_rung_alerts = 0
     agg_keys_checked = 0
     sched_hashes_seen: set[str] = set()
+    kept_hashes_seen: set[str] = set()
+    tallies: list[Mapping[str, Any]] = []
+    tally_missing: list[str] = []
+    part_bytes = 0
     for tag in part_tags:
         up = rdir / f"h4_units_{baseline}_{tag}.csv"
         tp = rdir / f"h4_trades_{baseline}_{tag}.csv"
@@ -2125,6 +2600,7 @@ def merge_h4_b_parts(
             if man.get("sha256") != sha:
                 raise HA.H4AuditRefused(f"{p.name}: sha256 mismatch vs manifest")
             part_shas.setdefault(tag, {})[p.name] = sha
+            part_bytes += int(p.stat().st_size)
             if p == up:
                 pm = man.get("parameters", {})
                 agg_exact_checked += int(pm.get("exact_checked", 0))
@@ -2134,10 +2610,21 @@ def merge_h4_b_parts(
                 agg_keys_checked += int(pm.get("keys_checked", 0))
                 if pm.get("schedules_sha256"):
                     sched_hashes_seen.add(str(pm["schedules_sha256"]))
+                kh = (pm.get("bundle_meta") or {}).get("kept_trades_sha256")
+                if kh:
+                    kept_hashes_seen.add(str(kh))
+                if "exact_differs_by_kind" in pm:
+                    tallies.append(pm["exact_differs_by_kind"])
+                else:
+                    tally_missing.append(str(tag))
         u_parts.append(pd.read_csv(up))
         t_parts.append(pd.read_csv(tp))
     if len(sched_hashes_seen) > 1:
         raise HA.H4AuditRefused(f"{baseline} merge: parts built on different schedules_sha256: {sorted(sched_hashes_seen)}")
+    if len(kept_hashes_seen) > 1:
+        raise HA.H4AuditRefused(f"{baseline} merge: parts built on different kept schedules: {sorted(kept_hashes_seen)}")
+    # rc-3 (Q-188b): the merge writes a second full copy of the parts; refuse unless the disk holds it
+    disk_merge = {"need_bytes": int(part_bytes), "free_bytes": HA.check_free_disk(rdir, int(part_bytes))}
 
     units_df = pd.concat(u_parts, ignore_index=True).sort_values(["arm", "start", "seed"], kind="stable").reset_index(drop=True)
     trades_df = pd.concat(t_parts, ignore_index=True)
@@ -2159,13 +2646,21 @@ def merge_h4_b_parts(
         "merged_parts": list(part_tags),
         "part_files_sha256": part_shas,
         "schedules_sha256": next(iter(sched_hashes_seen), None),
+        "kept_schedule_sha256": next(iter(kept_hashes_seen), None),
         "exact_checked": agg_exact_checked,
         "exact_differs": agg_exact_differs,
+        # B-2: the by-kind tally over the parts that carry it (parts run before Q-188b carry none: listed, and their
+        # kinds come from scripts/h4_exact_diff_classify.py on the audit sample)
+        "exact_differs_by_kind": HA.merge_exact_tallies(tallies),
+        "exact_differs_by_kind_missing_parts": tally_missing,
+        "record_read": {"readings": RECORD_READ, "exact_horizons": list(EXACT_HORIZONS)},
+        "disk_check": disk_merge,
         "oracle_checked_trades": agg_oracle_checked,
         "rung_alerts_sum": agg_rung_alerts,
         "keys_checked": agg_keys_checked,
         "seed_roles": ["h4b_coins", "h4_sample"] + (["h4s_schedule_side"] if baseline == "naive_coin" else []),
         "preconditions": pre,
+        "threads": thread_env(),  # F-13 (Q-188b)
     }
     u_p, _ = RES.write_result(
         units_df,
@@ -2282,6 +2777,7 @@ def run_h4_audit(
     checked_units = 0
     summary_rows_checked = 0
     replay_units_checked = 0
+    ledger_rows_checked = 0
 
     # First start of each search year (2020..2023)
     first_of_year: list[int] = []
@@ -2343,13 +2839,21 @@ def run_h4_audit(
             checked_units += 1
             for r in recs:
                 if str(r["reading"]) == W42.READING:
-                    HA.verify_race_trade_row(r, seed=coin_seed, part=part_id, history=0)
+                    # m-e: the costs, G <= target and L re-derived from the log's d and fee (the arm's worse ticks
+                    # by its name); the full re-derivation from the engine's ledger is the replay's, below
+                    HA.verify_race_trade_row(r, seed=coin_seed, part=part_id, history=0, require_inputs=True)
                     checked_trades += 1
 
         # 4. Recompute every search year's first start under first K.SAMPLE_SEEDS (64) seed indices, every arm
         if verify_replay:
             bundle = build_bundle(bname, last_day=W42.SEARCH_LAST, root=root)
             cal_fset = frozenset(date.fromisoformat(d) for d in bundle.dates)
+            # m-e (Q-188b): the replay keeps the engine's own ledger (logging only; the unit equality below would
+            # refuse any change it made), so the oracle re-derives every taken trade's inputs from the engine
+            args_led = {**bundle.args, "path": {**bundle.args["path"], "record_trades": True}}
+            subs_b = subs_of(bundle.facts)
+            srule = (bundle.args.get("draws") or {}).get("sizing")
+            fee_sched = getattr(srule, "fee_schedule", None)
             sample_seeds = tuple(range(min(K.SAMPLE_SEEDS, int(udf["seed"].max()) + 1)))
             by_key = {
                 (str(r["arm"]), int(r["start_idx"]), int(r["seed"])): r
@@ -2361,7 +2865,7 @@ def run_h4_audit(
                 for arm_name, reading_tag, outcome_mode, arm_spec, _ in ARM_SPECS:
                     rec = TB.simulate(
                         bundle.blocks,
-                        bundle.args,
+                        args_led,
                         bundle.facts,
                         s_idx,
                         sample_seeds,
@@ -2397,6 +2901,16 @@ def run_h4_audit(
                             strict_overlaps=0,
                             payout_lag=int(bundle.args["path"]["payout_lag_days"]),
                         )
+                        if outcome_mode == "race":
+                            t_rows = _format_sampled_trade_rows(
+                                bname, arm_name, reading_tag, s_idx, bundle.dates[s_idx], c_idx, bundle.dates,
+                                bundle.blocks, bundle.facts, subs_b, arm_spec, rec.logs[j_lane],
+                            )
+                            led_c = HA.verify_unit_against_ledger(
+                                t_rows, getattr(rec.paths[j_lane], "trades", None) or [], start=s_idx,
+                                seed=coin_seed, part=part_id, fee_schedule=fee_sched,
+                            )
+                            ledger_rows_checked += int(led_c["rows"])
                         logged = by_key.get((arm_name, s_idx, c_idx))
                         if logged is None:
                             raise HA.H4AuditRefused(f"auditor replay missing unit {bname}/{arm_name}/{s_idx}/{c_idx}")
@@ -2420,6 +2934,7 @@ def run_h4_audit(
         "sampled_units_verified": checked_units,
         "sampled_race_trades_verified": checked_trades,
         "replay_units_verified": replay_units_checked,
+        "ledger_rederived_trades_verified": ledger_rows_checked,
         "price_checked_files": checked_names,
     }
 
@@ -2429,7 +2944,9 @@ def run_h4_audit(
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--part", required=True, choices=("H4-0", "H4-S", "H4-A", "H4-B", "merge", "audit"))
+    ap.add_argument("--part", required=True, choices=("H4-0", "H4-S", "H4-S-checks", "H4-A", "H4-B", "merge", "audit"))
+    ap.add_argument("--baselines", default=",".join(BASELINES), help="H4-S-checks: comma-separated baselines")
+    ap.add_argument("--no-nested", action="store_true", help="H4-S-checks: the dropped alerts only, no I-2")
     ap.add_argument("--baseline", choices=BASELINES, default=None)
     ap.add_argument("--start-lo", type=int, default=0)
     ap.add_argument("--start-hi", type=int, default=None)
@@ -2443,6 +2960,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.part == "H4-0":
         res = run_h4_0(sealed_dir=args.sealed_dir)
         print(f"H4-0 done: sec/start={res['sec_per_start']:.4f}, sealed_sha256={res['sealed_sha256'][:16]}...")
+    elif args.part == "H4-S-checks":
+        bl = [b.strip() for b in args.baselines.split(",") if b.strip()]
+        res = run_h4_s_checks(bl, nested=not args.no_nested, tag=args.part_tag)
+        print(f"H4-S checks done: {res['sigma_drops_csv']} {res.get('identities_csv', '')}; "
+              f"I-2 failed rows: {len(res.get('failed', []))}")
+        for b_name, sm in res["summary"].items():
+            print(f"  {b_name}: lt_2={sm['dropped_sigma_lt_2']} zero={sm['dropped_sigma_zero']} kept={sm['kept_trades']}")
     elif args.part == "H4-S":
         res = run_h4_s()
         print(f"H4-S done: {res['supply_csv']}, {res['identities_csv']}")

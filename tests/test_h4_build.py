@@ -727,7 +727,7 @@ def test_m6_m7_m2_unit_measures_peak_month_deepest_fall_and_funded_lifetimes():
     # m-2: combines_out_of_room == 3, W=252 beside columns present, funded_lifetimes round-trips
     assert row["out_of_room_accounts"] == 3
     assert math.isfinite(row["first_pass_days_252"]) and math.isfinite(row["cash_to_first_pass_252"])
-    dec = HA.decode_funded_accounts(row["funded_lifetimes"])
+    dec = HA.decode_funded_accounts(row["funded_lifetimes"], window=252)   # B-1 (Q-188b): read at a window
     assert len(dec) == 1 and dec[0]["activation_day"] == 15 and dec[0]["ended_on"] == 60
     assert dec[0]["arrivals"] == (28, 43)
 

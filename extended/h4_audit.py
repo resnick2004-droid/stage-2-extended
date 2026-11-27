@@ -352,13 +352,230 @@ def walk_scalar_independent(uniforms: Sequence[float], G: Fraction, L: Fraction,
 
 
 def check_race_exact_zero_gross(G: Fraction, L: Fraction) -> None:
-    """F4-5: exact Fraction check that `p * G - (1 - p) * L == 0` where `p = L / (L + G)`."""
+    """**An identity, not a check** (m-e, Q-188b): with p := L / (L + G), p * G - (1 - p) * L is 0 for every positive
+    G and L, so this can fail only on non-positive barriers. Kept for its callers; the oracle no longer calls it. The
+    oracle's zero-edge checks are the replay itself (the logged p against L / (L + G), the uniform on the scalar key,
+    the outcome) and `verify_trade_inputs`' re-derivation of G, L, d, the room, the R and the fee."""
     if not (G > 0 and L > 0):
         raise H4OracleRefused(f"non-positive race barriers G={G}, L={L}")
     p = L / (L + G)
     gross_ev = p * G - (Fraction(1) - p) * L
     if gross_ev != 0:
         raise H4OracleRefused(f"non-zero exact race gross EV: {gross_ev}")
+
+
+#: m-e (Q-188b): the declared cost ticks the oracle re-derives a row's costs from, independent of the trade's facts --
+#: a tick at entry (FV3's market entry, `resolved_coin.cell_trades`' "a tick at entry"), the exit's ticks by kind
+#: (Stage 2's `fv3_rung_walk.EXIT_TICKS`: target 0, stop 1, flatten 2; a breakeven exit a stop's); a test holds them
+#: equal to `extended.walker`'s
+H4_COST_TICKS: dict[str, float] = {"entry": 1.0, "target": 0.0, "stop": 1.0, "flatten": 2.0}
+#: each arm's extra ticks a side (`scripts/h4_rebaseline.py` `ARM_SPECS`; a test holds them equal)
+H4_ARM_WORSE_TICKS: dict[str, float] = {"off": 0.0, "off_as_walked": 0.0, "worse_1": 1.0, "missed_0.1": 0.0}
+
+
+def _num(v: Any) -> float | None:
+    if v is None:
+        return None
+    if isinstance(v, str) and not v.strip():
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    return x if math.isfinite(x) else None
+
+
+def _target_ticks_indep(R: float, stop: int) -> int:
+    """FV3's target at R, this module's own: floor(R x stop + 1e-9)."""
+    return int(math.floor(float(R) * int(stop) + 1e-9))
+
+
+def verify_trade_inputs(
+    row: Mapping[str, Any],
+    *,
+    ledger: Mapping[str, Any] | None = None,
+    fee_fn: Any = None,
+    allowed_R: Any = None,
+    worse_ticks: float | None = None,
+    require: bool = False,
+    tol: float = 1e-9,
+    cost_ticks: Mapping[str, float] | None = None,
+) -> dict[str, bool]:
+    """m-e (Q-188b): re-derive a taken trade's inputs instead of reading them from the log, refusing
+    (`H4OracleRefused`) on any that disagree. Independent of `three_way_baseline`, `three_way_move` and
+    `three_way_redraw`. What is re-derived, and from what:
+
+    - **the R** -- a member of `allowed_R` (the job's table) when given, and the engine's own `rr` (`ledger`);
+    - **d** (dollars a tick) -- the engine's realised risk over the stop (`ledger["realised_risk"] / stop_ticks`);
+    - **the fee** -- `fee_fn(contracts)` from the engine's contracts (D-324's fee at size) when both are given, else
+      the engine's own `fee`;
+    - **the room** -- the engine's cushion at the trade (`ledger["room"]`) where it reports one;
+    - **the costs** -- e = entry ticks x d + fee + extra, x_t, x_s, x_f = their ticks x d + extra, extra = the arm's worse
+      ticks x d (`H4_COST_TICKS` -- H4's, or `cost_ticks` for a synthetic job with its own --, `H4_ARM_WORSE_TICKS`
+      by the row's `arm`, or `worse_ticks`);
+    - **G** -- FV3's target at the R and the stop, floor(R x stop + 1e-9), or the need-capped G = (need + e + x_t) / d
+      where the engine's need caps it (the profit-level race), never above the target;
+    - **L** -- min(stop x d, room - e - x_s) / d.
+
+    Without the engine's ledger row the re-derivation stands on the log's own d, fee and room (the costs, G <= target,
+    and L); `require=True` refuses a row missing the columns the re-derivation needs. Returns which items were
+    re-derived from the ledger."""
+    stop = int(row["stop_ticks"])
+    d_log = float(row["d"])
+    room_log = float(row["room"])
+    R = float(row["R"]) if _num(row.get("R")) is not None else None
+    did = {"R": False, "d": False, "fee": False, "room": False, "need": False}
+    if R is None:
+        if require:
+            raise H4OracleRefused(f"REFUSED (m-e): the row carries no R: {row}")
+        return did
+    if allowed_R is not None and not any(abs(R - float(a)) <= 1e-9 for a in allowed_R):
+        raise H4OracleRefused(f"REFUSED (m-e): R={R} is not in the job's table {sorted(float(a) for a in allowed_R)}")
+
+    d = d_log
+    fee_log = _num(row.get("fee"))
+    fee = fee_log
+    room = room_log
+    # the engine's need as the runner logged it (`need_logged` 1: a row written since Q-188b; blank `need`: None)
+    need_known = _num(row.get("need_logged")) == 1.0
+    need = _num(row.get("need")) if need_known else None
+    if ledger is not None:
+        eng_R = _num(ledger.get("rr"))
+        if eng_R is None or abs(eng_R - R) > tol:
+            raise H4OracleRefused(f"REFUSED (m-e): logged R={R} != the engine's rr={ledger.get('rr')}")
+        did["R"] = True
+        risk = _num(ledger.get("realised_risk"))
+        if risk is None or not risk > 0:
+            raise H4OracleRefused(f"REFUSED (m-e): the engine reports no realised risk: {ledger.get('realised_risk')}")
+        d = risk / float(stop)
+        if abs(d - d_log) > tol * max(1.0, abs(d)):
+            raise H4OracleRefused(f"REFUSED (m-e): logged d={d_log} != the engine's realised risk / stop = {d}")
+        did["d"] = True
+        n_c = ledger.get("contracts")
+        if fee_fn is not None and n_c is not None:
+            fee = float(fee_fn(int(n_c)))
+            did["fee"] = True
+        elif _num(ledger.get("fee")) is not None:
+            fee = float(ledger["fee"])
+            did["fee"] = True
+        if fee is not None and fee_log is not None and abs(fee - fee_log) > tol * max(1.0, abs(fee)):
+            raise H4OracleRefused(f"REFUSED (m-e): logged fee={fee_log} != re-derived {fee}")
+        eng_room = _num(ledger.get("room"))
+        if eng_room is not None:
+            if abs(eng_room - room_log) > tol * max(1.0, abs(eng_room)):
+                raise H4OracleRefused(f"REFUSED (m-e): logged room={room_log} != the engine's room={eng_room}")
+            room = eng_room
+            did["room"] = True
+        if "need" in ledger:
+            need = _num(ledger.get("need"))
+            need_known = True
+            did["need"] = True
+
+    arm = row.get("arm")
+    wt = worse_ticks if worse_ticks is not None else (H4_ARM_WORSE_TICKS.get(str(arm)) if arm is not None else None)
+    have_costs = all(k in row for k in ("e_cost", "xt_cost", "xs_cost", "xf_cost"))
+    if require and (wt is None or fee is None or not have_costs):
+        raise H4OracleRefused(f"REFUSED (m-e): the row lacks the arm, the fee or the costs to re-derive them: {row}")
+    e = xt = xs = xf = None
+    if wt is not None and fee is not None and have_costs:
+        ct = H4_COST_TICKS if cost_ticks is None else cost_ticks
+        extra = float(wt) * d
+        e = float(ct["entry"]) * d + fee + extra
+        xt = float(ct["target"]) * d + extra
+        xs = float(ct["stop"]) * d + extra
+        xf = float(ct["flatten"]) * d + extra
+        for nm, want in (("e_cost", e), ("xt_cost", xt), ("xs_cost", xs), ("xf_cost", xf)):
+            got = float(row[nm])
+            if abs(got - want) > tol * max(1.0, abs(want)):
+                raise H4OracleRefused(f"REFUSED (m-e): logged {nm}={got} != re-derived {want}")
+    law = str(row.get("law", ""))
+    if law in ("race", "walk", "move"):
+        target = float(_target_ticks_indep(R, stop))
+        G_log = float(row["G"])
+        if G_log > target + tol:
+            raise H4OracleRefused(f"REFUSED (m-e): G={G_log} above FV3's target {target} at R={R}, stop={stop}")
+        if e is not None and xt is not None and need_known:
+            capped = need is not None and need > H4_EPS and (need + e + xt) / d < target
+            G_want = (need + e + xt) / d if capped else target
+            if abs(G_log - G_want) > tol * max(1.0, abs(G_want)):
+                raise H4OracleRefused(f"REFUSED (m-e): logged G={G_log} != re-derived {G_want} (need={need})")
+        if e is not None and xs is not None and _num(row.get("L_ticks")) is not None:
+            L_want = min(float(stop) * d, room - e - xs) / d
+            if abs(float(row["L_ticks"]) - L_want) > tol * max(1.0, abs(L_want)):
+                raise H4OracleRefused(f"REFUSED (m-e): logged L_ticks={row['L_ticks']} != re-derived {L_want}")
+    return did
+
+
+#: D-324's mini mix, this module's own: micros a mini
+H4_MICROS_PER_MINI: int = 10
+
+
+def fee_mini_mix(micros: int, schedule: Sequence[float]) -> float:
+    """m-e: D-324's round-turn fee at size, this module's own (a test holds it equal to the vendored
+    `SizingRule.fee_dollars`): as many minis as fit at `schedule[1]`, the rest in micros at `schedule[0]`."""
+    n = int(micros)
+    minis = n // H4_MICROS_PER_MINI
+    return float(minis * float(schedule[1]) + (n - minis * H4_MICROS_PER_MINI) * float(schedule[0]))
+
+
+def check_cost_ticks(facts: Mapping[Any, Any], cost_ticks: Mapping[str, float] = H4_COST_TICKS) -> int:
+    """m-e: refuse before a run whose trades' facts carry cost ticks other than the oracle's declared ones (so a
+    mismatch stops the part at its start, never hours in); returns the trades checked."""
+    want = (float(cost_ticks["entry"]), float(cost_ticks["target"]), float(cost_ticks["stop"]),
+            float(cost_ticks["flatten"]))
+    bad = [k for k, f in facts.items()
+           if (float(f.e_ticks), float(f.xt_ticks), float(f.xs_ticks), float(f.xf_ticks)) != want]
+    if bad:
+        raise H4AuditRefused(f"REFUSED (m-e): {len(bad)} trades' cost ticks differ from the oracle's {want}, "
+                             f"e.g. {bad[0]}")
+    return len(facts)
+
+
+def ledger_by_trade(ledger_rows: Sequence[Mapping[str, Any]], start: int) -> dict[tuple, Mapping[str, Any]]:
+    """m-e: the engine's per-trade ledger (`LockstepPath.trades`, `record_trades=True`) keyed as the trade log keys a
+    trade: (block day = start + historical day, trade index, account kind, account index)."""
+    out: dict[tuple, Mapping[str, Any]] = {}
+    for t in ledger_rows or ():
+        if t.get("historical_day") is None or t.get("trade_index") is None:
+            continue
+        k = (int(start) + int(t["historical_day"]), int(t["trade_index"]), str(t.get("kind", "")), int(t.get("index", -1)))
+        out[k] = t
+    return out
+
+
+def verify_unit_against_ledger(
+    trade_rows: Sequence[Mapping[str, Any]],
+    ledger_rows: Sequence[Mapping[str, Any]],
+    *,
+    start: int,
+    seed: Any,
+    part: int,
+    fee_schedule: Sequence[float] | None = None,
+    allowed_R: Any = None,
+    history: int = 0,
+    cost_ticks: Mapping[str, float] | None = None,
+) -> dict[str, int]:
+    """m-e (Q-188b): every taken race-arm row of one unit verified by the oracle with its inputs re-derived from the
+    engine's own ledger row (the R, the realised risk, the contracts -> the fee at size, the room, the need), refusing a
+    taken trade the ledger lacks. Returns the rows checked and the items re-derived."""
+    by = ledger_by_trade(ledger_rows, start)
+    fee_fn = (lambda n: fee_mini_mix(n, fee_schedule)) if fee_schedule is not None else None
+    counts = {"rows": 0, "R": 0, "d": 0, "fee": 0, "room": 0, "need": 0}
+    for r in trade_rows:
+        if str(r.get("law")) in ("missed", "day_end"):
+            continue
+        k = (int(r["day_idx"]), int(r["trade_idx"]), str(r.get("acct_kind", "")), int(r.get("acct_index", -1)))
+        led = by.get(k)
+        if led is None:
+            raise H4OracleRefused(f"REFUSED (m-e): no engine ledger row for the taken trade {k}")
+        did = verify_trade_inputs(r, ledger=led, fee_fn=fee_fn, allowed_R=allowed_R, require=True,
+                                  cost_ticks=cost_ticks)
+        verify_race_trade_row(r, seed=seed, part=part, history=history, ledger=led, fee_fn=fee_fn,
+                              allowed_R=allowed_R, require_inputs=True, cost_ticks=cost_ticks)
+        counts["rows"] += 1
+        for nm, v in did.items():
+            counts[nm] += int(bool(v))
+    return counts
 
 
 def verify_race_trade_row(
@@ -368,11 +585,18 @@ def verify_race_trade_row(
     part: int,
     history: int = 0,
     tol: float = 1e-9,
+    ledger: Mapping[str, Any] | None = None,
+    fee_fn: Any = None,
+    allowed_R: Any = None,
+    worse_ticks: float | None = None,
+    require_inputs: bool = False,
+    cost_ticks: Mapping[str, float] | None = None,
 ) -> float:
-    """F4-5 & F4-10: verify ONE taken race-arm trade log row from its logged inputs alone, using an independent
-    scalar replay on the exact same Philox key stream. Refuses (`H4OracleRefused`) on any mismatch, non-zero gross
-    expectation, floor breach, or historical-field leakage. Returns the pre-clip time-exit clip credit
-    (`max(0.0, -room - out_logged)`, zero for non-time exits; `prereg/H4_rebaseline.md:257`)."""
+    """F4-5 & F4-10: verify ONE taken race-arm trade log row, using an independent scalar replay on the exact same
+    Philox key stream. Refuses (`H4OracleRefused`) on any mismatch, floor breach, or historical-field leakage.
+    m-e (Q-188b): its inputs are first re-derived (`verify_trade_inputs`: the R, d, the fee, the room, the costs, G
+    and L -- from the engine's own ledger row when `ledger` is given), not taken from the log. Returns the pre-clip
+    time-exit clip credit (`max(0.0, -room - out_logged)`, zero for non-time exits; `prereg/H4_rebaseline.md:257`)."""
     # F4-10: forbidden historical fields must never appear (or must be None / empty) on a race-arm row
     for bad_col in RACE_FORBIDDEN_FIELDS:
         if bad_col in row and row[bad_col] is not None and str(row[bad_col]).strip() != "":
@@ -381,6 +605,8 @@ def verify_race_trade_row(
     law = str(row["law"])
     if law in ("missed", "day_end"):
         return 0.0
+    verify_trade_inputs(row, ledger=ledger, fee_fn=fee_fn, allowed_R=allowed_R, worse_ticks=worse_ticks,
+                        require=require_inputs, tol=tol, cost_ticks=cost_ticks)
 
     start = int(row["start"])
     seed_index = int(row["seed_index"])
@@ -421,7 +647,8 @@ def verify_race_trade_row(
 
     G_frac = Fraction(G_ticks)
     L_frac = Fraction(L_ticks_want)
-    check_race_exact_zero_gross(G_frac, L_frac)
+    if not (G_frac > 0 and L_frac > 0):          # m-e: the barriers' sign; the zero-gross identity is no check
+        raise H4OracleRefused(f"non-positive race barriers G={G_frac}, L={L_frac}")
 
     unit = K.Unit(seed, int(part), int(history), seed_index, start)
     mom = K.moment(day_idx, decision, sub)
@@ -606,8 +833,16 @@ def encode_funded_accounts(accounts: Sequence[Mapping[str, Any]], max_window: in
     return ";".join(parts)
 
 
-def decode_funded_accounts(encoded: Any) -> list[dict[str, Any]]:
-    """Decode `encode_funded_accounts` back into `JM.funded_lifetime`-compatible account dicts."""
+def decode_funded_accounts(encoded: Any, *, window: int, encoded_window: int = JM.YEAR) -> list[dict[str, Any]]:
+    """Decode `encode_funded_accounts` back into `JM.funded_lifetime`-compatible account dicts **read at `window`**.
+
+    B-1 (the red team's c2 note, Q-188b): the stored kind is the ending at `encoded_window` (close 252), so an account
+    still open at the reading's window W -- `ended_on` blank or after W -- is `window` (censored at W) whatever it
+    became later, and only an account that ended by close W keeps its stored kind (MEASURES 1.1: a reading at W reads
+    closes 0 .. W only; (31)'s censoring). A window past the encoded one is refused (the stored kind cannot say what
+    an account ending between the two became)."""
+    if int(window) > int(encoded_window):
+        raise ValueError(f"a reading window {window} past the encoded window {encoded_window} cannot be decoded")
     if encoded is None or (isinstance(encoded, float) and math.isnan(encoded)):
         return []
     s = str(encoded).strip()
@@ -620,6 +855,8 @@ def decode_funded_accounts(encoded: Any) -> list[dict[str, Any]]:
         act_s, end_s, ending, arr_s = tok.split("/", 3)
         end_i = int(end_s)
         arrs = tuple(int(x) for x in arr_s.split("+") if x)
+        if end_i < 0 or end_i > int(window):
+            ending = "window"                      # B-1: still open at the reading's window -- censored at W
         out.append(
             {
                 "activation_day": int(act_s),
@@ -930,6 +1167,141 @@ def share_window_sessions_after_last_cut(
     return float(tot_after) / float(tot_sessions)
 
 
+# --------------------------------------------------------------------------------------------- B-2: exact-run differences
+
+#: B-2 (Q-188b): the kinds of a difference between a unit's long run read at h and its exact-length run of h closes,
+#: most serious first. `event_day` -- the first pass, the first payout or a payout's arrival day moved (the D-620
+#: (3)(f) case: `Views` reads the exact run); `arrival_cash` -- the same arrival days, a different cash; `rel_only_at_h`
+#: -- the event days and arrivals equal, `rel` differing only at close h itself (e.g. the long run's causal abandon
+#: taken at close h, `lockstep.py`'s `day + 1 < horizon_days`); `rel_only_before_h` -- `rel` differing before close h
+#: with every event day equal; `same` -- no difference.
+EXACT_KINDS: tuple[str, ...] = ("event_day", "arrival_cash", "rel_only_at_h", "rel_only_before_h", "same")
+EXACT_REL_TOL: float = 1e-6
+
+
+def _event_within(v: Any, h: int) -> int:
+    x = int(v) if v is not None and not (isinstance(v, float) and math.isnan(v)) else -1
+    return x if 0 < x <= int(h) else -1
+
+
+def classify_exact_difference(
+    h: int,
+    *,
+    first_pass_long: Any,
+    first_pay_long: Any,
+    rel_long: Sequence[float],
+    arrivals_long: Sequence[tuple[int, float]],
+    first_pass_exact: Any,
+    first_pay_exact: Any,
+    rel_exact: Sequence[float],
+    arrivals_exact: Sequence[tuple[int, float]],
+    tol: float = EXACT_REL_TOL,
+) -> dict[str, Any]:
+    """B-2 (Q-188b): one lane's exact-run difference at horizon h, classified (`EXACT_KINDS`). Reads closes 0 .. h of
+    both records only. `differs` is exactly the runner's m-4 test (`(first pass, first payout)` within h, `rel[:h+1]`
+    within `tol`, the arrivals up to h with cash to 6 places), so the counts by kind sum to its `exact_differs` (one
+    exception, stricter here: a NaN in `rel` counts as a difference, where the m-4 test's `max` let it pass)."""
+    hh = int(h)
+    fp_l, fy_l = _event_within(first_pass_long, hh), _event_within(first_pay_long, hh)
+    fp_e, fy_e = _event_within(first_pass_exact, hh), _event_within(first_pay_exact, hh)
+    arr_l = [(int(d), round(float(c), 6)) for d, c in arrivals_long if int(d) <= hh]
+    arr_e = [(int(d), round(float(c), 6)) for d, c in arrivals_exact if int(d) <= hh]
+    rl = np.asarray(rel_long, float)[: hh + 1]
+    re_ = np.asarray(rel_exact, float)[: hh + 1]
+    if rl.shape != re_.shape:
+        raise ValueError(f"the long and exact records hold different closes up to h={hh}: {rl.shape} vs {re_.shape}")
+    dif = np.abs(rl - re_)
+    bad_closes = np.flatnonzero(~(dif <= float(tol)))          # NaN counts as a difference
+    rel_differs = bool(bad_closes.size)
+    fp_moved, fy_moved = fp_l != fp_e, fy_l != fy_e
+    day_moved = [d for d, _ in arr_l] != [d for d, _ in arr_e]
+    cash_moved = (not day_moved) and arr_l != arr_e
+    if fp_moved or fy_moved or day_moved:
+        kind = "event_day"
+    elif cash_moved:
+        kind = "arrival_cash"
+    elif rel_differs:
+        kind = "rel_only_at_h" if (bad_closes.size == 1 and int(bad_closes[0]) == hh) else "rel_only_before_h"
+    else:
+        kind = "same"
+    return {
+        "kind": kind,
+        "differs": kind != "same",
+        "first_pass_moved": bool(fp_moved),
+        "first_pay_moved": bool(fy_moved),
+        "arrival_day_moved": bool(day_moved),
+        "arrival_cash_moved": bool(cash_moved),
+        "rel_differs": rel_differs,
+        "rel_first_close": int(bad_closes[0]) if rel_differs else -1,
+        "rel_closes_differing": int(bad_closes.size),
+        "rel_diff_over_1usd": bool(rel_differs and float(np.nanmax(np.where(np.isnan(dif), np.inf, dif))) > 1.0),
+    }
+
+
+def new_exact_tally() -> dict[str, dict[str, dict[str, int]]]:
+    """An empty B-2 tally: `{arm: {str(h): {"checked_lanes", "checked_starts", "differing_starts", <kind>: lanes}}}`."""
+    return {}
+
+
+def tally_exact(tally: dict, arm: str, h: int, kinds_by_lane: Sequence[str]) -> None:
+    """Add one start's exact-run check at (arm, h) to the tally: every lane's kind, and whether any lane differed."""
+    cell = tally.setdefault(str(arm), {}).setdefault(str(int(h)), {k: 0 for k in ("checked_lanes", "checked_starts",
+                                                                                  "differing_starts", *EXACT_KINDS)})
+    cell["checked_lanes"] += len(kinds_by_lane)
+    cell["checked_starts"] += 1
+    cell["differing_starts"] += int(any(k != "same" for k in kinds_by_lane))
+    for k in kinds_by_lane:
+        if k not in EXACT_KINDS:
+            raise ValueError(f"unknown exact-run difference kind {k!r}")
+        cell[k] += 1
+
+
+def merge_exact_tallies(tallies: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Sum B-2 tallies over disjoint start ranges (the parts, or a part's batches): every count adds."""
+    out: dict[str, Any] = {}
+    for t in tallies:
+        for arm, by_h in (t or {}).items():
+            for h, cell in by_h.items():
+                dst = out.setdefault(str(arm), {}).setdefault(str(h), {})
+                for k, v in cell.items():
+                    dst[k] = int(dst.get(k, 0)) + int(v)
+    return out
+
+
+def exact_tally_differs(tally: Mapping[str, Any]) -> int:
+    """The tally's lanes that differ (every kind but `same`): the runner's old `exact_differs`."""
+    return int(sum(int(cell.get(k, 0)) for by_h in tally.values() for cell in by_h.values()
+                   for k in EXACT_KINDS if k != "same"))
+
+
+# --------------------------------------------------------------------------------------------- rc-3: the trade log's disk
+
+#: rc-3 (Q-188b; the red team's m-c): the audit-sample trade log's measured cost a row, from the part manifests' rows
+#: against their file sizes (229 to 232 B a row), not Appendix A's assumed 128 B
+H4_TRADE_ROW_BYTES: int = 231
+#: Appendix A's declared rows a baseline's audit-sample log may reach (its rc-3 sizing), the disk check's row bound
+H4_TRADE_ROWS_PER_BASELINE: int = 5_377_720
+
+
+def trade_log_disk_need(rows: int, *, row_bytes: int = H4_TRADE_ROW_BYTES, copies: int = 2) -> int:
+    """rc-3: the free disk a trade log of `rows` rows needs, at the measured row cost, for `copies` copies (a part
+    and the merge's second copy)."""
+    return int(rows) * int(row_bytes) * int(copies)
+
+
+def check_trade_log_disk(path: Path | str, rows: int, *, row_bytes: int = H4_TRADE_ROW_BYTES, copies: int = 2,
+                         what: str = "trade log") -> dict[str, int]:
+    """rc-3 (Q-188b): refuse unless the free disk at `path` holds `copies` copies of a `rows`-row trade log at the
+    measured row cost; returns the need and what was free (printed beside in the manifest)."""
+    need = trade_log_disk_need(rows, row_bytes=row_bytes, copies=copies)
+    free = int(shutil.disk_usage(Path(path)).free)
+    if free < need:
+        raise H4AuditRefused(f"REFUSED (rc-3): {what} needs {need / 1e9:.2f} GB free ({rows} rows x {row_bytes} B x "
+                             f"{copies}); {free / 1e9:.2f} GB free at {path}")
+    return {"rows": int(rows), "row_bytes": int(row_bytes), "copies": int(copies), "need_bytes": need,
+            "free_bytes": free}
+
+
 __all__ = [
     "H4_DECL_REL",
     "H4_DECL_LF_SHA256",
@@ -960,6 +1332,14 @@ __all__ = [
     "assert_zero_strict_overlaps",
     "walk_scalar_independent",
     "check_race_exact_zero_gross",
+    "H4_COST_TICKS",
+    "H4_ARM_WORSE_TICKS",
+    "verify_trade_inputs",
+    "H4_MICROS_PER_MINI",
+    "fee_mini_mix",
+    "ledger_by_trade",
+    "check_cost_ticks",
+    "verify_unit_against_ledger",
     "verify_race_trade_row",
     "accounts_active_by_day",
     "unit_days_for_measures",
@@ -968,4 +1348,14 @@ __all__ = [
     "decode_funded_accounts",
     "extract_unit_measures",
     "share_window_sessions_after_last_cut",
+    "EXACT_KINDS",
+    "classify_exact_difference",
+    "new_exact_tally",
+    "tally_exact",
+    "merge_exact_tallies",
+    "exact_tally_differs",
+    "H4_TRADE_ROW_BYTES",
+    "H4_TRADE_ROWS_PER_BASELINE",
+    "trade_log_disk_need",
+    "check_trade_log_disk",
 ]

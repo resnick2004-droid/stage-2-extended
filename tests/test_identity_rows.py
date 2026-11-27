@@ -22,7 +22,8 @@ GIT = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "
 
 
 def _git(repo: Path, *args: str) -> str:
-    return subprocess.run([*GIT, *args], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run([*GIT, *args], cwd=repo, capture_output=True, text=True, encoding="utf-8",  # Q-188b
+                          check=True).stdout.strip()
 
 
 def _repo(tmp_path: Path) -> Path:

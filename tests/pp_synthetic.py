@@ -807,7 +807,7 @@ def section_t10w2() -> None:
 
 def _old_adapter() -> types.ModuleType:
     src = subprocess.run(["git", "show", f"{BASE_COMMIT}:extended/user_beside.py"], cwd=REPO, capture_output=True,
-                         text=True, check=True).stdout.replace("\r\n", "\n")
+                         text=True, encoding="utf-8", check=True).stdout.replace("\r\n", "\n")   # Q-188b: UTF-8
     sha = hashlib.sha256(src.encode("utf-8")).hexdigest()
     out["absent_base_sha256"] = sha
     check(sha == BASE_SHA256, f"absent: git show {BASE_COMMIT}:extended/user_beside.py is not the pinned text")

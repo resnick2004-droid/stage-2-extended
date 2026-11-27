@@ -145,7 +145,9 @@ def plan():
 
 
 def _git(*args: str, cwd: Path = ROOT, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=check)
+    # Q-188b: decode git's bytes as UTF-8, never the locale's code page (cp1252 outside UTF-8 mode broke the pinned
+    # files' hashes, e.g. test_b6_j_refused_until_w42r1_is_pinned)
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, encoding="utf-8", check=check)
 
 
 def _show(commit: str, path: str) -> str:
