@@ -320,11 +320,19 @@ and **W42-R1** (the test term only, at the drawn winner's sd).
   winner form. **Stated exceptions:** the scenarios where the worst baseline binds (distinct, two-humped, behind) do not
   depend on the headroom form -- the check verifies that the three forms give the same value in every draw -- so they
   carry C3 and C4 only; and the lattice scenario is form-insensitive by construction (a lattice step is larger than
-  any headroom, so every form gives the same refusals), so it carries C1 only.
+  any headroom, so every form gives the same refusals), so it carries C1 only -- **checked in code** (R-2): the
+  exception holds only if every form's headroom, in every replication, is narrower than the smallest lattice step.
 
 *Amended before the full run, after a machinery smoke of 100 replications per scenario (synthetic only): the lattice
 scenario moved into C6's exceptions, and `top_two_tied`'s two lower baselines moved closer to the top (within every
-form's headroom, so the scenario can tell the forms apart). No criterion's threshold changed.*
+form's headroom, so the scenario can tell the forms apart). No criterion's threshold changed. **Both amendments make
+the check stricter**: the lattice exception is claimed only where the code shows every form's headroom inside the
+lattice step (R-2), and `top_two_tied` can now fail the old forms where before it could not.*
+
+**The order of record (R-1), plainly.** C1 to C6 and the two amendments first reached git in `db3cc27`, which was
+committed after the full run. Their pre-run order is not shown by git: it rests on the worker's statement that this
+file's LF sha256 was recorded before the run (`d3ca12f3af9e4a855ce14772be0e11d650618d0271af4e1d13279c3437ad71ec`) and
+was unchanged after it, as `db3cc27` holds it.
 
 ### 7.2 The scenarios
 

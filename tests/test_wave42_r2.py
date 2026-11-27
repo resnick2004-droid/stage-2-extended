@@ -786,3 +786,21 @@ def test_the_power_checks_seed_is_derived_from_its_name() -> None:
     m = law.median(1.0)
     x = law.draw(np.random.default_rng(np.random.SeedSequence(PW.ROOT_ENTROPY, spawn_key=(99,))), (400000,), 1.0)
     assert abs(float(np.median(x)) - m) < 5 * law.median_se(1.0, x.size)
+
+
+def test_the_lattice_exception_holds_only_inside_the_lattice_step() -> None:
+    """R-2: C6's lattice exception is checked in code: every form's headroom, in every replication, is narrower than
+    the smallest lattice step; a scenario whose step is narrower than the headroom loses the exception."""
+    r = PW.run_size("lattice", reps=30)
+    assert r["lattice_step"] == 1.0 and 0.0 < r["widest_headroom"] < r["lattice_step"] and r["c6_exception"] is True
+    assert PW.lattice_step(PW.Law("lattice", ((2.0, 3.0, 4.0), (0.5, 0.4, 0.1)))) == 1.0
+    fine = dict(PW.SIZE["lattice"])
+    fine["laws"] = [PW.Law("lattice", ((2.0, 3.0, 3.0001, 4.0), (0.5, 0.2, 0.2, 0.1)))] * 4
+    PW.SIZE["lattice_fine_r2"] = fine
+    try:
+        f = PW.run_size("lattice_fine_r2", reps=5)
+    finally:
+        del PW.SIZE["lattice_fine_r2"]
+    assert f["lattice_step"] == pytest.approx(0.0001) and f["c6_exception"] is False
+    for name in ("rt_unequal_sd", "equal_independent"):
+        assert PW.run_size(name, reps=5)["c6_exception"] is False

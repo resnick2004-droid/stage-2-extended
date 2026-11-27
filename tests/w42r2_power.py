@@ -95,16 +95,27 @@ def counts() -> dict[str, int]:
 
 
 # ------------------------------------------------------------------------------------- the three headroom forms
+def form_needed(form: str, direction: str, m_best: float, sds: Sequence[float], best: int,
+                n_s: int, n_t: int, j_test: int, j_h4: int, z: float) -> float:
+    """A limit's needed value (M_best plus or minus its headroom) under one form, through `headroom`."""
+    if form == "sd_star":
+        return R2.headroom(m_best, float(max(sds)), n_s, n_t, j_test, j_h4, z, direction)["needed"]
+    h = R2.headroom(m_best, float(sds[best]), n_s, n_t, j_test, j_h4, z, direction)
+    sign = 1.0 if direction == "ceiling" else -1.0
+    return h["needed"] if form == "winner" else m_best + sign * z * h["se_test"]
+
+
 def form_value(form: str, direction: str, m_best: float, m_worst: float, sds: Sequence[float], best: int,
                n_s: int, n_t: int, j_test: int, j_h4: int, z: float) -> float:
     """A limit's value under one form, through `headroom` and `limit_value` (the rule's own functions)."""
-    if form == "sd_star":
-        needed = R2.headroom(m_best, float(max(sds)), n_s, n_t, j_test, j_h4, z, direction)["needed"]
-    else:
-        h = R2.headroom(m_best, float(sds[best]), n_s, n_t, j_test, j_h4, z, direction)
-        sign = 1.0 if direction == "ceiling" else -1.0
-        needed = h["needed"] if form == "winner" else m_best + sign * z * h["se_test"]
+    needed = form_needed(form, direction, m_best, sds, best, n_s, n_t, j_test, j_h4, z)
     return R2.limit_value(direction, R2.NET12_KIND, m_worst, needed, np.asarray([m_worst]))["value"]
+
+
+def lattice_step(law: "Law") -> float:
+    """The smallest gap between a lattice law's values (R-2: the step every form's headroom must stay inside)."""
+    v = np.unique(np.asarray(law.p[0], dtype=float))
+    return float(np.min(np.diff(v)))
 
 
 def refused(direction: str, estimate: float, value: float) -> bool:
@@ -233,7 +244,8 @@ def size_rep(sc: dict, rng: np.random.Generator, n_s: int, j_h4: int, n_t: int, 
     b, w = best_worst(d, M)
     D = float(np.quantile(laws[sc["design"]].draw(rng, (n_t * j_test,)), q))
     vals = {f: form_value(f, d, M[b], M[w], sds, b, n_s, n_t, j_test, j_h4, z) for f in FORMS}
-    return {"refused": {f: refused(d, D, vals[f]) for f in FORMS},
+    width = {f: abs(form_needed(f, d, M[b], sds, b, n_s, n_t, j_test, j_h4, z) - M[b]) for f in FORMS}
+    return {"refused": {f: refused(d, D, vals[f]) for f in FORMS}, "headroom_width": width,
             "headroom": {f: vals[f] != M[w] for f in FORMS}, "values": vals, "M_worst": M[w], "D": D,
             "sd_star_is_winner": int(np.argmax(sds)) == b}
 
@@ -245,13 +257,14 @@ def run_size(name: str, reps: int = SIZE_REPS, horizon: int = 252, log: Callable
     kids = _root("size", list(SIZE).index(name)).spawn(reps)
     ref = {f: 0 for f in FORMS}
     hb = {f: 0 for f in FORMS}
-    dist = []
+    dist, widest = [], 0.0
     t0 = time.perf_counter()
     for i, k in enumerate(kids):
         r = size_rep(sc, np.random.default_rng(k), n_s, c["j_h4"], n_t, c["j_test"])
         for f in FORMS:
             ref[f] += int(r["refused"][f])
             hb[f] += int(r["headroom"][f])
+        widest = max(widest, max(r["headroom_width"].values()))
         dist.append(r["M_worst"] - r["values"]["sd_star"] if sc["direction"] == "floor"
                     else r["values"]["sd_star"] - r["M_worst"])
         if log and (i + 1) % 1000 == 0:
@@ -260,13 +273,17 @@ def run_size(name: str, reps: int = SIZE_REPS, horizon: int = 252, log: Callable
     bound = c1_bound(tol, n=reps)
     p = {f: ref[f] / reps for f in FORMS}
     law = sc["laws"][sc["design"]]
+    # R-2: the lattice exception is claimed only if every form's headroom, in every replication, stays inside the
+    # smallest lattice step of every baseline's law (then no form can move a value across a step)
+    step = min(lattice_step(x) for x in sc["laws"]) if sc.get("form_insensitive") else None
+    exception = bool(sc.get("form_insensitive")) and widest < step
     return {"part": "size", "scenario": name, "what": sc["what"], "reps": reps, "n_s": n_s, "n_t": n_t,
             "j_h4": c["j_h4"], "j_test": c["j_test"], "p0": P0, "tolerance": tol, "c1_bound": bound,
             "refusal": p, "ratio_to_p0": {f: p[f] / P0 for f in FORMS},
             "share_headroom_bound": {f: hb[f] / reps for f in FORMS},
             "c1_pass": {f: p[f] <= bound for f in FORMS},
             "c6_fails_under_old": (p["winner"] > bound) or (p["w42_r1"] > bound),
-            "c6_exception": bool(sc.get("form_insensitive")),
+            "c6_exception": exception, "lattice_step": step, "widest_headroom": widest,
             "floor_beyond_worst_mean": float(np.mean(dist)),
             "design_true_stat": law.quantile(sc["q"]), "elapsed_s": round(time.perf_counter() - t0, 1)}
 
