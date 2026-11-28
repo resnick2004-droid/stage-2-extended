@@ -760,3 +760,16 @@ def test_q215_the_routes_three_declarations_and_t1s_narrowing(text: str) -> None
     head = _head(text)
     assert "the route refuses `coin` and `p16` by name (`trigger_sides.NO_SIDE`)" in head
     assert "`extended/survey_route.py` (wt/wt-survey `d64aced`" in head
+
+
+def test_q215_red_team_s2_onto_r_and_refused_points(text: str) -> None:
+    """BUILD_Q215_ROUTE B-1 and m-3: one rule for S2 onto the engine's R, and a refused route point never scored."""
+    s2 = next(r for r in _rows(_section(text, 3)) if r[0] == "S2")[4]
+    assert "**one rule for S2 onto the engine's R**" in s2
+    assert "each trade is read only at its own component's w" in s2 and "outcomes at every other w" in s2 and "masked" in s2
+    assert "the runner refuses a taken trade whose R differs from its own w" in s2
+    gates = _flat(_section(text, 6))
+    assert "**A point the route refuses**" in gates and "**is recorded as a refused cell with its reason and never scored**" in gates
+    assert "it is never given an infeasible reading" in gates
+    t7 = next(r for r in _rows(_section(text, 3)) if r[0] == "T7")
+    assert "**held at `off` in this search**" in t7[3]
