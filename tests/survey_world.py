@@ -3,20 +3,20 @@ imported by `tests/test_survey.py`, and named by its declarations as factory ids
 which the survey builds itself from their declared parameters (F-2). A test fixture pin only: under a real pin a part
 is `extended.`'s.
 
-**W42-R1 as it stands** (C-1): `load_w42()` reads `extended/wave42.py` (its public scoring functions
-`composite_per_seed`, `limit_estimate`, `do_nothing_floor`, `values_from_rows`), `scripts/wave42_apply.py` and the
-rule text unedited from `WAVE42_COMMIT` on `wt/wt-infra` (`git show`) into a temporary root whose `extended/` is put
-on `extended.__path__`, until W42-R1 merges. Q-197's loader is this tree's (`extended/search_calendar.py`, master
-990d874). The two calendar shas W42-R1 has not pinned yet (`SEARCH_CALENDAR_SHA256` until Q-197's file is pinned;
+**W42-R2 as the survey binds it** (C-1; E-296, E-299): `load_w42()` returns the survey's own rule object
+(`survey._wave42()`: W42-R2's tables and limits over W42-R1's code) and W42-R2's application script
+(`scripts/wave42_r2_apply.py`), both this tree's. Q-197's loader is this tree's (`extended/search_calendar.py`). The
+two calendar shas (`extended.wave42`'s `SEARCH_CALENDAR_SHA256` and `HELD_OUT_CALENDAR_SHA256`, read by both rules;
 the held-out calendar is never read here) are set to this world's synthetic calendars. No stand-in remains.
 
-**The fixture** is W42-R1's own application: `w42_root(path, spread, base_q)` writes a synthetic H4 collection result
-and sidecar, the two synthetic calendars, and runs `wave42_apply.apply` with synthetic `Sources` (the adapter returns
-this world's baselines on every calendar session, seeds 0..15), so `results/w42_r1_values.csv` and its manifest are
-the real format.
+**The fixture** is W42-R2's own application: `w42_root(path, spread, base_q)` writes a synthetic H4 collection result
+over W42-R1's keys and its sidecar, H4-B's four units files carrying `net_month_12` beside them (the sidecar's
+`units_files_sha256`), the two synthetic calendars, and runs `wave42_r2_apply.apply` with synthetic `Sources` (the
+adapter returns this world's baselines on every calendar session, seeds 0..15), so `results/w42_r2_values.csv` and its
+manifest are the real format.
 
 **The parts**: `make_space`, `make_gate`, `make_schedule`, `make_runner`, `make_playbook`. The runner's per-unit
-latent is u = q(design) + 0.3 common(seed) + SIGMA idio(start, seed); every W42-R1 key moves with u and its own noise.
+latent is u = q(design) + 0.3 common(seed) + SIGMA idio(start, seed); every W42-R2 key moves with u and its own noise.
 It reports six starts on the calendar (`STARTS`), never their sessions left. Its kinds, beside ``plateau``,
 ``spike``, ``noise``: ``near`` (the bump at `A_NEAR`), ``strong`` (P-16 above every design), ``ceiling`` (accounts at
 once raised there), ``floor`` (trades taken lowered there), ``risky`` (the floor crossed on the fresh seeds only),
@@ -49,7 +49,7 @@ import numpy as np
 
 from extended import ROOT
 
-WAVE42_COMMIT = "01e896a"          # wt/wt-infra: W42-R1 with its public scoring functions and DO_NOTHING_EPS
+NET12 = "net_month_12"             # W42-R2's added key (`wave42_r2.NET12_KEY`): H4-B's units files carry it
 A = 2.0
 A_NEAR = 0.45                      # on the spread fixture: a gap past delta*, short of delta* + t se
 A_NEAR6 = 1.1                      # at 6 re-read seeds: every t past the normal 3, one short of t(5)'s 5.51
@@ -62,6 +62,7 @@ STARTS_LEFT = (320, 280, 240, 180, 130, 90)            # the runner's starts by 
 CALLS: list[str] = []
 GATE_SEEN: list[tuple[str, ...]] = []
 _W42: Any = None
+W42_RULE = "W42-R2"                # the survey's rule (`survey.W42_RULE`), the spec's `objective.rule_id`
 
 
 def calendar() -> tuple[str, ...]:
@@ -106,48 +107,41 @@ _WORLD_SHAS: tuple[str, str] | None = None
 
 
 def load_w42(*, patch_shas: bool = True):
-    """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), its two
-    unpinned calendar shas set to this world's (the module docstring). When `patch_shas=False` (used during pytest
+    """W42-R2 as the survey binds it (`survey._wave42()`: W42-R2's limits and tables over W42-R1's own code, E-296,
+    E-299) and W42-R2's application script, both this tree's; W42-R1's two unpinned calendar shas (`extended.wave42`'s
+    module globals, which W42-R2's application reads) set to this world's. When `patch_shas=False` (used during pytest
     collection of `test_survey.py` so `extended.wave42` is not mutated before `test_wave42_rule.py` imports it), the
     world SHAs are cached for `world_w42_shas()` instead of mutating module globals immediately.
-    Returns (wave42, wave42_apply)."""
+    Returns (the survey's W42-R2 rule, wave42_r2_apply)."""
     global _W42, _WORLD_SHAS
     if _W42 is not None:
         if patch_shas and _WORLD_SHAS is not None:
-            _W42[0].SEARCH_CALENDAR_SHA256, _W42[0].HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
+            _r1().SEARCH_CALENDAR_SHA256, _r1().HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
         return _W42
-    import extended
+    import pytest
 
+    for rel in ("extended/wave42.py", "extended/wave42_r2.py", "scripts/wave42_r2_apply.py",
+                "extended/search_calendar.py"):
+        if not (ROOT / rel).is_file():
+            pytest.skip(f"{rel} is not in this tree (W42-R2 merged at 5ae351d, E-299)")
+    from extended import survey as SV
+
+    R1 = _r1()
     root = Path(tempfile.mkdtemp(prefix="survey-w42-"))
-    for rel, commit in (("extended/wave42.py", WAVE42_COMMIT), ("scripts/wave42_apply.py", WAVE42_COMMIT),
-                        ("docs/plans/WAVE42_SETTING_RULE.md", WAVE42_COMMIT)):
-        mine = ROOT / rel
-        if mine.is_file() and rel != "scripts/wave42_apply.py":
-            data = mine.read_bytes()
-        else:
-            r = subprocess.run(["git", "show", f"{commit}:{rel}"], cwd=ROOT, capture_output=True)
-            if r.returncode != 0:
-                import pytest
-                pytest.skip(f"{rel} is neither in this tree nor at {commit}")
-            data = r.stdout
-        (root / rel).parent.mkdir(parents=True, exist_ok=True)
-        (root / rel).write_bytes(data)
-    if not (ROOT / "extended" / "search_calendar.py").is_file():
-        import pytest
-        pytest.skip("Q-197's loader is not in this tree (master 990d874 carries it)")
-    if not (ROOT / "extended" / "wave42.py").is_file():
-        extended.__path__.append(str(root / "extended"))
-    W = importlib.import_module("extended.wave42")
     _WORLD_SHAS = (calendar_file(root / "search_calendar.csv"),
                    hashlib.sha256(_csv(held_out_calendar())).hexdigest())
     if patch_shas:
-        W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
-    spec = importlib.util.spec_from_file_location("wave42_apply", root / "scripts" / "wave42_apply.py")
+        R1.SEARCH_CALENDAR_SHA256, R1.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
+    spec = importlib.util.spec_from_file_location("wave42_r2_apply", ROOT / SV.W42_SCRIPT)
     apply = importlib.util.module_from_spec(spec)
-    sys.modules["wave42_apply"] = apply
+    sys.modules["wave42_r2_apply"] = apply
     spec.loader.exec_module(apply)
-    _W42 = (W, apply)
+    _W42 = (SV._wave42(), apply)
     return _W42
+
+
+def _r1():
+    return importlib.import_module("extended.wave42")
 
 
 def world_w42_shas():
@@ -156,14 +150,15 @@ def world_w42_shas():
 
     @contextlib.contextmanager
     def _cm():
-        W, _ = load_w42(patch_shas=False)
-        old = (W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256)
+        load_w42(patch_shas=False)
+        R1 = _r1()
+        old = (R1.SEARCH_CALENDAR_SHA256, R1.HELD_OUT_CALENDAR_SHA256)
         assert _WORLD_SHAS is not None
-        W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
+        R1.SEARCH_CALENDAR_SHA256, R1.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
         try:
             yield
         finally:
-            W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = old
+            R1.SEARCH_CALENDAR_SHA256, R1.HELD_OUT_CALENDAR_SHA256 = old
 
     return _cm()
 
@@ -181,14 +176,14 @@ def _noise(name: str, seeds, starts: int) -> np.ndarray:
 
 def unit_values(name: str, q: float, seeds, starts: int, *, extra: Mapping[str, float] | None = None
                 ) -> dict[str, np.ndarray]:
-    """Every W42-R1 key of one arm, start by seed, from its latent u = q + 0.3 common + SIGMA idio."""
+    """Every W42-R2 key of one arm, start by seed, from its latent u = q + 0.3 common + SIGMA idio."""
     common = np.array([np.random.default_rng(_h("common", int(s))).standard_normal() for s in seeds])
     u = q + 0.3 * common[None, :] + SIGMA * _noise(name, seeds, starts)
     e = {k: _noise(f"{name}/{k}", seeds, starts) for k in
-         ("n1", "n2", "n3", "p1", "p2", "p3", "spent", "pass", "pay", "cash", "oop", "steady", "taken", "accounts",
-          "orders")}
+         ("n1", "n2", "n3", "n12", "p1", "p2", "p3", "spent", "pass", "pay", "cash", "oop", "steady", "taken",
+          "accounts", "orders")}
     x = extra or {}
-    v = {f"net_month_{m}": u + 0.8 * e[f"n{m}"] for m in (1, 2, 3)}
+    v = {f"net_month_{m}": u + 0.8 * e[f"n{m}"] for m in (1, 2, 3, 12)}
     v.update({f"peak_month_{m}": 100.0 + 20.0 * np.abs(e[f"p{m}"]) for m in (1, 2, 3)})
     v["spent_before_first_payout"] = np.maximum(0.0, 300.0 - 80.0 * u + 60.0 * e["spent"])
     v["first_pass_days"] = np.clip(40.0 - 12.0 * u + 10.0 * e["pass"], 0.0, 127.0)
@@ -203,7 +198,8 @@ def unit_values(name: str, q: float, seeds, starts: int, *, extra: Mapping[str, 
 
 
 def nothing_values(seeds, starts: int, fee_unit: float) -> dict[str, np.ndarray]:
-    """W42-R1's own do-nothing journey on every unit, the workload keys at zero."""
+    """W42-R1's own do-nothing journey (W42-R2 carries it) on every unit, the workload keys and `net_month_12` at zero
+    (`wave42_r2.null_net12`: the do-nothing journey's 12-month net is zero)."""
     W = load_w42()[0]
     z = np.zeros((starts, len(seeds)))
     v = {k: np.full_like(z, float(x)) for k, x in W.null_journeys(fee_unit)["do_nothing"].items()}
@@ -228,9 +224,28 @@ def _manifest_writer(df, name, *, script, seed, parameters, results_dir, descrip
     return p, Path(f"{p}.manifest.json")
 
 
+def _units_file(path: Path, name: str, starts, seeds, values: Mapping[str, np.ndarray], keys) -> str:
+    """H4-B's units file of one baseline as W42-R2's application reads it (`wave42_r2_apply.units_net12`): its deciding
+    rows, one per start and seed, every key's value written exactly (repr); returns its sha256 (its sidecar written)."""
+    import csv as _csv_mod
+
+    W, apply = load_w42()
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        w = _csv_mod.writer(fh, lineterminator="\n")
+        w.writerow(list(apply.UNIT_ID_COLUMNS) + list(keys))
+        for si, d in enumerate(starts):
+            for ci, c in enumerate(seeds):
+                w.writerow([name, W.ARM, W.READING, W.BLOCK, d, str(c),
+                            *[repr(float(values[k][si, ci])) for k in keys]])
+    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    Path(f"{path}.manifest.json").write_text(json.dumps({"sha256": sha}), encoding="utf-8")
+    return sha
+
+
 def w42_root(root: Path, spread: float = 0.0, base_q: float = 0.0) -> dict[str, Any]:
-    """A repository root holding W42-R1's real output on this world's H4 reading (the module docstring); returns the
-    values, the readings and their sessions left."""
+    """A repository root holding W42-R2's real output on this world's H4 reading (the module docstring): the collection
+    over W42-R1's keys, H4-B's four units files carrying `net_month_12` beside them, and W42-R2's application run on
+    both; returns the values, the readings and their sessions left."""
     W, apply = load_w42()
     res = root / "results"
     res.mkdir(parents=True, exist_ok=True)
@@ -238,17 +253,21 @@ def w42_root(root: Path, spread: float = 0.0, base_q: float = 0.0) -> dict[str, 
     (res / W.HELD_OUT_CALENDAR).write_bytes(_csv(held_out_calendar()))
     seeds = tuple(range(H4_SEEDS))
     vals = baseline_values(seeds, N_CAL, spread, base_q)
-    readings = {b: W.BaselineReading(b, W.BLOCK, W.READING, CAL, seeds, vals[b]) for b in BASELINES}
-    coll = res / W.COLLECTION_RESULT
-    coll.write_bytes(b"synthetic,h4\n1,1\n")
-    man = {"sha256": hashlib.sha256(coll.read_bytes()).hexdigest(), "parameters": {
+    r1_keys = sorted(_r1().REQUIRED)
+    coll = {b: {k: vals[b][k] for k in r1_keys} for b in BASELINES}
+    readings = {b: W.BaselineReading(b, W.BLOCK, W.READING, CAL, seeds, coll[b]) for b in BASELINES}
+    units = {b: _units_file(res / apply.UNITS_NAME.format(baseline=b), b, CAL, seeds, vals[b],
+                            (NET12, *r1_keys)) for b in BASELINES}
+    cpath = res / W.COLLECTION_RESULT
+    cpath.write_bytes(b"synthetic,h4\n1,1\n")
+    man = {"sha256": hashlib.sha256(cpath.read_bytes()).hexdigest(), "parameters": {
         "block": W.BLOCK, "reading": W.READING, "arm": W.ARM, **W.VERDICT, "W": W.W, "baselines": list(BASELINES),
         "starts": list(CAL), "seeds": list(seeds), "calendar_sha256": W.calendar_digest(CAL),
-        "readings_sha256": W.readings_digest(readings)}}
-    Path(f"{coll}.manifest.json").write_text(json.dumps(man), encoding="utf-8")
+        "readings_sha256": W.readings_digest(readings), apply.UNITS_KEY: units}}
+    Path(f"{cpath}.manifest.json").write_text(json.dumps(man), encoding="utf-8")
     loader = importlib.import_module("extended.search_calendar").load_search_calendar
-    src = apply.Sources(adapter=lambda path, sidecar: readings, calendar_loader=loader,
-                        fee=lambda: (50.0, W.FEE_SOURCE, "0" * 64), writer=_manifest_writer)
+    src = apply.A.Sources(adapter=lambda path, sidecar: readings, calendar_loader=loader,
+                          fee=lambda: (50.0, W.FEE_SOURCE, "0" * 64), writer=_manifest_writer)
     apply.apply(res, src)
     out = root / "results" / W.OUTPUT_NAME
     import csv as _csv_mod
@@ -419,7 +438,7 @@ def spec(parts_block: Mapping[str, Any], *, protocol_sha256: str, code_sha256: s
          **over: Any) -> dict[str, Any]:
     s = copy.deepcopy(SPEC)
     s["parts"] = copy.deepcopy(dict(parts_block))
-    s["objective"] = {"rule_id": "W42-R1", "values_row": values_row, "code_sha256": code_sha256}
+    s["objective"] = {"rule_id": W42_RULE, "values_row": values_row, "code_sha256": code_sha256}
     for k, v in over.items():
         s[k] = copy.deepcopy(v)
     s["protocol"] = dict(s["protocol"], sha256=protocol_sha256)

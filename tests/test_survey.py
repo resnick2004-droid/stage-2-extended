@@ -1,10 +1,11 @@
 """Wave 5's survey runner (`extended/survey.py`), build v3, end to end on the synthetic worlds of
-`tests/survey_world.py`: Wave 3.4's engine with Q-192, Q-192b and rm3-b (wt/wt-features 3452952), W42-R1 as it
-stands (01e896a: its module, public scoring functions and DO_NOTHING_EPS, its application script, its real output file made by
-`wave42_apply.apply`), Q-197's calendar loader (master 990d874). No bar, no result file of the repository, no held-out
+`tests/survey_world.py`: Wave 3.4's engine with Q-192, Q-192b and rm3-b (wt/wt-features 3452952), W42-R2 as the
+survey binds it (E-296, E-299: W42-R2's limits and tables over W42-R1's code, its application script, its real output
+file made by `wave42_r2_apply.apply` on H4's collection and H4-B's units files), Q-197's calendar loader. No bar, no result file of the repository, no held-out
 calendar: every input and output is in a temporary folder (`SV.ROOT` pointed there).
 
-* W42-R1's public functions reproduce its own `setting_rule` outputs on its H4 reading (the identity);
+* the survey is bound to W42-R2, never W42-R1 (Q-215; a planted old binding is refused);
+* W42-R2's public functions reproduce its own `setting_rule` outputs on its H4 reading (the identity);
 * the planted region is found within budget; in every other world there is no finalist, each world checked to bite;
 * every cell is counted (through Q-192's pens), the bytes repeat, one ledger a run;
 * the refusals (pins, rows, bindings, data, the space's digest, the allowlist, the spec's form, held-out first, the
@@ -500,7 +501,7 @@ def _refuses(fn, cls, word) -> bool:
 def sc_row_order(eng, tmp, roots):
     """m-7 `order`: under a real pin row, the margin's and the values' rows come before it (through `check_rows`)."""
     vsha = "ab" * 32
-    vrow = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
+    vrow = f"{SV.W42_RULE}'s values `results/{SV.VALUES_NAME}` sha256 `{vsha}`"
     root = _rows_root(tmp, f"| E-099 | 2026-11-20 | {vrow} | t |\n| E-100 | 2026-11-20 | the no-harm margin is 0.005 | t |\n"
                            f"| E-102 | 2026-11-20 | {vrow} again | t |\n"
                            "| E-103 | 2026-11-20 | the no-harm margin is 0.005 again | t |\n")
@@ -646,7 +647,7 @@ def sc_margin_exact(eng, tmp, roots):
     the near miss 0.0051; full-width digits. Passed: correct rows, 0.0050 and .005 included. The values' row names
     `W42-R1` (not `W42-R10`), the file as a whole word and the whole sha256. Two rows also go through `check_rows`."""
     vsha = "cd" * 32
-    good_v = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
+    good_v = f"{SV.W42_RULE}'s values `results/{SV.VALUES_NAME}` sha256 `{vsha}`"
     cases = [("the no-harm margin is 0.0055 (was 0.005 in the draft)", 0.005, False),
              ("the no-harm margin is 0.02; the stop at 0.005 points", 0.005, False),
              ("the no-harm margin is -0.005", 0.005, False), ("the no-harm margin is 0.005e-3", 0.005, False),
@@ -674,10 +675,12 @@ def sc_margin_exact(eng, tmp, roots):
              ("the no-harm margin is 0.0050", 0.005, True), ("the no-harm margin: `0.005`.", 0.005, True),
              ("the No-Harm margin = .005", 0.005, True), ("the no-harm margin is 0.005 | t |", 0.005, True),
              ("the no-harm margin is 0.005; see O-4", 0.005, True), ("the no-harm margin is 0.005", 0.005, True)]
-    vcases = [(good_v, True), (good_v.replace("W42-R1's", "the rule's"), False),
-              (good_v.replace("W42-R1's", "W42-R10's"), False),
-              (good_v.replace("results/w42_r1_values.csv", "old_w42_r1_values.csv.bak"), False),
-              (good_v.replace("w42_r1_values.csv", "values.csv"), False), (good_v.replace(vsha, vsha + "e"), False),
+    vcases = [(good_v, True), (good_v.replace("W42-R2's", "the rule's"), False),
+              (good_v.replace("W42-R2's", "W42-R20's"), False),
+              (good_v.replace("W42-R2's", "W42-R1's"), False),
+              (good_v.replace("results/w42_r2_values.csv", "old_w42_r2_values.csv.bak"), False),
+              (good_v.replace("w42_r2_values.csv", "values.csv"), False),
+              (good_v.replace("w42_r2_values.csv", "w42_r1_values.csv"), False), (good_v.replace(vsha, vsha + "e"), False),
               (good_v.replace(vsha, "a" + vsha), False), (good_v.replace(vsha, "0" * 64), False)]
     ok = all(_carries(SV.margin_row_carries, t, m) == want for t, m, want in cases)
     ok = ok and all(_carries(SV.values_row_carries, t, vsha) == want for t, want in vcases)
@@ -784,7 +787,7 @@ def _head_pin(repo: Path, content: str | None) -> str:
         tree = git("mktree")
     else:
         blob = git("hash-object", "-w", "--stdin", stdin=content)
-        sub = git("mktree", stdin=f"100644 blob {blob}\tw42_r1_pin.json\n")
+        sub = git("mktree", stdin=f"100644 blob {blob}\t{Path(SV.W42_PIN_FILE).name}\n")
         tree = git("mktree", stdin=f"040000 tree {sub}\tconfig\n")
     new = git("commit-tree", tree, "-p", git("rev-parse", "HEAD"), "-m", "pin")
     git("update-ref", "refs/heads/main", new)
@@ -793,7 +796,7 @@ def _head_pin(repo: Path, content: str | None) -> str:
 
 def _worktree_pin(repo):
     """The mutant `pin-from-worktree`: W42-R1's own reading of the pin file, from the working tree."""
-    p = Path(repo) / "config" / "w42_r1_pin.json"
+    p = Path(repo) / SV.W42_PIN_FILE
     return json.loads(p.read_text(encoding="utf-8")).get("commit") if p.is_file() else None
 
 
@@ -828,18 +831,18 @@ def sc_provenance(eng, tmp, roots):
     ok = says(P(man()), "its pinned_commit", "not this checkout's pin")              # HEAD holds no pin file yet
     pin(a)
     (repo / "config").mkdir(exist_ok=True)
-    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": b}), encoding="utf-8")  # the tree's: ignored
+    (repo / SV.W42_PIN_FILE).write_text(json.dumps({"commit": b}), encoding="utf-8")  # the tree's: ignored
     ok = ok and P(man()) == [] and calls[-1] == (a, a)
     ok = ok and all(says(P(man(p=x)), "its parameters.pinned_commit", "40 hex") for x in (None, a[:39], a + "0"))
     ok = ok and all(says(P(man(h=x)), "its git_commit", "40 hex") for x in (a + "0", "fixture"))
     ok = ok and says(P(man(h=a + "-dirty")), "its git_commit", "-dirty")
-    ok = ok and says(P(man(), apply=rule(refuse=a)), "W42-R1's commit rule", "refuses")
+    ok = ok and says(P(man(), apply=rule(refuse=a)), f"{SV.W42_RULE}'s commit rule", "refuses")
     ok = ok and says(P(man(), verify=lambda q: (False, "modified since it was written")), "verify_result", "modified")
     real = SimpleNamespace(commit_problem=APPLY.commit_problem)
     ok = ok and P(man(), apply=real) == []
     pin(b)
     ok = ok and says(P(man()), "its pinned_commit", "not this checkout's pin")
-    ok = ok and says(P(man(p=b, h=a), apply=real), "W42-R1's commit rule", "not the pinned commit")
+    ok = ok and says(P(man(p=b, h=a), apply=real), f"{SV.W42_RULE}'s commit rule", "not the pinned commit")
     pin("f" * 40)
     ok = ok and says(P(man(p="f" * 40, h="f" * 40)), "its git_commit", "no commit")
     pin(c)
@@ -1140,7 +1143,7 @@ SCENARIOS = {
     "gated": _none("gated", _refused_rows("gate")),
     "unpaired": _refusal("unpaired", SV.SurveyRefused, "paired"),
     "realkeys": _refusal("realkeys", SV.SurveyRefused, "real path"),
-    "range": _refusal("range", SV.SurveyRefused, "outside W42-R1's range"),
+    "range": _refusal("range", SV.SurveyRefused, f"outside {SV.W42_RULE}'s range"),
     "data": _refusal("data", SV.SurveyRefused, "does not bind"),
     "offcal": _refusal("offcal", SV.SurveyRefused, "calendar"),
     "heldout": sc_heldout_gated,
@@ -1734,7 +1737,7 @@ def test_the_rows_are_checked(eng, tmp_path, roots):
     root = roots["default"]["root"]
     vsha = roots["default"]["values_sha256"]
     good = (f"| E-100 | 2026-11-20 | the no-harm margin is {W.NO_HARM_MARGIN} | t |\n"
-            f"| E-101 | 2026-11-20 | W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}` | t |\n")
+            f"| E-101 | 2026-11-20 | {SV.W42_RULE}'s values `results/{SV.VALUES_NAME}` sha256 `{vsha}` | t |\n")
     over = {"no_harm": {"margin": W.NO_HARM_MARGIN, "margin_row": "E-100"}}
     cases = [(good, None), (good.replace(str(W.NO_HARM_MARGIN), "0.05"), "does not carry"),
              (good.replace(vsha, "0" * 64), "does not carry"), ("", "is not a row")]
@@ -1790,7 +1793,7 @@ def test_data_and_the_space_digest_are_bound(eng, tmp_path, roots):
         run(eng, root, decl, tmp_path / "s" / "out")
 
 
-def test_the_objective_is_w42_r1s_file(eng, tmp_path, roots, monkeypatch):
+def test_the_objective_is_w42_r2s_file(eng, tmp_path, roots, monkeypatch):
     """C-1: the values file by name, its sidecar's sha256, script, rule id, values digest and rule module sha256; the
     public functions required; every limit set (m-2)."""
     import shutil
@@ -1816,7 +1819,7 @@ def test_the_objective_is_w42_r1s_file(eng, tmp_path, roots, monkeypatch):
         monkeypatch.delattr(W42, "limit_estimate")
         with pytest.raises(SV.PartRefused, match="public functions"):
             SV.load_objective(W42)
-    with pytest.raises(SV.SpecRefused, match="not W42-R1's output"):
+    with pytest.raises(SV.SpecRefused, match=f"not {SV.W42_RULE}'s output"):
         (root / "results" / "bad.csv").write_text("a,b\n1,2\n", encoding="utf-8")
         SV.read_values(root / "results" / "bad.csv")
 
@@ -2196,3 +2199,74 @@ def test_the_known_folder_in_a_process_of_its_own(tmp_path):
     known, problem = json.loads(r.stdout.strip().splitlines()[-1])
     assert known == str(SV.known_local_appdata()) and known != str(tmp_path)
     assert problem is not None and "not the Windows known folder" in problem
+
+
+# ------------------------------------------------------------------------------------------------ Q-215: the binding
+
+
+def _binding_problems() -> list[str]:
+    """Every way the survey's objective differs from W42-R2 (E-296, E-299): the constants, the rule object's tables
+    and limits (W42-R2's own objects, never W42-R1's), its module file, and what the objective's code binds."""
+    from extended import wave42_r2 as R2
+
+    W = SV._wave42()
+    out = []
+    for what, got, want in (("W42_SCRIPT", SV.W42_SCRIPT, R2.APPLY_SCRIPT), ("W42_RULE", SV.W42_RULE, R2.RULE_ID),
+                            ("VALUES_NAME", SV.VALUES_NAME, R2.OUTPUT_NAME), ("W42_PIN_FILE", SV.W42_PIN_FILE,
+                                                                             APPLY.PIN_FILE)):
+        if got != want:
+            out.append(f"{what} is {got!r}, not {want!r}")
+    if "extended.wave42_r2" not in SV.OBJECTIVE_MODULES:
+        out.append("the objective's code does not bind extended.wave42_r2")
+    for n in ("LIMITS", "REQUIRED", "HORIZONS", "limit_estimate", "limit_check", "limit_per_seed_sd"):
+        if getattr(W, n, None) is not getattr(R2, n):
+            out.append(f"the rule's {n} is not W42-R2's")
+    if getattr(W, "RULE_ID", None) != R2.RULE_ID or getattr(W, "OUTPUT_NAME", None) != R2.OUTPUT_NAME:
+        out.append("the rule's id or output is not W42-R2's")
+    if inspect.getsourcefile(W) != inspect.getsourcefile(R2):
+        out.append("the rule's module file (whose raw sha256 the sidecar records) is not W42-R2's")
+    if SV.W42_SCRIPT not in SV.objective_code() or not str(SV.W42_SCRIPT).endswith("wave42_r2_apply.py"):
+        out.append("the objective's code does not bind W42-R2's application script")
+    return out
+
+
+def test_the_survey_is_bound_to_w42_r2_never_w42_r1(roots, tmp_path, monkeypatch):
+    """Q-215 (E-296, E-299: W42-R2 is the rule applied to H4, W42-R1 is never applied): the survey's script, rule id,
+    values file, pin file, objective modules and rule object are W42-R2's; each piece of the old binding, planted, is
+    caught; a W42-R2 name never falls back to W42-R1's; and a values file W42-R1's application wrote is refused."""
+    from extended import wave42 as R1
+
+    assert _binding_problems() == []
+    old = {"W42_SCRIPT": "scripts/wave42_apply.py", "W42_RULE": R1.RULE_ID, "VALUES_NAME": R1.OUTPUT_NAME,
+           "W42_PIN_FILE": "config/w42_r1_pin.json", "OBJECTIVE_MODULES": ("extended.wave42", "extended.search_calendar")}
+    for name, value in old.items():
+        with monkeypatch.context() as m:
+            m.setattr(SV, name, value)
+            assert _binding_problems(), f"the old {name} passed"
+    with monkeypatch.context() as m:
+        m.setattr(SV, "_wave42", lambda: R1)
+        assert len(_binding_problems()) >= 5                     # W42-R1's module as the rule: every table differs
+    rule = SV._wave42()
+    with monkeypatch.context() as m:
+        m.delattr(rule, "limit_estimate")
+        assert getattr(rule, "limit_estimate", None) is None      # no silent fallback to W42-R1's own
+    assert rule.composite_per_seed is R1.composite_per_seed and rule.null_journeys is R1.null_journeys
+    import shutil
+    root = tmp_path / "root"
+    shutil.copytree(roots["default"]["root"] / "results", root / "results")
+    side = root / "results" / (SV.VALUES_NAME + ".manifest.json")
+    good = json.loads(side.read_text(encoding="utf-8"))
+    with at(root):
+        assert SV.load_objective(rule).limits
+        assert {lim["name"] for lim in SV.load_objective(rule).limits} == {lim.name for lim in rule.LIMITS}
+        assert "net_month_12_p50" in {lim["name"] for lim in SV.load_objective(rule).limits}
+        for patch, err in (({"script": "scripts/wave42_apply.py"}, "its script"),
+                           ({"parameters": {**good["parameters"], "rule_id": R1.RULE_ID}}, "its rule id")):
+            side.write_text(json.dumps({**good, **patch}), encoding="utf-8")
+            with pytest.raises(SV.SpecRefused, match=err):
+                SV.load_objective(rule)
+        side.write_text(json.dumps(good), encoding="utf-8")
+        (root / "results" / R1.OUTPUT_NAME).write_bytes((root / "results" / SV.VALUES_NAME).read_bytes())
+        (root / "results" / SV.VALUES_NAME).unlink()
+        with pytest.raises(SV.SpecRefused, match="both required"):  # W42-R1's file by its own name is never read
+            SV.load_objective(rule)
