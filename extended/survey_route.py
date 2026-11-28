@@ -63,18 +63,32 @@ runner reads each trade at its own w** (a policy of fixed leaves reads one R a s
 where the table meets the engine:
 - `check_policy_reads(policy, out)` reads the policy's own leaves (never the vendored `policy_rrs`, which drops a leaf
   without an R). A trading leaf (risk above zero, not abandon, a trade limit other than zero) of source `strategy`
-  must ask for every trade's own w; one with `rr=None` reads the log's own outcome -- the pnl channel below -- and is
-  admitted only when every trade's own w is 1, so that `r_1` is its own outcome; a `collect` leaf (a take-profit at the
-  shortfall, D-379, whose read of the table is not traced here) is refused by name. **A flip leaf is exempt**: it
-  trades the account's own scheduled bracket (D-339), reads nothing of the table, and gets no R check (it is listed
-  apart in the check's report). A policy with no trading leaf that reads the table takes none of the design's trades
-  and is refused.
+  must ask for every trade's own w; one with `rr=None` is refused outright, at w = 1 too -- the race refuses a trade
+  read at no R (`three_way_baseline`'s C2-6), and the router's holding clock would read the protocol leg's R; a
+  `collect` leaf (a take-profit at the shortfall, D-379, whose read of the table is not traced here) is refused by
+  name. **A flip leaf is exempt**: it trades the account's own scheduled bracket (D-339), reads nothing of the table,
+  and gets no R check (it is listed apart in the check's report) -- **but the baseline-mode race cannot run it yet**
+  (`three_way_baseline.replay` refuses a flip stream), so a policy the check admits with a flip leaf fails loudly at
+  the engine when a flip decision is taken: a condition on F-13's runner. A policy with no trading leaf that reads the
+  table takes none of the design's trades and is refused.
 - `check_taken_rr(race_log, own_rr(out, dates))`: every trade the race took was read at its own w (`aux["rr"]`).
 - `route_simulate(out, blocks, args, facts, ...)`: `three_way_baseline.simulate` with every account's vendored draw
-  under an **accounting** (`AccountingDraw`): each trade offered to a trading leaf is taken, or stood aside by a named
-  rule (D-272's stand-aside, an unsized trade); a trade the draw drops with a NaN outcome, or one with no outcome at
-  the state's R (the vendored `no_outcome`, D-315), refuses -- so a NaN never passes silently -- and every lane's race
-  log goes through `check_taken_rr`.
+  under an **accounting** (`AccountingDraw`), which sees **the draws it is handed** -- every slot's call, whether or
+  not the router gives it a trade -- and nothing else:
+  - **a state-R check on every call**: the R the account's state asks for (the draw's `_rr`) is the table's w, else
+    refused (`rr=None` refused too). Because the draw is called on every slot even when the router hands it nothing,
+    this catches an R mismatch whatever the router does;
+  - each trade the draw is handed is `handed_to_race`, stood aside (D-272) or unsized; one it drops with a NaN outcome,
+    or one with no outcome at the state's R (the vendored `no_outcome`, D-315), refuses;
+  - **reconciled against the race log**, lane by lane: `taken` is the log's booked records (`missed` and `day_end`
+    apart), and the records logged never exceed the trades handed to the race (the difference, `day_ended`, is the
+    race's own un-logged rule for an account whose day has ended); every lane's log goes through `check_taken_rr`.
+  The router's declines are the engine's own counts, **outside the accounting**: D-318's `passed_over` and `skipped`
+  (a trade with no outcome at an account's R, which the vendored router passes on), D-429's `skipped_busy` and
+  D-339's `skipped_opposite`.
+  **The swap.** `three_way_baseline.replay` builds each draw through the module global `RaceOver`; `route_simulate`
+  installs its wrapper there for the call, under a module lock held for the whole swap, refusing on entry unless the
+  original (captured at import, `RACE_OVER`) is in place, and restoring it whatever happens.
 
 **The vendored pnl channel.** A block's `pnl` is the vendored `r_1` (`score_fv3_grid.gate_blocks`), which the mask
 makes NaN on every row whose own w is not 1 (and absent from a design without a w = 1 component, so the caller pads
@@ -82,7 +96,10 @@ it). Its vendored readers -- `SharedDayDraw` (and `EmpiricalDraw`), a `TierSized
 `gate.shifted_blocks` and `gate.mean_r`, and `three_way_baseline`'s `outcome="vendored"` -- would read NaN there. Where
 this module hands a route table to one of them it refuses by name (`refuse_pnl_reader`), unless every trade's own w is 1:
 `route_simulate` refuses `outcome="vendored"`, a draw that is not a `TierSizedDraw`, and a `TierSizedDraw` reading at
-no R; nothing here calls `gate`'s readers. The runner reads every trade per R (`set_risk(risk, w)`).
+no R; nothing here calls `gate`'s readers. The runner reads every trade per R (`set_risk(risk, w)`). **`PNL_READERS` is
+enforced by the runner**: this module refuses where it hands the table over; F-13's runner must call no other reader
+of the list, reach the engine only through `facts` and `route_simulate`, and a mutant runner that bypasses them must
+fail a test (a condition on F-13's runner).
 
 The target is floor(w x stop) whole ticks (`walker.target_ticks`, the lever table's S2).
 
@@ -101,6 +118,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import math
+import threading
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Callable, Mapping, Sequence
@@ -775,8 +793,9 @@ def check_policy_reads(policy: Any, rt_trades: RouteTrades) -> dict[str, Any]:
         if src not in TABLE_SOURCES:
             raise RouteRefused(f"REFUSED: {where}: an unknown leaf source")
         if leaf.rr is None:
-            refuse_pnl_reader(f"{where} at rr=None (the log's own outcome)", rt_trades)
-        elif abs(float(leaf.rr) - w) > RR_TOL:
+            raise RouteRefused(f"REFUSED: {where} at rr=None: the race refuses a trade read at no R (C2-6), and the "
+                               "leaf would read the vendored pnl channel; every trading leaf asks for the design's w")
+        if abs(float(leaf.rr) - w) > RR_TOL:
             raise RouteRefused(f"REFUSED: {where} asks for R {float(leaf.rr)}, the design's trades are each read at "
                                f"their own w {w}: a trade asked for at another R is padded to NaN and never taken "
                                "(S2 maps onto the engine's R as each trade's own w)")
@@ -787,16 +806,24 @@ def check_policy_reads(policy: Any, rt_trades: RouteTrades) -> dict[str, Any]:
     return {"reads": reads, "flip_exempt": flips, "w": w}
 
 
+_TALLY_KEYS = ("trades", "stood_aside", "unsized", "no_outcome")
+
+
 class AccountingDraw:
     """One account's vendored draw under the route's accounting (the module docstring): every attribute and call its
-    own; each call's outcome classed -- no trade at the slot, taken, stood aside (D-272), unsized -- into the lane's
-    `tally`; a trade dropped with a NaN outcome, or one with no outcome at the state's R (`no_outcome`, D-315),
-    refuses. A draw that is not a `TierSizedDraw`, or one reading at no R, reads the pnl channel and refuses."""
+    own; on every call the state's R checked against the table's w (`rr=None` refused); each call classed -- no trade
+    at the slot, handed to the race, stood aside (D-272), unsized -- into the lane's `tally`; a trade dropped with a
+    NaN outcome, or one with no outcome at the state's R (`no_outcome`, D-315), refuses. A draw that is not a
+    `TierSizedDraw` reads the pnl channel and refuses."""
 
     def __init__(self, inner: Any, tally: dict[str, int], rt_trades: RouteTrades):
+        ws = own_ws(rt_trades)
+        if len(ws) != 1:
+            raise RouteRefused(f"REFUSED: the accounting reads one w a design, got {ws}")
         object.__setattr__(self, "_inner", inner)
         object.__setattr__(self, "_tally", tally)
         object.__setattr__(self, "_rt", rt_trades)
+        object.__setattr__(self, "_w", float(ws[0]))
         if type(inner).__name__ != "TierSizedDraw":
             refuse_pnl_reader(f"the vendored draw {type(inner).__name__}", rt_trades)
 
@@ -808,19 +835,27 @@ class AccountingDraw:
 
     def __call__(self, n: int, day: int, slot: int, cushion: Any, **kw: Any) -> Any:
         inner, tally = object.__getattribute__(self, "_inner"), object.__getattribute__(self, "_tally")
-        if getattr(inner, "_rr", 0.0) is None:
-            refuse_pnl_reader("a TierSizedDraw at rr=None", object.__getattribute__(self, "_rt"))
+        w = object.__getattribute__(self, "_w")
+        rr = getattr(inner, "_rr", None)
+        if rr is None:
+            raise RouteRefused(f"REFUSED: the account's state asks for no R at day {day} slot {slot}: the race refuses "
+                               "a trade read at no R (C2-6), and the draw would read the vendored pnl channel")
+        if abs(float(rr) - w) > RR_TOL:
+            raise RouteRefused(f"REFUSED: the account's state asks for R {float(rr)} at day {day} slot {slot}, the "
+                               f"design's trades are each read at their own w {w}: the state-R check (a trade asked "
+                               "for at another R is passed over and never taken)")
         st = getattr(inner, "stats", None)
-        before = tuple(int(getattr(st, k, 0)) for k in ("trades", "stood_aside", "unsized", "no_outcome"))
+        before = tuple(int(getattr(st, k, 0)) for k in _TALLY_KEYS)
         out = inner(n, day, slot, cushion, **kw)
-        after = tuple(int(getattr(st, k, 0)) for k in ("trades", "stood_aside", "unsized", "no_outcome"))
-        d = dict(zip(("trades", "stood_aside", "unsized", "no_outcome"), (b - a for a, b in zip(before, after))))
+        after = tuple(int(getattr(st, k, 0)) for k in _TALLY_KEYS)
+        d = dict(zip(_TALLY_KEYS, (b_ - a_ for a_, b_ in zip(before, after))))
         pnl = float(np.asarray(out, dtype=float).ravel()[0])
         lt = getattr(inner, "last_trade", None)
+        tally["calls"] = tally.get("calls", 0) + 1
         if d["no_outcome"]:
             tally["no_outcome"] = tally.get("no_outcome", 0) + d["no_outcome"]
             raise RouteRefused(f"REFUSED: a trade offered at day {day} slot {slot} has no outcome at the state's R "
-                               f"{getattr(inner, '_rr', None)} (D-315): under the own-w rule none may")
+                               f"{rr} (D-315): under the own-w rule none may")
         if lt is None and not any(d.values()):
             tally["no_trade"] = tally.get("no_trade", 0) + 1
             return out
@@ -834,36 +869,64 @@ class AccountingDraw:
         if not math.isfinite(pnl):
             tally["nan_dropped"] = tally.get("nan_dropped", 0) + 1
             raise RouteRefused(f"REFUSED: the draw dropped the trade at day {day} slot {slot} with a NaN outcome "
-                               f"(u = {None if lt is None else lt.get('u')!r}, R = {getattr(inner, '_rr', None)}): a "
-                               "trade offered to a trading leaf is taken or stood aside by a named rule")
-        tally["taken"] = tally.get("taken", 0) + 1
+                               f"(u = {None if lt is None else lt.get('u')!r}, R = {rr}): a trade offered to a "
+                               "trading leaf is taken or stood aside by a named rule")
+        tally["handed_to_race"] = tally.get("handed_to_race", 0) + 1
         return out
+
+
+#: the race's per-account draw door, captured at import: `route_simulate` swaps it under `_SWAP_LOCK` and refuses
+#: on entry unless this original is in place
+RACE_OVER = TB.RaceOver
+_SWAP_LOCK = threading.Lock()
+UNBOOKED_LAWS = ("missed", "day_end")
+
+
+def reconcile(tally: Mapping[str, int], log: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """One lane's accounting against its race log: `taken` the booked records (laws other than `missed` and
+    `day_end`), those two apart, `day_ended` the trades handed to the race and not logged (the race's un-logged rule
+    for an account whose day has ended). Refused when the log holds more records than the trades handed."""
+    handed = int(tally.get("handed_to_race", 0))
+    logged = len(log)
+    if logged > handed:
+        raise RouteRefused(f"REFUSED: the race logged {logged} trades, the accounting handed it {handed}: a record "
+                           "the accounting never saw")
+    out = {"handed_to_race": handed, "logged": logged, "day_ended": handed - logged,
+           "taken": sum(1 for r in log if r.get("law") not in UNBOOKED_LAWS)}
+    for law in UNBOOKED_LAWS:
+        out[law] = sum(1 for r in log if r.get("law") == law)
+    return out
 
 
 def route_simulate(rt_trades: RouteTrades, blocks: Sequence[Any], args: Mapping[str, Any],
                    facts_: Mapping[tuple[int, int], TB.TradeFacts], start: int, seed_indices: Sequence[int],
                    horizon: int, *, dates: Sequence[str], **kw: Any) -> tuple[Any, dict[str, Any]]:
-    """`three_way_baseline.simulate` on the route's table (its `log` always kept): the policy checked first
-    (`check_policy_reads`), every account's draw under `AccountingDraw`, `outcome="vendored"` refused (a pnl reader),
-    and every lane's race log through `check_taken_rr`. Returns the records and the accounting (per lane, and the
-    policy check's report)."""
+    """`three_way_baseline.simulate` on the route's table (its `log` always kept): `outcome="vendored"` refused (a pnl
+    reader), the policy checked (`check_policy_reads`), every account's draw under `AccountingDraw` (the swap under
+    `_SWAP_LOCK`, refused on entry unless `RACE_OVER` is in place, restored whatever happens), every lane's race log
+    through `check_taken_rr` and reconciled with its accounting (`reconcile`). Returns the records and the accounting
+    (per lane, its reconciliation, and the policy check's report)."""
     if kw.get("outcome", "race") == "vendored":
         refuse_pnl_reader("three_way_baseline outcome='vendored'", rt_trades)
     report = check_policy_reads(args["path"]["risk_policy"], rt_trades)
     own = own_rr(rt_trades, dates)
-    tallies = [dict() for _ in seed_indices]
-    real = TB.RaceOver
+    tallies: list[dict[str, int]] = [dict() for _ in seed_indices]
 
     def race_over(inner, unit, lane, outcome, log, counts, book=None):
-        return real(AccountingDraw(inner, tallies[int(lane)], rt_trades), unit, lane, outcome, log, counts, book)
+        return RACE_OVER(AccountingDraw(inner, tallies[int(lane)], rt_trades), unit, lane, outcome, log, counts, book)
 
-    TB.RaceOver = race_over                              # the one door `three_way_baseline.replay` builds draws by
-    try:
-        rec = TB.simulate(blocks, args, facts_, start, seed_indices, horizon, dates=dates, **{**kw, "log": True})
-    finally:
-        TB.RaceOver = real
+    with _SWAP_LOCK:
+        if TB.RaceOver is not RACE_OVER:
+            raise RouteRefused("REFUSED: three_way_baseline.RaceOver is not the original captured at import (a leaked "
+                               "or concurrent swap): the race would run under another accounting")
+        TB.RaceOver = race_over                          # the one door `three_way_baseline.replay` builds draws by
+        try:
+            rec = TB.simulate(blocks, args, facts_, start, seed_indices, horizon, dates=dates, **{**kw, "log": True})
+        finally:
+            TB.RaceOver = RACE_OVER
     checked = [check_taken_rr(lg, own) for lg in rec.logs]
-    return rec, {"lanes": tallies, "logged": checked, "policy": report}
+    recon = [reconcile(t, lg) for t, lg in zip(tallies, rec.logs)]
+    return rec, {"lanes": tallies, "logged": checked, "reconciled": recon, "policy": report}
 
 
 # ------------------------------------------------------------------------------------------------ what is decided when
@@ -912,4 +975,4 @@ __all__ = ["TASK", "FIRM", "LEVER_ROUTE", "ROUTE", "LIBRARY", "FIRM_PATH", "DROP
            "rr_grid", "build", "facts", "decisions", "TRADE_R_PREFIXES", "AUX_R_PREFIXES", "RR_TOL",
            "check_caps", "check_trail", "masked_problems", "own_rr", "check_taken_rr", "check_policy_reads",
            "TABLE_SOURCES", "FLIP_SOURCE", "COLLECT_SOURCE", "PNL_READERS", "own_ws", "pnl_channel_is_own",
-           "refuse_pnl_reader", "AccountingDraw", "route_simulate"]
+           "refuse_pnl_reader", "AccountingDraw", "route_simulate", "RACE_OVER", "UNBOOKED_LAWS", "reconcile"]

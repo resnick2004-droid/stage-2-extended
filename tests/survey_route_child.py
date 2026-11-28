@@ -141,13 +141,14 @@ def _gate_problems(blocks, t, a, days, keys) -> list[str]:
 
 
 def check_race() -> dict:
-    """B-1 (c2): the route's one-component table (RL3, w = 1.5) through the vendored engine on `early_look`'s toy job,
-    its protocol's combine and funded R both the design's w, by `survey_route.route_simulate`
-    (`three_way_baseline.simulate(log=True)` under the accounting). The engine's own lane logs are checked by
-    `check_taken_rr`; a log record moved off its own w and one off the table, both taken from the engine's log, are
-    refused. The planted mixed policy (a combine leaf at the own w, a funded leaf at rr=None) is refused by the policy
-    check and admitted by round 1's check (`policy_rrs` read as floats); a combine leaf at rr=None, run past the
-    policy check, is refused by the accounting (the draw reads the masked pnl channel)."""
+    """B-1 (c2) and the c3 minors: the route's one-component table (RL3, w = 1.5) through the vendored engine on
+    `early_look`'s toy job, its protocol's combine and funded R both the design's w, by `survey_route.route_simulate`
+    (`three_way_baseline.simulate(log=True)` under the accounting, each lane reconciled with its own log). The
+    engine's own lane logs are checked by `check_taken_rr`; a log record moved off its own w and one off the table,
+    both taken from the engine's log, are refused. The planted mixed policy is refused by the policy check and admitted
+    by round 1's check (`policy_rrs` read as floats). Past the policy check (taken out), a policy at R 1.0 and one at
+    rr=None are refused by the accounting's state-R check. Two threads run `route_simulate` at once; the swap's
+    original is restored after every run."""
     import copy
     import dataclasses as dc
     import importlib.util
@@ -185,13 +186,17 @@ def check_race() -> dict:
     start, horizon = max(0, first - 1), len(days) - max(0, first - 1)
     run = dict(seed=RW.SEED_ROUTE_COINS, part=0, history=0, block_sessions=len(days), dates=days,
                calendar=frozenset(__import__("datetime").date.fromisoformat(x) for x in days))
+    from extended import three_way_baseline as TB
+
+    original = TB.RaceOver
+    restored: dict = {}
     rec, acct = SR.route_simulate(one, list(blocks), args, facts, start, (0, 1, 2), horizon, **run)
+    restored["after_run"] = TB.RaceOver is original is SR.RACE_OVER
     logs = [list(lg) for lg in rec.logs]
-    taken = sum(1 for lg in logs for r in lg if r.get("law") not in ("missed", "day_end"))
+    taken = sum(r["taken"] for r in acct["reconciled"])
     own = SR.own_rr(one, days)
     out: dict = {"trades": int(len(one.trades)), "taken": int(taken), "logged": acct["logged"],
-                 "lanes": acct["lanes"], "no_outcome": int(sum(t.get("no_outcome", 0) for t in acct["lanes"])),
-                 "nan_dropped": int(sum(t.get("nan_dropped", 0) for t in acct["lanes"]))}
+                 "lanes": acct["lanes"], "reconciled": acct["reconciled"]}
     # the engine's own log, moved: off its own w, then off the table
     rec0 = next(r for lg in logs for r in lg)
     refusals = {}
@@ -208,26 +213,53 @@ def check_race() -> dict:
         SR.check_policy_reads(mixed, one)
         out["mixed_refused"] = False
     except SR.RouteRefused as e:
-        out["mixed_refused"] = "pnl channel" in str(e)
+        out["mixed_refused"] = "rr=None" in str(e)
     asks = zd.policy_rrs(mixed)
     out["round1_admits_mixed"] = bool(asks) and all(abs(float(R) - w) <= SR.RR_TOL for R in asks)
-    # past the policy check, a combine leaf at rr=None: the accounting refuses the draw that reads the pnl channel
-    a2 = copy.deepcopy(args)
-    a2["path"]["risk_policy"] = RiskPolicy.from_protocol(proto, with_rr=False)
+    # past the policy check (taken out): a policy at R 1.0 on the w 1.5 table, then one at rr=None -- the accounting's
+    # state-R check refuses each on the draw's first call, whatever the router hands it
     real = SR.check_policy_reads
+    planted = {"bypass_r1": RiskPolicy("p", Phase(combine=Leaf("c", 500.0, 1.0), funded=Leaf("f", 400.0, 1.0))),
+               "bypass_none": RiskPolicy.from_protocol(proto, with_rr=False)}
     SR.check_policy_reads = lambda policy, rt_trades: {"reads": ["planted"], "flip_exempt": [], "w": w}
     try:
-        SR.route_simulate(one, list(blocks), a2, facts, start, (0,), horizon, **run)
-        out["accounting_refused"] = False
-    except SR.RouteRefused as e:
-        out["accounting_refused"] = "pnl channel" in str(e) or "NaN outcome" in str(e)
-        out["accounting_why"] = str(e)[:160]
+        for name, pol in planted.items():
+            a2 = copy.deepcopy(args)
+            a2["path"]["risk_policy"] = pol
+            words = "state-R check" if name == "bypass_r1" else "asks for no R"
+            try:
+                SR.route_simulate(one, list(blocks), a2, facts, start, (0, 1), horizon, **run)
+                out[f"{name}_refused"] = False
+            except SR.RouteRefused as e:
+                out[f"{name}_refused"] = words in str(e)
+                out[f"{name}_why"] = str(e)[:160]
+            restored[f"after_{name}"] = TB.RaceOver is original
     finally:
         SR.check_policy_reads = real
-    out["ok"] = bool(taken > 0 and sum(acct["logged"]) == sum(map(len, logs))
-                     and out["no_outcome"] == 0 and out["nan_dropped"] == 0 and all(refusals.values())
-                     and out["mixed_refused"] and out["round1_admits_mixed"] and out["accounting_refused"]
-                     and n_used == len(one.trades))
+    # two threads calling route_simulate at once: serialised by the swap's lock, both complete, the original restored
+    import threading
+
+    done, errors = [], []
+
+    def one_run(k: int) -> None:
+        try:
+            _, ac = SR.route_simulate(one, list(blocks), args, facts, start, (k,), horizon, **run)
+            done.append(ac["reconciled"][0]["taken"])
+        except Exception as e:                                       # noqa: BLE001 -- reported, never hidden
+            errors.append(f"{type(e).__name__}: {e}"[:160])
+
+    th = [threading.Thread(target=one_run, args=(k,)) for k in (0, 1)]
+    for t in th:
+        t.start()
+    for t in th:
+        t.join()
+    out["threads"] = {"completed": len(done), "errors": errors}
+    restored["after_threads"] = TB.RaceOver is original
+    out["restored"] = restored
+    out["ok"] = bool(taken > 0 and all(x["taken"] > 0 for x in acct["reconciled"])
+                     and all(refusals.values()) and out["mixed_refused"] and out["round1_admits_mixed"]
+                     and out["bypass_r1_refused"] and out["bypass_none_refused"] and len(done) == 2 and not errors
+                     and all(restored.values()) and n_used == len(one.trades))
     return out
 
 

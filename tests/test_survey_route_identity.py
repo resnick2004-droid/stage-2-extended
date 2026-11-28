@@ -170,3 +170,22 @@ def test_the_point_is_the_early_looks_cell_in_the_space(toy):
     for day in sp.days[::50]:
         a = sp.starts(day)["ny_am"]
         assert d["ny_am.0.first"] <= T.LIVE_0900 - a <= d["ny_am.0.last"]
+
+
+def test_i2s_stand_aside_check_reads_every_day_not_the_counts():
+    """c3 m-6: two compensating days (one wrongly stood aside, another wrongly traded) leave the counts equal and are
+    still caught; the mutant that compares the counts lets them through."""
+    import inspect
+    import textwrap
+
+    days = ["2021-03-01", "2021-03-02", "2021-03-03"]
+    route, apart = ["no_trail", "", "below_floor"], ["no_trail", "below_floor", ""]
+    assert sorted(route) == sorted(apart)                                  # equal counts by reason
+    assert len(ID.aside_problems(route, apart, days)) == 2 and ID.aside_problems(apart, apart, days) == []
+    src = textwrap.dedent(inspect.getsource(ID.aside_problems))
+    old = "    return [f\"{d}: route"
+    assert src.count(old) == 1
+    new_src = src.replace(old, "    return [] if sorted(route) == sorted(apart) else [\"counts\"]\n    return [f\"{d}: route")
+    ns: dict = {}
+    exec(compile("from __future__ import annotations\n" + new_src, ID.__file__, "exec"), ID.__dict__, ns)
+    assert ns["aside_problems"](route, apart, days) == []                  # the counts-only mutant passes them

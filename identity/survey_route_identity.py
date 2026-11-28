@@ -21,9 +21,10 @@ cell or low end, T7 off) routed with the early look's declared kind, cutoff and 
 - **the stops and outcomes**: for every stop group of the route (the days its S1 stop is one value), the route's rows
   equal `design_trades.build_trades(rl3_spec(kind, cutoff, rule, stop))` on those days at the route's own w, column for
   column (the **trade frame**: stop, costs, outcome, MAE, exit and kind at w; the aux frame is not compared here);
-- **the stand-aside days**: the route's days stood aside, by reason (`no_trail`, `below_floor`, `above_cap`), equal
-  those computed apart from `survey_route.stops` -- `s1_range.add_trailing` of `s1_range.day_table` on the same
-  arrays (its own day kinds), `ny`'s trailing range times k against `lever_space.stop_caps()`, both edges inclusive;
+- **the stand-aside days**: the route's stand-aside reason on **every day** (`no_trail`, `below_floor`, `above_cap`,
+  or none), day by day -- not only the counts, which two compensating days would leave equal -- equals the one
+  computed apart from `survey_route.stops`: `s1_range.add_trailing` of `s1_range.day_table` on the same arrays (its
+  own day kinds), `ny`'s trailing range times k against `lever_space.stop_caps()`, both edges inclusive;
 - **the record**: the rebuilt early look's `trades_sha256` (`search_cut.trades_subhash` of its padded table), trade
   count and counts equal those its committed result records (`results/early_look_rl3_pd_fade.csv.manifest.json`), so
   the reference is the one that run read.
@@ -175,11 +176,11 @@ def record_problems(early: Mapping[str, Any], record: Mapping[str, Any] | None) 
 
 
 def stand_aside_apart(hist: Any, cal: Any, *, k: float, fomc: Sequence[int], bls: Sequence[int], tick: float
-                      ) -> dict[str, int]:
-    """The NY AM slot's days stood aside, by reason, computed apart from `survey_route.stops`: Q-171's own trailing
-    range (`s1_range.add_trailing` of `s1_range.day_table` on the history's arrays, its day kinds by
-    `vol_descriptive.day_kind` with `fomc` and `bls`), `ny`'s times k, against `lever_space.stop_caps()`, edges
-    inclusive."""
+                      ) -> list[str]:
+    """The NY AM slot's stand-aside reason on every day ('' where it trades), computed apart from
+    `survey_route.stops`: Q-171's own trailing range (`s1_range.add_trailing` of `s1_range.day_table` on the
+    history's arrays, its day kinds by `vol_descriptive.day_kind` with `fomc` and `bls`), `ny`'s times k, against
+    `lever_space.stop_caps()`, edges inclusive."""
     from extended import lever_space as LS
     from extended import s1_range as S1R
 
@@ -187,12 +188,26 @@ def stand_aside_apart(hist: Any, cal: Any, *, k: float, fomc: Sequence[int], bls
     arrays = {d: hist.day(i) for i, d in enumerate(days)}
     ref = S1R.add_trailing(S1R.day_table(pd.DataFrame({"day": days}), fomc=fomc, bls=bls, src=cal,
                                          day_arrays=lambda g: arrays[str(g["day"].iloc[0])]))
-    t = ref["trail_ny"].to_numpy(float)
     caps = LS.stop_caps()
-    x = float(k) * t
-    fin = np.isfinite(t)
-    return {"no_trail": int((~fin).sum()), "below_floor": int((fin & (x < int(caps["floor_ticks"]) * tick)).sum()),
-            "above_cap": int((fin & (x > int(caps["cap_ticks"]) * tick)).sum())}
+    out = []
+    for t in ref["trail_ny"].to_numpy(float):
+        if not np.isfinite(t):
+            out.append("no_trail")
+        elif float(k) * t < int(caps["floor_ticks"]) * tick:
+            out.append("below_floor")
+        elif float(k) * t > int(caps["cap_ticks"]) * tick:
+            out.append("above_cap")
+        else:
+            out.append("")
+    return out
+
+
+def aside_problems(route: Sequence[str], apart: Sequence[str], days: Sequence[str]) -> list[str]:
+    """The days whose stand-aside reason differs between the route and the apart computation (equal counts by
+    reason are not enough: two compensating days would pass)."""
+    if len(route) != len(apart):
+        return [f"the route reads {len(route)} days, the apart computation {len(apart)}"]
+    return [f"{d}: route {a or 'trades'!r}, apart {b or 'trades'!r}" for d, a, b in zip(days, route, apart) if a != b]
 
 
 def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, kind: str, cutoff: int,
@@ -252,10 +267,14 @@ def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, ki
             bad_groups.append(s)
     rec = record_problems(early, record)
     apart = stand_aside_apart(hist, cal, k=float(rt.slots[0].k), fomc=fomc, bls=bls, tick=tick)
-    aside = dict(out.counts[SLOT]["stand_aside"]) == apart
+    route_why = [why for _, why in SR.stops(rt, trail, tick=tick)[SLOT]]
+    aside_bad = aside_problems(route_why, apart, hist.days)
+    aside = not aside_bad
     holds = bool(fills and groups and not bad_groups and not rec and aside)
     return {"part": "route", "holds": holds, "fills_equal": bool(fills), "stand_aside_equal": bool(aside),
-            "stand_aside_apart": apart, "stop_groups": len(groups),
+            "stand_aside_days_unequal": aside_bad[:10],
+            "stand_aside_apart": {r: apart.count(r) for r in ("no_trail", "below_floor", "above_cap")},
+            "stop_groups": len(groups),
             "stop_groups_unequal": bad_groups[:10], "record_problems": rec, "route_trades": int(len(out.trades)),
             "early_trades_on_route_days": int(len(ef)), "early_trades": int(len(early_fills(early))),
             "route_days": len(traded), "stand_aside": out.counts[SLOT]["stand_aside"], "k": rt.slots[0].k, "w": w,
