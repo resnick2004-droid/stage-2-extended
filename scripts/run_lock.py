@@ -114,6 +114,15 @@ def _darwin_available_gb(vm_stat: str | None = None) -> float | None:
     return pages * int(m.group(1)) / 2**30
 
 
+def memory_words(lock: dict) -> str:
+    """The memory the lock's own record holds, for its TAKEN line (Q-229): what was read at the take, what the job
+    needs."""
+    have, need = lock.get("mem_gb_available_at_start"), lock.get("mem_gb_needed")
+    have_s = "unread" if have is None else f"{float(have):.2f} GB"
+    need_s = "unstated" if need is None else f"{float(need):.2f} GB"
+    return f"memory available at the take {have_s}, needed {need_s}"
+
+
 def take(a) -> int:
     held = read()
     if held is not None:
@@ -136,7 +145,8 @@ def take(a) -> int:
     except FileExistsError:
         print(f"REFUSED: taken a moment ago -- {describe(read() or {})}")
         return 3
-    print(f"TAKEN: {LOCK} by {a.holder} for {a.job} ({a.task}), expected end {lock['expected_end']}")
+    print(f"TAKEN: {LOCK} by {a.holder} for {a.job} ({a.task}), expected end {lock['expected_end']}; "
+          f"{memory_words(lock)}")
     return 0
 
 

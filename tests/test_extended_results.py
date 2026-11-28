@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import textwrap
@@ -162,6 +163,8 @@ def test_clean_run_writes_and_never_overwrites(tmp_path):
     """, tmp_path, env={"S2X_CLEAN_RUN": "q04-sim"})
     assert Path(out["csv"]) == tmp_path / "runs" / "q04-sim" / "results" / "t_clean.csv"
     assert out["prov"]["clean_run"]["name"] == "q04-sim"
+    # Q-229: the manifest names the host it was written on (the Mac's runs are collected by it)
+    assert out["prov"]["clean_run"]["host"] == socket.gethostname() and out["prov"]["clean_run"]["platform"] == sys.platform
     assert out["again"] == "refused", "a result file is never overwritten (DIRECTIVE Part 1)"
 
 

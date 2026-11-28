@@ -7,8 +7,8 @@
   commit, and `results_dir` defaulting to this repository's `results/`. A write into a `results/` folder of this
   repository's trees **refuses** (`CleanRunRequired`) unless the process runs inside the clean checkout
   `scripts/run_clean.py` made -- `ROOT` is `RUNS_DIR/<name>` and the environment marker `S2X_CLEAN_RUN` names it --
-  and the marker is recorded in the manifest's `provenance.clean_run`. A result file there is never overwritten
-  (`ResultExists`; DIRECTIVE Part 1). Any other folder (a test's temporary one) is written as the vendored writer
+  and the marker is recorded in the manifest's `provenance.clean_run`, with the host and its platform (Q-229). A
+  result file there is never overwritten (`ResultExists`; DIRECTIVE Part 1). Any other folder (a test's temporary one) is written as the vendored writer
   writes it.
 * **The read ledger inside a clean run** (Q-97, E-062): a run that reads through `extended.reader` appends its read's
   line to `results/read_ledger.jsonl` in its own checkout before it writes a result, and the vendored writer would
@@ -30,7 +30,9 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -185,7 +187,9 @@ def write_result(df: pd.DataFrame, name: str, *, script: str, seed: int | None, 
         if csv.exists() or manifest_path_for(csv).exists():
             raise ResultExists(f"REFUSED: {csv} exists; a result file is never overwritten (DIRECTIVE Part 1) -- a new "
                                "reading is a new file under its own decision row")
-        prov["clean_run"] = {"name": os.environ[CLEAN_RUN_ENV], "checkout": str(ROOT), "marker": CLEAN_RUN_ENV}
+        # Q-229: the host and its platform, so a run from a second machine (the Mac) is named by its own manifest
+        prov["clean_run"] = {"name": os.environ[CLEAN_RUN_ENV], "checkout": str(ROOT), "marker": CLEAN_RUN_ENV,
+                             "host": socket.gethostname(), "platform": sys.platform}
         prov["read_ledger"] = note_ledger_appends(ROOT)      # Q-97: the run's own ledger appends are its writes
     return _vendored.write_result(df, name, script=script, seed=seed, parameters=parameters, results_dir=target,
                                   provenance=prov or None, repo=ROOT, **kw)
