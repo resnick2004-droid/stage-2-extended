@@ -149,7 +149,14 @@ def walks_frame() -> pd.DataFrame:
 
 def make_tree(base: Path, name: str = RUN) -> Path:
     """A temporary tree at `<base>/runs/<name>` (so a clean run can be simulated): a git repository with the synthetic
-    declarations and decision rows, a tiny store and walk table (git-ignored, as the real ones are), a data manifest."""
+    declarations and decision rows, a tiny store and walk table (git-ignored, as the real ones are), a data manifest.
+    Built once a process for each name and copied (Q-226, `tests/tree_template.py`)."""
+    import tree_template
+
+    return tree_template.copied(("reader", name), lambda b: _build_tree(b, name), base / "runs" / name)
+
+
+def _build_tree(base: Path, name: str = RUN) -> Path:
     t = base / "runs" / name
     (t / "prereg").mkdir(parents=True)
     (t / "identity").mkdir()
