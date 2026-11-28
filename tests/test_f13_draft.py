@@ -689,14 +689,18 @@ def test_k_max_is_the_loaded_spaces(text: str) -> None:
         elif part in ("T4", "T5"):
             key = f"{slot}.0.T1"
             total += max(len(d.cells({key: src})) for src in sources[slot]) - 1
+        elif part == "S2":
+            continue                                             # S2 is design-wide (the route's m-4, option (b))
         else:
             total += 2
             if part == "S1":
                 has_s1.add(slot)
     total += 2 * len(set(sources) - has_s1)                      # S1 where `results/s1_range.csv` is absent
-    assert "S1" in LS.LEVERS and total == 85, total
-    assert "**k_max = 85**" in _flat(_section(text, 7)) and "4 x 85 = 340" in _flat(_section(text, 13))
-    assert "768 + 4 + 340 = 1112" in _flat(_section(text, 13))
+    total += 2                                                   # the one design-wide S2
+    assert "S1" in LS.LEVERS and total == 77, total
+    assert "**k_max = 77**" in _flat(_section(text, 7)) and "4 x 77 = 308" in _flat(_section(text, 13))
+    assert "768 + 4 + 308 = 1080" in _flat(_section(text, 13))
+    assert _spec(text)["parts"]["space"]["params"].get("design_wide") == ["S2"]
 
 
 def test_the_minors_of_both_reads(text: str) -> None:
@@ -773,3 +777,23 @@ def test_q215_red_team_s2_onto_r_and_refused_points(text: str) -> None:
     assert "it is never given an infeasible reading" in gates
     t7 = next(r for r in _rows(_section(text, 3)) if r[0] == "T7")
     assert "**held at `off` in this search**" in t7[3]
+
+
+def test_q215_c2_m1_m4_and_the_same_convention(text: str) -> None:
+    """The route's re-read: m-1 (the runner calls the boundary checks), m-4 (one w per design, flip's R) and the same
+    convention (CHARTER 3.8)."""
+    head = _head(text)
+    for x in ("`survey_route.check_policy_reads`", "`survey_route.check_taken_rr`", "`survey_route.own_rr`",
+              "`survey_route.facts` (never `design_trades.facts_for` directly", "a refusal stops the run",
+              "a mutant runner dropping any of these calls fails a test"):
+        assert x in head, x
+    s2 = next(r for r in _rows(_section(text, 3)) if r[0] == "S2")
+    assert s2[3].startswith("searched, **one w per design**")
+    for x in ("**why one w per design**", "option (b)", "four dimensions fewer", "no several-w design in the space",
+              "**flip under one w:**", "never its reward-to-risk", "the runner refuses a flip leaf at any other R"):
+        assert x in s2[4], x
+    conv = _flat(_section(text, 1))
+    for x in ("**The same convention, and the one difference declared**", "**The convention CHARTER 3.8 asks for is the same:**",
+              "**The R schedule is not part of the convention but of each plan:**",
+              "**The difference does not favour the designs:**"):
+        assert x in conv, x
