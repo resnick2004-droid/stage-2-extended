@@ -11,8 +11,9 @@ this module only maps levers to a spec and stitches the per-day specs' tables in
     out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fee_for_stop=fee,
                    tick_value=tv, market_entry_ticks=slip)                       # -> RouteTrades(trades, aux, ...)
     facts = SR.facts(out, hist.days, tick_value=tv)                              # (day, j) -> TB.TradeFacts
-    SR.check_policy_reads(policy_rrs, out)          # the engine's policy reads every trade at its own w, or refused
-    SR.check_taken_rr(race_log, SR.own_rr(out, hist.days))      # every taken trade was read at its own w, or refused
+    SR.check_policy_reads(args["path"]["risk_policy"], out)   # every trading leaf reads each trade at its own w
+    rec, acct = SR.route_simulate(out, blocks, args, facts, start, seeds, horizon, seed=..., part=..., history=...,
+                                  block_sessions=..., dates=...)  # the race, accounted; every lane's log checked
 
 **Every lever is mapped, passed on, or refused, by name** (`LEVER_ROUTE`, a partition of `lever_space.LEVERS` that a
 test holds equal to the table): the slot levers T1 (the source), T2 (the slot on), T3 (the window's offsets), T4 (L),
@@ -57,12 +58,33 @@ outcome, cost, MAE, exit and kind columns at any other w are NaN, its `exit_t` a
 engine's `fresh_rr`), and its facts carry a kind at its own w only. A read at another R so finds nothing -- the race
 refuses ("carries no kind at R"), the vendored router passes a NaN trade on -- and never a silent outcome at another
 component's target. **The rule** (for F-13 to state): S2 maps onto the engine's R as each trade's own component w; the
-policy reads every trade at its own w. Two refusing checks hold it where the table meets the engine:
-`check_policy_reads` (a fixed-leaf policy whose R is not every trade's own w would pad the trades to NaN and leave
-them untaken: refused -- so a one-component design is admitted only with a policy asking for its w and nothing else,
-and a design of several w only with a reader that takes each trade's own) and `check_taken_rr` (every trade the race
-took was read at its own w, its row's `aux["rr"]`). The target is floor(w x stop) whole ticks (`walker.target_ticks`,
-the lever table's S2).
+policy reads every trade at its own w. **The own-w rule refuses a design whose components' w differ, until F-13's
+runner reads each trade at its own w** (a policy of fixed leaves reads one R a state). Three refusing checks hold it
+where the table meets the engine:
+- `check_policy_reads(policy, out)` reads the policy's own leaves (never the vendored `policy_rrs`, which drops a leaf
+  without an R). A trading leaf (risk above zero, not abandon, a trade limit other than zero) of source `strategy`
+  must ask for every trade's own w; one with `rr=None` reads the log's own outcome -- the pnl channel below -- and is
+  admitted only when every trade's own w is 1, so that `r_1` is its own outcome; a `collect` leaf (a take-profit at the
+  shortfall, D-379, whose read of the table is not traced here) is refused by name. **A flip leaf is exempt**: it
+  trades the account's own scheduled bracket (D-339), reads nothing of the table, and gets no R check (it is listed
+  apart in the check's report). A policy with no trading leaf that reads the table takes none of the design's trades
+  and is refused.
+- `check_taken_rr(race_log, own_rr(out, dates))`: every trade the race took was read at its own w (`aux["rr"]`).
+- `route_simulate(out, blocks, args, facts, ...)`: `three_way_baseline.simulate` with every account's vendored draw
+  under an **accounting** (`AccountingDraw`): each trade offered to a trading leaf is taken, or stood aside by a named
+  rule (D-272's stand-aside, an unsized trade); a trade the draw drops with a NaN outcome, or one with no outcome at
+  the state's R (the vendored `no_outcome`, D-315), refuses -- so a NaN never passes silently -- and every lane's race
+  log goes through `check_taken_rr`.
+
+**The vendored pnl channel.** A block's `pnl` is the vendored `r_1` (`score_fv3_grid.gate_blocks`), which the mask
+makes NaN on every row whose own w is not 1 (and absent from a design without a w = 1 component, so the caller pads
+it). Its vendored readers -- `SharedDayDraw` (and `EmpiricalDraw`), a `TierSizedDraw` whose state R is None,
+`gate.shifted_blocks` and `gate.mean_r`, and `three_way_baseline`'s `outcome="vendored"` -- would read NaN there. Where
+this module hands a route table to one of them it refuses by name (`refuse_pnl_reader`), unless every trade's own w is 1:
+`route_simulate` refuses `outcome="vendored"`, a draw that is not a `TierSizedDraw`, and a `TierSizedDraw` reading at
+no R; nothing here calls `gate`'s readers. The runner reads every trade per R (`set_risk(risk, w)`).
+
+The target is floor(w x stop) whole ticks (`walker.target_ticks`, the lever table's S2).
 
 **Costs** are `design_trades`' (Stage 2's): `fee_for_stop(stop)` is the caller's `atlas_a3.fee_by_stop` at the day's
 stop, a market fill pays `market_entry_ticks`, a resting fill none; each trade's entry ticks go to its facts (each
@@ -691,17 +713,157 @@ def check_taken_rr(taken: Sequence[Mapping[str, Any]], own: Mapping[tuple[int, i
     return n
 
 
-def check_policy_reads(policy_rrs: Sequence[float], rt_trades: RouteTrades) -> None:
-    """B-1 (b), the policy's side: a fixed-leaf policy (`zero_edge_decomposition.policy_rrs`) reads every trade at
-    the R its leaves ask for; a trade whose own w is not that R is padded to NaN (`zero_edge_decomposition.pad`) and
-    never taken. Admitted only when every R the policy can ask for is every trade's own w -- one component's w and
-    nothing else; a design of several w needs a reader that takes each trade's own (F-13's rule), refused here."""
-    ws = sorted({float(w) for w in rt_trades.aux["rr"]}) if len(rt_trades.aux) else list(rt_trades.rr_grid)
-    asks = sorted({float(R) for R in policy_rrs})
-    if not asks or len(ws) != 1 or any(abs(R - ws[0]) > RR_TOL for R in asks):
-        raise RouteRefused(f"REFUSED: the policy asks for R {asks}, the design's trades are each read at their own w "
-                           f"{ws}: a trade asked for at another R is padded to NaN and never taken (S2 maps onto the "
-                           "engine's R as each trade's own w)")
+#: a leaf's sources (`risk_policy.SOURCES`): those reading the trade table, and the flip stream's (D-339), apart
+TABLE_SOURCES = ("strategy",)
+FLIP_SOURCE = "flip"
+COLLECT_SOURCE = "collect"
+#: the vendored readers of a block's pnl channel (`r_1`), named in the refusals
+PNL_READERS = ("SharedDayDraw", "EmpiricalDraw", "TierSizedDraw at rr=None", "gate.shifted_blocks", "gate.mean_r",
+               "three_way_baseline outcome='vendored'")
+
+
+def own_ws(rt_trades: RouteTrades) -> list[float]:
+    """The distinct own w of the table's trades (the grid's when it holds none)."""
+    return sorted({float(w) for w in rt_trades.aux["rr"]}) if len(rt_trades.aux) else list(rt_trades.rr_grid)
+
+
+def pnl_channel_is_own(rt_trades: RouteTrades) -> bool:
+    """Whether the vendored pnl channel (`r_1`) is every trade's own outcome: every own w is 1."""
+    ws = own_ws(rt_trades)
+    return bool(ws) and all(abs(w - 1.0) <= RR_TOL for w in ws)
+
+
+def refuse_pnl_reader(reader: str, rt_trades: RouteTrades) -> None:
+    """Refuse handing the route's table to a reader of the vendored pnl channel unless `r_1` is every trade's own."""
+    if not pnl_channel_is_own(rt_trades):
+        raise RouteRefused(f"REFUSED: {reader} reads the vendored pnl channel (r_1), NaN on every row whose own w is "
+                           f"not 1; the design's w are {own_ws(rt_trades)}")
+
+
+def _policy_leaves(policy: Any) -> list[tuple[Any, frozenset]]:
+    import sys
+
+    phases = getattr(sys.modules.get(type(policy).__module__), "PHASES", None)
+    root = getattr(policy, "root", None)
+    if phases is None or root is None or not callable(getattr(root, "leaves", None)):
+        raise RouteRefused(f"REFUSED: {type(policy).__name__} is not a risk policy whose leaves can be read")
+    return list(root.leaves(frozenset(phases)))
+
+
+def check_policy_reads(policy: Any, rt_trades: RouteTrades) -> dict[str, Any]:
+    """B-1 (b) and (c2): the policy's own leaves against each trade's own w (the module docstring). Returns the
+    leaves read and the flip leaves exempted; refuses otherwise."""
+    ws = own_ws(rt_trades)
+    if len(ws) != 1:
+        raise RouteRefused(f"REFUSED: the design's trades are read at the w {ws}: the own-w rule refuses a design whose "
+                           "components' w differ until F-13's runner reads each trade at its own w (a fixed-leaf "
+                           "policy reads one R a state; a trade asked for at another is padded to NaN and never taken)")
+    w = ws[0]
+    reads, flips = [], []
+    for leaf, phases in _policy_leaves(policy):
+        trading = not bool(getattr(leaf, "abandon", False)) and float(leaf.risk) > 0 and leaf.max_trades != 0
+        if not trading:
+            continue
+        src = str(getattr(leaf, "source", "strategy"))
+        where = f"leaf {leaf.name!r} ({src}, {sorted(phases)})"
+        if src == FLIP_SOURCE:
+            flips.append(leaf.name)                         # the account's own bracket: reads nothing of the table
+            continue
+        if src == COLLECT_SOURCE:
+            raise RouteRefused(f"REFUSED: {where} is a collect leaf (D-379), whose read of the route's table is not "
+                               "traced: never admitted here")
+        if src not in TABLE_SOURCES:
+            raise RouteRefused(f"REFUSED: {where}: an unknown leaf source")
+        if leaf.rr is None:
+            refuse_pnl_reader(f"{where} at rr=None (the log's own outcome)", rt_trades)
+        elif abs(float(leaf.rr) - w) > RR_TOL:
+            raise RouteRefused(f"REFUSED: {where} asks for R {float(leaf.rr)}, the design's trades are each read at "
+                               f"their own w {w}: a trade asked for at another R is padded to NaN and never taken "
+                               "(S2 maps onto the engine's R as each trade's own w)")
+        reads.append(leaf.name)
+    if not reads:
+        raise RouteRefused("REFUSED: no trading leaf of the policy reads the route's table: the design's trades would "
+                           "never be taken")
+    return {"reads": reads, "flip_exempt": flips, "w": w}
+
+
+class AccountingDraw:
+    """One account's vendored draw under the route's accounting (the module docstring): every attribute and call its
+    own; each call's outcome classed -- no trade at the slot, taken, stood aside (D-272), unsized -- into the lane's
+    `tally`; a trade dropped with a NaN outcome, or one with no outcome at the state's R (`no_outcome`, D-315),
+    refuses. A draw that is not a `TierSizedDraw`, or one reading at no R, reads the pnl channel and refuses."""
+
+    def __init__(self, inner: Any, tally: dict[str, int], rt_trades: RouteTrades):
+        object.__setattr__(self, "_inner", inner)
+        object.__setattr__(self, "_tally", tally)
+        object.__setattr__(self, "_rt", rt_trades)
+        if type(inner).__name__ != "TierSizedDraw":
+            refuse_pnl_reader(f"the vendored draw {type(inner).__name__}", rt_trades)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_inner"), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        setattr(object.__getattribute__(self, "_inner"), name, value)
+
+    def __call__(self, n: int, day: int, slot: int, cushion: Any, **kw: Any) -> Any:
+        inner, tally = object.__getattribute__(self, "_inner"), object.__getattribute__(self, "_tally")
+        if getattr(inner, "_rr", 0.0) is None:
+            refuse_pnl_reader("a TierSizedDraw at rr=None", object.__getattribute__(self, "_rt"))
+        st = getattr(inner, "stats", None)
+        before = tuple(int(getattr(st, k, 0)) for k in ("trades", "stood_aside", "unsized", "no_outcome"))
+        out = inner(n, day, slot, cushion, **kw)
+        after = tuple(int(getattr(st, k, 0)) for k in ("trades", "stood_aside", "unsized", "no_outcome"))
+        d = dict(zip(("trades", "stood_aside", "unsized", "no_outcome"), (b - a for a, b in zip(before, after))))
+        pnl = float(np.asarray(out, dtype=float).ravel()[0])
+        lt = getattr(inner, "last_trade", None)
+        if d["no_outcome"]:
+            tally["no_outcome"] = tally.get("no_outcome", 0) + d["no_outcome"]
+            raise RouteRefused(f"REFUSED: a trade offered at day {day} slot {slot} has no outcome at the state's R "
+                               f"{getattr(inner, '_rr', None)} (D-315): under the own-w rule none may")
+        if lt is None and not any(d.values()):
+            tally["no_trade"] = tally.get("no_trade", 0) + 1
+            return out
+        tally["offered"] = tally.get("offered", 0) + 1
+        if lt is not None and lt.get("stood_aside"):
+            tally["stood_aside"] = tally.get("stood_aside", 0) + 1
+            return out
+        if d["unsized"]:
+            tally["unsized"] = tally.get("unsized", 0) + 1
+            return out
+        if not math.isfinite(pnl):
+            tally["nan_dropped"] = tally.get("nan_dropped", 0) + 1
+            raise RouteRefused(f"REFUSED: the draw dropped the trade at day {day} slot {slot} with a NaN outcome "
+                               f"(u = {None if lt is None else lt.get('u')!r}, R = {getattr(inner, '_rr', None)}): a "
+                               "trade offered to a trading leaf is taken or stood aside by a named rule")
+        tally["taken"] = tally.get("taken", 0) + 1
+        return out
+
+
+def route_simulate(rt_trades: RouteTrades, blocks: Sequence[Any], args: Mapping[str, Any],
+                   facts_: Mapping[tuple[int, int], TB.TradeFacts], start: int, seed_indices: Sequence[int],
+                   horizon: int, *, dates: Sequence[str], **kw: Any) -> tuple[Any, dict[str, Any]]:
+    """`three_way_baseline.simulate` on the route's table (its `log` always kept): the policy checked first
+    (`check_policy_reads`), every account's draw under `AccountingDraw`, `outcome="vendored"` refused (a pnl reader),
+    and every lane's race log through `check_taken_rr`. Returns the records and the accounting (per lane, and the
+    policy check's report)."""
+    if kw.get("outcome", "race") == "vendored":
+        refuse_pnl_reader("three_way_baseline outcome='vendored'", rt_trades)
+    report = check_policy_reads(args["path"]["risk_policy"], rt_trades)
+    own = own_rr(rt_trades, dates)
+    tallies = [dict() for _ in seed_indices]
+    real = TB.RaceOver
+
+    def race_over(inner, unit, lane, outcome, log, counts, book=None):
+        return real(AccountingDraw(inner, tallies[int(lane)], rt_trades), unit, lane, outcome, log, counts, book)
+
+    TB.RaceOver = race_over                              # the one door `three_way_baseline.replay` builds draws by
+    try:
+        rec = TB.simulate(blocks, args, facts_, start, seed_indices, horizon, dates=dates, **{**kw, "log": True})
+    finally:
+        TB.RaceOver = real
+    checked = [check_taken_rr(lg, own) for lg in rec.logs]
+    return rec, {"lanes": tallies, "logged": checked, "policy": report}
 
 
 # ------------------------------------------------------------------------------------------------ what is decided when
@@ -748,4 +910,6 @@ __all__ = ["TASK", "FIRM", "LEVER_ROUTE", "ROUTE", "LIBRARY", "FIRM_PATH", "DROP
            "RL3_PARAMS", "T7_MAPPED", "T8_EVALUATION", "STAND_ASIDE", "AUX_ADDED", "RouteRefused", "Windowed",
            "p14_alerts", "SlotRoute", "Route", "route", "day_ranges", "trailing", "stop_on", "stops", "RouteTrades",
            "rr_grid", "build", "facts", "decisions", "TRADE_R_PREFIXES", "AUX_R_PREFIXES", "RR_TOL",
-           "check_caps", "check_trail", "masked_problems", "own_rr", "check_taken_rr", "check_policy_reads"]
+           "check_caps", "check_trail", "masked_problems", "own_rr", "check_taken_rr", "check_policy_reads",
+           "TABLE_SOURCES", "FLIP_SOURCE", "COLLECT_SOURCE", "PNL_READERS", "own_ws", "pnl_channel_is_own",
+           "refuse_pnl_reader", "AccountingDraw", "route_simulate"]

@@ -123,7 +123,8 @@ def load_w42(*, patch_shas: bool = True):
     for rel in ("extended/wave42.py", "extended/wave42_r2.py", "scripts/wave42_r2_apply.py",
                 "extended/search_calendar.py"):
         if not (ROOT / rel).is_file():
-            pytest.skip(f"{rel} is not in this tree (W42-R2 merged at 5ae351d, E-299)")
+            pytest.fail(f"{rel} is not in this tree: W42-R2 merged at 5ae351d (E-299), so a tree without it fails "
+                        "the survey's binding tests, never skips them", pytrace=False)
     from extended import survey as SV
 
     R1 = _r1()

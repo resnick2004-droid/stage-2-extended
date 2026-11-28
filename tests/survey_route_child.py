@@ -3,6 +3,10 @@
 
     python tests/survey_route_child.py trailing
     python tests/survey_route_child.py gate
+    python tests/survey_route_child.py race
+
+`race` (B-1 (c2)): `check_race`'s docstring -- the route's one-component table through the vendored engine on
+`early_look`'s toy job, under the route's accounting, the engine's own logs checked.
 
 `gate` (the red team's m-4): the route's table for the tests' three-component point, with a stop of its own a day
 (S1) and a fee a stop (a toy schedule), through the vendored `zero_edge_decomposition.pad` and
@@ -136,13 +140,108 @@ def _gate_problems(blocks, t, a, days, keys) -> list[str]:
     return bad
 
 
+def check_race() -> dict:
+    """B-1 (c2): the route's one-component table (RL3, w = 1.5) through the vendored engine on `early_look`'s toy job,
+    its protocol's combine and funded R both the design's w, by `survey_route.route_simulate`
+    (`three_way_baseline.simulate(log=True)` under the accounting). The engine's own lane logs are checked by
+    `check_taken_rr`; a log record moved off its own w and one off the table, both taken from the engine's log, are
+    refused. The planted mixed policy (a combine leaf at the own w, a funded leaf at rr=None) is refused by the policy
+    check and admitted by round 1's check (`policy_rrs` read as floats); a combine leaf at rr=None, run past the
+    policy check, is refused by the accounting (the draw reads the masked pnl channel)."""
+    import copy
+    import dataclasses as dc
+    import importlib.util
+
+    import score_fv3_grid as gf
+    import zero_edge_decomposition as zd
+    from extended import search_space as SS
+    from extended import triggers as T
+    from propedge.campaign.risk_policy import Leaf, Phase, RiskPolicy
+
+    spec = importlib.util.spec_from_file_location("early_look_for_route_race", ROOT / "scripts" / "early_look.py")
+    el = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = el
+    spec.loader.exec_module(el)
+    bars = RW.bars()
+    hist = T.History.from_bars(bars)
+    cal = RW.fake_sources(bars)
+    sp = RW.space()
+    w = 1.5
+    d = RW.with_slot(sp, RW.base_point(sp), "ny_am.0", T1="rl3", T4=None, T5=SS.TICKET, first=30, last=120,
+                     S1=0.2, S2=w)
+    rt = SR.route(sp, d, side_rules=RW.SIDE_RULES, source_params={"rl3": RW.RL3_PARAMS})
+    one = SR.build(rt, hist, **RW.build_kw(hist, cal))
+    days = list(hist.days)
+    keys = [1.0, w]                                                  # gate_blocks reads r_1: padded (NaN off w = 1)
+    blocks, n_used = gf.gate_blocks(zd.pad(one.trades, keys), days, RW.TICK_VALUE, keys, require_sides=True,
+                                    require_exits=True)
+    facts = SR.facts(one, days, tick_value=RW.TICK_VALUE)
+    el.check_alignment(list(blocks), facts)
+    args = el.toy_args()
+    proto = dc.replace(args["draws"]["protocol"], combine_rr=w, funded_rr=w)
+    args["draws"]["protocol"] = proto
+    args["path"]["risk_policy"] = RiskPolicy.from_protocol(proto, with_rr=True)
+    first = min(facts)[0]
+    start, horizon = max(0, first - 1), len(days) - max(0, first - 1)
+    run = dict(seed=RW.SEED_ROUTE_COINS, part=0, history=0, block_sessions=len(days), dates=days,
+               calendar=frozenset(__import__("datetime").date.fromisoformat(x) for x in days))
+    rec, acct = SR.route_simulate(one, list(blocks), args, facts, start, (0, 1, 2), horizon, **run)
+    logs = [list(lg) for lg in rec.logs]
+    taken = sum(1 for lg in logs for r in lg if r.get("law") not in ("missed", "day_end"))
+    own = SR.own_rr(one, days)
+    out: dict = {"trades": int(len(one.trades)), "taken": int(taken), "logged": acct["logged"],
+                 "lanes": acct["lanes"], "no_outcome": int(sum(t.get("no_outcome", 0) for t in acct["lanes"])),
+                 "nan_dropped": int(sum(t.get("nan_dropped", 0) for t in acct["lanes"]))}
+    # the engine's own log, moved: off its own w, then off the table
+    rec0 = next(r for lg in logs for r in lg)
+    refusals = {}
+    for name, bad in (("off_w", [dict(rec0, R=2.0)]), ("off_table", [dict(rec0, j=int(rec0["j"]) + 999)])):
+        try:
+            SR.check_taken_rr(bad, own)
+            refusals[name] = False
+        except SR.RouteRefused:
+            refusals[name] = True
+    out["log_refusals"] = refusals
+    # the planted mixed policy: refused now; round 1's float check admits it
+    mixed = RiskPolicy("probe", Phase(combine=Leaf("c", 500.0, w), funded=Leaf("f", 400.0, None)))
+    try:
+        SR.check_policy_reads(mixed, one)
+        out["mixed_refused"] = False
+    except SR.RouteRefused as e:
+        out["mixed_refused"] = "pnl channel" in str(e)
+    asks = zd.policy_rrs(mixed)
+    out["round1_admits_mixed"] = bool(asks) and all(abs(float(R) - w) <= SR.RR_TOL for R in asks)
+    # past the policy check, a combine leaf at rr=None: the accounting refuses the draw that reads the pnl channel
+    a2 = copy.deepcopy(args)
+    a2["path"]["risk_policy"] = RiskPolicy.from_protocol(proto, with_rr=False)
+    real = SR.check_policy_reads
+    SR.check_policy_reads = lambda policy, rt_trades: {"reads": ["planted"], "flip_exempt": [], "w": w}
+    try:
+        SR.route_simulate(one, list(blocks), a2, facts, start, (0,), horizon, **run)
+        out["accounting_refused"] = False
+    except SR.RouteRefused as e:
+        out["accounting_refused"] = "pnl channel" in str(e) or "NaN outcome" in str(e)
+        out["accounting_why"] = str(e)[:160]
+    finally:
+        SR.check_policy_reads = real
+    out["ok"] = bool(taken > 0 and sum(acct["logged"]) == sum(map(len, logs))
+                     and out["no_outcome"] == 0 and out["nan_dropped"] == 0 and all(refusals.values())
+                     and out["mixed_refused"] and out["round1_admits_mixed"] and out["accounting_refused"]
+                     and n_used == len(one.trades))
+    return out
+
+
 def main(argv: list[str]) -> int:
+    if argv == ["race"]:
+        out = check_race()
+        print(json.dumps(out, sort_keys=True, default=str))
+        return 0 if out["ok"] else 1
     if argv == ["gate"]:
         out = check_gate()
         print(json.dumps(out, sort_keys=True))
         return 0 if out["ok"] else 1
     if argv != ["trailing"]:
-        raise SystemExit("usage: survey_route_child.py trailing | gate")
+        raise SystemExit("usage: survey_route_child.py trailing | gate | race")
     out = check_trailing()
     print(json.dumps(out, sort_keys=True))
     return 0 if out["equal"] and not out["mutant_equal"] else 1

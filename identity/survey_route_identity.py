@@ -20,7 +20,10 @@ cell or low end, T7 off) routed with the early look's declared kind, cutoff and 
   `A.rrs(cfg)`, its own facts and job blocks), row for row (a fill and its side do not depend on the stop);
 - **the stops and outcomes**: for every stop group of the route (the days its S1 stop is one value), the route's rows
   equal `design_trades.build_trades(rl3_spec(kind, cutoff, rule, stop))` on those days at the route's own w, column for
-  column (the whole frame: stop, costs, outcome, MAE, exit and kind at w);
+  column (the **trade frame**: stop, costs, outcome, MAE, exit and kind at w; the aux frame is not compared here);
+- **the stand-aside days**: the route's days stood aside, by reason (`no_trail`, `below_floor`, `above_cap`), equal
+  those computed apart from `survey_route.stops` -- `s1_range.add_trailing` of `s1_range.day_table` on the same
+  arrays (its own day kinds), `ny`'s trailing range times k against `lever_space.stop_caps()`, both edges inclusive;
 - **the record**: the rebuilt early look's `trades_sha256` (`search_cut.trades_subhash` of its padded table), trade
   count and counts equal those its committed result records (`results/early_look_rl3_pd_fade.csv.manifest.json`), so
   the reference is the one that run read.
@@ -171,10 +174,31 @@ def record_problems(early: Mapping[str, Any], record: Mapping[str, Any] | None) 
     return out
 
 
+def stand_aside_apart(hist: Any, cal: Any, *, k: float, fomc: Sequence[int], bls: Sequence[int], tick: float
+                      ) -> dict[str, int]:
+    """The NY AM slot's days stood aside, by reason, computed apart from `survey_route.stops`: Q-171's own trailing
+    range (`s1_range.add_trailing` of `s1_range.day_table` on the history's arrays, its day kinds by
+    `vol_descriptive.day_kind` with `fomc` and `bls`), `ny`'s times k, against `lever_space.stop_caps()`, edges
+    inclusive."""
+    from extended import lever_space as LS
+    from extended import s1_range as S1R
+
+    days = list(hist.days)
+    arrays = {d: hist.day(i) for i, d in enumerate(days)}
+    ref = S1R.add_trailing(S1R.day_table(pd.DataFrame({"day": days}), fomc=fomc, bls=bls, src=cal,
+                                         day_arrays=lambda g: arrays[str(g["day"].iloc[0])]))
+    t = ref["trail_ny"].to_numpy(float)
+    caps = LS.stop_caps()
+    x = float(k) * t
+    fin = np.isfinite(t)
+    return {"no_trail": int((~fin).sum()), "below_floor": int((fin & (x < int(caps["floor_ticks"]) * tick)).sum()),
+            "above_cap": int((fin & (x > int(caps["cap_ticks"]) * tick)).sum())}
+
+
 def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, kind: str, cutoff: int,
                    rule: Mapping[str, str], early: Mapping[str, Any], record: Mapping[str, Any] | None,
                    fee_for_stop: Callable[[int], float], tick_value: float, market_entry_ticks: float, tick: float,
-                   route_side: str | None = None) -> dict[str, Any]:
+                   fomc: Sequence[int] = (), bls: Sequence[int] = (), route_side: str | None = None) -> dict[str, Any]:
     """I-2 on a given space and history (the module docstring). `early` is `early_look.build`'s output, `record` its
     committed result's parameters (or None: then I-2 does not hold). `route_side` plants a side rule on the route
     alone (a light test's fault); the references keep the declared rule."""
@@ -227,8 +251,11 @@ def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, ki
                 ref.trades.reset_index(drop=True)):
             bad_groups.append(s)
     rec = record_problems(early, record)
-    holds = bool(fills and groups and not bad_groups and not rec)
-    return {"part": "route", "holds": holds, "fills_equal": bool(fills), "stop_groups": len(groups),
+    apart = stand_aside_apart(hist, cal, k=float(rt.slots[0].k), fomc=fomc, bls=bls, tick=tick)
+    aside = dict(out.counts[SLOT]["stand_aside"]) == apart
+    holds = bool(fills and groups and not bad_groups and not rec and aside)
+    return {"part": "route", "holds": holds, "fills_equal": bool(fills), "stand_aside_equal": bool(aside),
+            "stand_aside_apart": apart, "stop_groups": len(groups),
             "stop_groups_unequal": bad_groups[:10], "record_problems": rec, "route_trades": int(len(out.trades)),
             "early_trades_on_route_days": int(len(ef)), "early_trades": int(len(early_fills(early))),
             "route_days": len(traded), "stand_aside": out.counts[SLOT]["stand_aside"], "k": rt.slots[0].k, "w": w,
@@ -307,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
             results.append(route_identity(sp, hist, kinds, cal, kind=EL.KIND, cutoff=int(EL.CUTOFF), rule=EL.RULE,
                                           early=early, record=record, fee_for_stop=fee, tick_value=tv,
                                           market_entry_ticks=float(cfg["slip_ticks"]),
-                                          tick=float(cfg["contract"]["tick"])))
+                                          tick=float(cfg["contract"]["tick"]), fomc=sorted(fomc), bls=sorted(bls)))
     holds = bool(results) and all(r.get("holds") for r in results)
     print(json.dumps({"identity": "Q-215 survey route", "holds": holds, "parts": results,
                       "seconds": round(time.perf_counter() - t0, 1)}, sort_keys=True, default=str))

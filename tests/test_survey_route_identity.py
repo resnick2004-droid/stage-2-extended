@@ -98,6 +98,29 @@ def test_i2_holds_on_the_early_looks_cell(toy, sp1):
     assert ok["route_trades"] > 5 and ok["route_trades"] == ok["early_trades_on_route_days"]
     assert ok["stop_groups"] > 3 and ok["stop_groups_unequal"] == []
     assert ok["early_trades"] > ok["route_trades"]                    # the first twenty days stand aside (no T(d))
+    assert ok["stand_aside_equal"] is True and ok["stand_aside_apart"]["no_trail"] >= 20
+
+
+def test_i2s_stand_aside_count_fails_on_a_planted_stop_rule(toy, sp1, monkeypatch):
+    """m-3: the route's floor planted higher (its stand-aside rule, not the trailing range): the days it stands aside
+    no longer equal those computed apart from `survey_route.stops`."""
+    import inspect
+    import textwrap
+
+    from extended import survey_route as SR
+
+    src = textwrap.dedent(inspect.getsource(SR.stop_on))
+    old = 'if x < int(caps["floor_ticks"]) * tick:'
+    assert src.count(old) == 1
+    ns: dict = {}
+    exec(compile("from __future__ import annotations\n" + src.replace(old, 'if x < (int(caps["floor_ticks"]) + 60) * '
+                                                                            'tick:'), SR.__file__, "exec"),
+         SR.__dict__, ns)
+    monkeypatch.setattr(SR, "stop_on", ns["stop_on"])
+    cutoff = int(ID._early_look().CUTOFF)
+    early = _early(toy, cutoff)
+    bad = _run(toy, sp1, cutoff=cutoff, early=early, record=_record(early))
+    assert bad["holds"] is False and bad["stand_aside_equal"] is False, bad
 
 
 def test_i2s_fill_comparison_fails_on_a_planted_route_fault(toy, sp1):

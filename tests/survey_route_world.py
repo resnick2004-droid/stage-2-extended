@@ -4,8 +4,9 @@ bars (`extended/synthetic_bars.py`) and a synthetic void calendar (every overnig
 bar store, no result file, no held-out day.
 
 Seeds, named by role (searched on 2026-11-27 over every ref, every worktree, the main tree and the vendored snapshot:
-no other token of either): `SEED_ROUTE_BARS` the toys' bars; `SEED_ROUTE_SHIFT` the shift test's arbitrary values,
-the k-th cut taking the k-th child (`numpy.random.SeedSequence(SEED_ROUTE_SHIFT).spawn`).
+no other token of any of them): `SEED_ROUTE_BARS` the toys' bars; `SEED_ROUTE_SHIFT` the shift test's arbitrary values,
+the k-th cut taking the k-th child (`numpy.random.SeedSequence(SEED_ROUTE_SHIFT).spawn`);
+`SEED_ROUTE_COINS` the race's coin field in the end-to-end check (`survey_route_child.py race`).
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ from extended import walker as W
 
 SEED_ROUTE_BARS = 4215071
 SEED_ROUTE_SHIFT = 4215072
+SEED_ROUTE_COINS = 4215073
 START, END = date(2021, 1, 4), date(2021, 4, 30)          # a roll (03-12) and the US clock change (03-14) inside
 #: the tests' stand-in for S1's reading: k ranges per lever session (multiples of the trailing range)
 K_RANGES = {"evening": (0.8, 4.0), "asia": (0.3, 2.0), "london": (0.2, 1.5), "ny_am": (0.05, 0.6),

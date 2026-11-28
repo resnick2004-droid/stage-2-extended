@@ -45,6 +45,7 @@ from extended import triggers as T  # noqa: E402
 from extended import vol_descriptive as V  # noqa: E402
 from extended import walker as W  # noqa: E402
 
+import survey_route_policies as PL  # noqa: E402
 import survey_route_world as RW  # noqa: E402  (tests/ is on sys.path under pytest's rootdir)
 
 
@@ -480,32 +481,135 @@ def test_every_taken_trade_was_read_at_its_own_w(world, built):
     assert m(bad, own) == len(bad)                                          # the mutant takes the wrong R
 
 
-def test_the_policy_must_read_every_trade_at_its_own_w(sp, world, built):
-    """B-1 (b), the single-component case: padded to the policy's R by `zero_edge_decomposition.pad`'s rule, its
-    trades are live at its own w, so a policy asking for that w alone takes them, and admitted; a policy asking for
-    another R would leave them NaN and untaken, and is refused; several components' w under one fixed-leaf policy
-    are refused."""
+@pytest.fixture(scope="module")
+def one_w(sp, world):
+    """One-component tables: RL3 at w = 1.5, and at w = 1 (where `r_1` is every trade's own outcome)."""
+    out = {}
+    for w in (1.5, 1.0):
+        d = RW.with_slot(sp, RW.base_point(sp), "ny_am.0", T1="rl3", T4=None, T5=SS.TICKET, first=30, last=120,
+                         S1=0.2, S2=w)
+        out[w] = SR.build(_route(sp, d), world["hist"], **RW.build_kw(world["hist"], world["cal"]))
+    return out
+
+
+def test_the_policy_must_read_every_trade_at_its_own_w(built, one_w):
+    """B-1 (b), (c2): the policy's own leaves against each trade's own w. A one-component design (w = 1.5) is admitted
+    under leaves at its w, with a flip leaf exempt; refused under the planted mixed policy (a combine leaf at its w, a
+    funded leaf at rr=None -- the pnl channel, NaN off w = 1), a leaf at another R, a collect leaf and a policy with no
+    trading leaf; at w = 1 the rr=None leaf reads its own outcome and is admitted. Three components' w are refused."""
+    one, one1 = one_w[1.5], one_w[1.0]
     rt, out = built
-    d = RW.with_slot(sp, RW.base_point(sp), "ny_am.0", T1="rl3", T4=None, T5=SS.TICKET, first=30, last=120,
-                     S1=0.2, S2=1.5)
-    one = SR.build(_route(sp, d), world["hist"], **RW.build_kw(world["hist"], world["cal"]))
-    assert one.rr_grid == (1.5,) and len(one.trades) > 5
-    SR.check_policy_reads([1.5], one)
-    assert one.trades["r_1.5"].notna().all()                                 # at its own w every trade is offered
-    for asks in ([1.0], [1.0, 1.5], [1.5, 2.0]):
-        padded = one.trades.copy()
-        for R in asks:                                                      # pad's rule: an R not carried is NaN
-            for c in ("r", "mae", "exit_t"):
-                if f"{c}_{R:g}" not in padded.columns:
-                    padded[f"{c}_{R:g}"] = np.nan
-        assert any(padded[f"r_{R:g}"].isna().all() for R in asks)          # a leaf at another R takes none
-        with pytest.raises(SR.RouteRefused, match="padded to NaN and never taken"):
-            SR.check_policy_reads(asks, one)
-    with pytest.raises(SR.RouteRefused, match="never taken"):
-        SR.check_policy_reads([1.0, 1.5, 2.0], out)                         # three w, one fixed-leaf policy
-    tail = " or any(abs(R - ws[0]) > RR_TOL for R in asks):"
-    m = _edit("check_policy_reads", "if not asks or len(ws) != 1" + tail, "if not asks or len(ws) != 1:")
-    m([1.0], one)                                                           # the mutant admits a policy at another R
+    L = PL.Leaf
+    ok = SR.check_policy_reads(PL.policy(L("c", 500.0, 1.5), L("f", 400.0, 1.5)), one)
+    assert ok["reads"] == ["c", "f"] and ok["flip_exempt"] == [] and one.trades["r_1.5"].notna().all()
+    flip = SR.check_policy_reads(PL.policy(L("c", 500.0, 1.5), L("flip", 300.0, 3.0, source="flip")), one)
+    assert flip["reads"] == ["c"] and flip["flip_exempt"] == ["flip"]          # a flip leaf reads no table
+    sits = SR.check_policy_reads(PL.policy(L("c", 500.0, 1.5), L("sit", 0.0, None, max_trades=0)), one)
+    assert sits["reads"] == ["c"]                                              # a sitting leaf trades nothing
+    mixed = PL.policy(L("c", 500.0, 1.5), L("f", 400.0, None))
+    cases = ((mixed, "pnl channel"), (PL.policy(L("c", 500.0, 1.0), L("f", 400.0, 1.5)), "asks for R 1.0"),
+             (PL.policy(L("c", 500.0, 1.5), L("k", 400.0, None, source="collect")), "collect leaf"),
+             (PL.policy(L("c", 0.0, 1.5, max_trades=0), L("f", 0.0, None, abandon=True)), "no trading leaf"))
+    for pol, words in cases:
+        with pytest.raises(SR.RouteRefused, match=words):
+            SR.check_policy_reads(pol, one)
+    assert one1.trades["r_1"].notna().all()                                    # at w = 1, r_1 is the own outcome
+    assert SR.check_policy_reads(PL.policy(L("c", 500.0, 1.0), L("f", 400.0, None)),
+                                 one1)["reads"] == ["c", "f"]
+    with pytest.raises(SR.RouteRefused, match="components' w differ"):
+        SR.check_policy_reads(PL.policy(L("c", 500.0, 1.5), L("f", 400.0, 1.5)), out)
+    with pytest.raises(SR.RouteRefused, match="not a risk policy"):
+        SR.check_policy_reads([1.5], one)                                      # round 1's float list: refused
+    # the mutants: round 1's blind spot (a leaf without an R skipped), the flip exemption removed, several w admitted
+    m = _edit("check_policy_reads", 'refuse_pnl_reader(f"{where} at rr=None (the log\'s own outcome)", rt_trades)',
+              "continue")
+    assert m(mixed, one)["reads"] == ["c"]                                     # the mixed policy let through
+    mf = _edit("check_policy_reads", "if src == FLIP_SOURCE:", "if False:")
+    with pytest.raises(SR.RouteRefused, match="unknown leaf source"):
+        mf(PL.policy(L("c", 500.0, 1.5), L("flip", 300.0, 3.0, source="flip")), one)
+    mw = _edit("check_policy_reads", "if len(ws) != 1:", "if False:")
+    assert mw(PL.policy(L("c", 500.0, 1.0), L("f", 400.0, 1.0)), out)["reads"] == ["c", "f"]
+
+
+def _acct(script, rt, cls=PL.TierSizedDraw, rr=1.5):
+    tally: dict = {}
+    draw = SR.AccountingDraw(cls(list(script), _rr=rr), tally, rt)
+    for _ in script:
+        draw(1, 0, 0, np.array([1000.0]))
+    return tally
+
+
+def test_the_race_accounts_for_every_offered_trade(one_w):
+    """B-1 (c2): every trade offered to a trading leaf is taken or stood aside by a named rule; a trade dropped with a
+    NaN outcome, or with no outcome at the state's R, refuses; a draw reading the pnl channel (not a `TierSizedDraw`,
+    or one at rr=None) refuses off w = 1 and is admitted at w = 1. Each refusal's mutant lets its case through."""
+    one, one1 = one_w[1.5], one_w[1.0]
+    t = _acct(["none", "taken", "stood_aside", "unsized", "taken"], one)
+    assert t == {"no_trade": 1, "offered": 4, "taken": 2, "stood_aside": 1, "unsized": 1}
+    for case, words in (("nan", "NaN outcome"), ("no_outcome", "no outcome at the state's R")):
+        with pytest.raises(SR.RouteRefused, match=words):
+            _acct(["taken", case], one)
+    with pytest.raises(SR.RouteRefused, match="SharedDayDraw reads the vendored pnl channel"):
+        _acct(["taken"], one, cls=PL.SharedDayDraw)
+    with pytest.raises(SR.RouteRefused, match="rr=None reads the vendored pnl channel"):
+        _acct(["taken"], one, rr=None)
+    assert _acct(["taken"], one1, cls=PL.SharedDayDraw)["taken"] == 1         # at w = 1 the channel is the own one
+    assert _acct(["taken"], one1, rr=None)["taken"] == 1
+    real = SR.AccountingDraw.__call__
+    for line, script, kw, words in (("if not math.isfinite(pnl):", ["nan"], {}, "NaN outcome"),
+                                    ('if d["no_outcome"]:', ["no_outcome"], {}, "no outcome at the state's R"),
+                                    ('if getattr(inner, "_rr", 0.0) is None:', ["taken"], {"rr": None}, "rr=None")):
+        src = textwrap.dedent(inspect.getsource(real))
+        assert src.count(line) == 1, line
+        ns: dict = {}
+        exec(compile("from __future__ import annotations\n" + src.replace(line, "if False:"), SR.__file__, "exec"),
+             SR.__dict__, ns)
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setattr(SR.AccountingDraw, "__call__", ns["__call__"])
+            try:
+                _acct(script, one, **kw)
+                refused = False
+            except SR.RouteRefused as e:
+                refused = words in str(e)
+            assert not refused, line                                           # the mutant no longer refuses so
+    src = textwrap.dedent(inspect.getsource(SR.AccountingDraw.__init__))
+    line = 'if type(inner).__name__ != "TierSizedDraw":'
+    ns = {}
+    exec(compile("from __future__ import annotations\n" + src.replace(line, "if False:"), SR.__file__, "exec"),
+         SR.__dict__, ns)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(SR.AccountingDraw, "__init__", ns["__init__"])
+        assert _acct(["taken"], one, cls=PL.SharedDayDraw)["taken"] == 1
+
+
+def test_the_route_never_hands_its_table_to_a_pnl_reader(one_w):
+    """m-2: `route_simulate` refuses `outcome="vendored"` off w = 1 (before any engine is built), and its mutant
+    goes on to the engine."""
+    one = one_w[1.5]
+    with pytest.raises(SR.RouteRefused, match="outcome='vendored' reads the vendored pnl channel"):
+        SR.route_simulate(one, [], {}, {}, 0, (0,), 1, dates=(), outcome="vendored")
+    m = _edit("route_simulate", 'if kw.get("outcome", "race") == "vendored":', "if False:")
+    with pytest.raises(Exception) as e:                                       # the mutant reaches the policy check
+        m(one, [], {"path": {"risk_policy": None}}, {}, 0, (0,), 1, dates=(), outcome="vendored")
+    assert "outcome='vendored'" not in str(e.value)
+    with pytest.raises(SR.RouteRefused, match="gate.mean_r reads"):
+        SR.refuse_pnl_reader("gate.mean_r", one)
+    SR.refuse_pnl_reader("gate.mean_r", one_w[1.0])                           # at w = 1: admitted
+
+
+def test_the_engine_takes_the_one_component_design_at_its_own_w():
+    """B-1 (c2) end to end (a child process, the vendored engine on `early_look`'s toy job): the trades are taken,
+    every lane's own log passes `check_taken_rr` (its records moved off the own w, or off the table, refused), the
+    vendored `no_outcome` is 0 and nothing is dropped with a NaN; the planted mixed policy is refused, round 1's float
+    check admits it; a combine leaf at rr=None run past the policy check is refused by the accounting."""
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "survey_route_child.py"), "race"], cwd=ROOT,
+                       capture_output=True, text=True, encoding="utf-8", timeout=900)
+    lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
+    assert r.returncode == 0 and lines, r.stderr[-3000:]
+    out = json.loads(lines[-1])
+    assert out["ok"] is True and out["taken"] > 0 and sum(out["logged"]) >= out["taken"], out
+    assert out["no_outcome"] == 0 and out["nan_dropped"] == 0 and all(out["log_refusals"].values()), out
+    assert out["mixed_refused"] and out["round1_admits_mixed"] and out["accounting_refused"], out
 
 
 # ------------------------------------------------------------------------------------------------ the minor findings
@@ -743,3 +847,21 @@ def test_mixed_stops_and_fees_go_through_the_vendored_pad_and_gate_blocks():
     out = json.loads(lines[-1])
     assert out["ok"] is True and out["aligned"] is True and out["problems"] == [], out
     assert out["stops"] > 10 and out["fees"] > 10 and len(out["control_caught"]) >= 2, out
+
+
+def test_a_tree_without_w42_r2_fails_the_survey_world_never_skips(tmp_path, monkeypatch):
+    """m-5 (the red team's, round 2): `tests/survey_world.py` on a tree missing a W42-R2 file fails (`pytest.fail`),
+    never skips; the mutant that skips is told apart."""
+    import survey_world as SW
+
+    monkeypatch.setattr(SW, "_W42", None)
+    monkeypatch.setattr(SW, "ROOT", tmp_path)
+    with pytest.raises(pytest.fail.Exception, match="never skips"):
+        SW.load_w42(patch_shas=False)
+    src = textwrap.dedent(inspect.getsource(SW.load_w42))
+    assert src.count("pytest.fail(") == 1
+    ns: dict = {}
+    exec(compile("from __future__ import annotations\n" + src.replace("pytest.fail(", "pytest.skip(").replace(
+        ", pytrace=False)", ")"), SW.__file__, "exec"), SW.__dict__, ns)
+    with pytest.raises(pytest.skip.Exception):                               # the mutant skips: not a failure
+        ns["load_w42"](patch_shas=False)
