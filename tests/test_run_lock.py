@@ -53,3 +53,37 @@ def test_set_pid_only_for_the_holder(lock):
     assert L.main(["set-pid", "--job", "other", "--pid", "1"]) == 3
     assert L.main(["set-pid", "--job", "j1", "--pid", "42", "--log", "x.log"]) == 0
     assert json.loads(lock.read_text())["pid"] == 42
+
+
+# Q-229: the lock on macOS -------------------------------------------------------------------------------------------
+
+VM_STAT = """Mach Virtual Memory Statistics: (page size of 16384 bytes)
+Pages free:                               65536.
+Pages active:                            400000.
+Pages inactive:                          131072.
+Pages speculative:                        65536.
+Pages throttled:                              0.
+Pages wired down:                        200000.
+"""
+
+
+def test_darwin_memory_read_from_vm_stat():
+    # (65536 + 131072 + 65536) pages x 16 KiB = 4 GiB; active and wired pages are not available
+    assert L._darwin_available_gb(VM_STAT) == pytest.approx(4.0)
+
+
+def test_darwin_memory_unreadable_is_none():
+    assert L._darwin_available_gb("no page size here") is None
+    assert L._darwin_available_gb(VM_STAT.replace("Pages inactive", "Pages gone")) is None
+
+
+def test_darwin_dispatch(monkeypatch):
+    monkeypatch.setattr(L.sys, "platform", "darwin")
+    monkeypatch.setattr(L.os, "name", "posix")
+    monkeypatch.setattr(L, "_darwin_available_gb", lambda vm_stat=None: 5.5)
+    assert L.available_gb() == 5.5
+
+
+def test_unknown_memory_refuses(lock, monkeypatch):
+    monkeypatch.setattr(L, "available_gb", lambda: None)
+    assert take(mem=1.0) == 4 and not lock.exists()     # a heavy run never starts with its memory unchecked
