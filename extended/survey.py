@@ -9,9 +9,9 @@ the three-way runner, the playbook writer -- by a factory id (`module:function`)
 it reads (each by sha256); the survey builds each part itself (`build_part`). A part is **bound** by the sha256 of its
 id, parameters, gate keys, data and code (its module and every `extended` module it imports, transitively); the
 space's built digest is compared too, and the engine (Wave 3.4 with Q-192, `search_space`, `surrogate`, `proposer`,
-`plateau`) and the objective's code are bound the same way: `objective.code_sha256` covers `extended.wave42` and
-`extended.search_calendar`, **the driver itself** (`extended.survey`'s closure), the entry script
-`scripts/survey_run.py` and W42-R1's application script, each compared, never only recorded (Q-186 m-4). **Under a
+`plateau`) and the objective's code are bound the same way: `objective.code_sha256` covers `extended.wave42_r2`,
+`extended.wave42` and `extended.search_calendar`, **the driver itself** (`extended.survey`'s closure), the entry
+script `scripts/survey_run.py` and W42-R2's application script, each compared, never only recorded (Q-186 m-4). **Under a
 pin** the process is the entry script inside a clean run, invoked as exactly `python scripts/survey_run.py
 prereg/F-NN_<name>.md` -- no `-c`, `-m`, `-i`, `-X` or any other flag, not interactive, no `PYTHONSTARTUP`,
 `PYTHONINSPECT` or `PYTHONPATH` (`invocation_problems`, so a `runpy` wrapper refuses) -- the tree clean counting
@@ -26,35 +26,40 @@ The runner's reported `data` equals the runner's declared data key for key (a mi
 refuses). It is still the runner's own report: its own identity must cover its data report (a runner that declares
 and reports nothing passes `{} == {}`; Q-186b n-b).
 
-**One objective, W42-R1's as it stands** (C-1): the survey reads `results/` + `wave42.OUTPUT_NAME` (its `key` /
-`value_json` rows) by name, checks its sidecar (its file sha256, `scripts/wave42_apply.py`, the rule id, the values'
-digest, the rule module's raw-bytes sha256 equal to this tree's) and, under a pin, the decision row that pins its
-sha256. The composite and every limit are W42-R1's own public functions (`wave42.composite_per_seed`,
-`wave42.limit_estimate`, the ones `setting_rule` calls), never re-implemented here; the do-nothing floor is
-`null_journeys.floor`, self-checked at load against the public composite of `wave42.null_journeys(...)["do_nothing"]`,
-and decided by W42-R1's own comparator `wave42.above_floor` (Q-186 m-1); the one-sided check beside each limit is
-`wave42.limit_check`'s (normal z, B-10's form; Q-186 n-1). Every limit W42-R1 declares must be `set` (m-2); its
-`inactivity_guards` and each limit's vacuous flag are written beside the candidates. **Under a pin the values file's
-provenance is checked** (Q-186 m-3, Q-186b F-2): its `parameters.pinned_commit` is 40 hex and equals this checkout's
-pin (`wave42_apply.pinned_commit(ROOT)`, `config/w42_r1_pin.json`), its `git_commit` is 40 hex and clean (no `-dirty`),
-names a commit of this repository (`git cat-file -e`) that is an ancestor of the run's HEAD, and
-`wave42_apply.commit_problem(ROOT, pinned_commit, head=git_commit)` is None (the pinned commit, or a descendant
-touching none of W42-R1's imported files); and `extended.results.verify_result` passes. (That import puts the vendored
+**One objective, W42-R2's** (C-1; E-296, E-299: W42-R2 is the setting rule applied to H4, W42-R1 is never applied):
+the rule the survey calls (`_wave42()`, an `ObjectiveRule`) is W42-R2's module for its tables and limits
+(`W42_R2_NAMES`: `wave42_r2.RULE_ID`, `OUTPUT_NAME`, `LIMITS`, `REQUIRED`, `HORIZONS`, `limit_estimate`,
+`limit_check`, ... -- the headroom-corrected limits and the floor on the median `net_month_12`) and, for every other
+name, W42-R1's module, whose code W42-R2 runs unchanged (the composite, the do-nothing journey and floor, delta*, the
+calendars). The survey reads `results/` + `wave42_r2.OUTPUT_NAME` (its `key` / `value_json` rows) by name, checks its
+sidecar (its file sha256, `scripts/wave42_r2_apply.py`, the rule id, the values' digest, the rule module's raw-bytes
+sha256 -- `extended/wave42_r2.py`'s -- equal to this tree's) and, under a pin, the decision row that pins its sha256.
+The composite and every limit are the rule's own public functions (`composite_per_seed`, W42-R2's `limit_estimate`),
+never re-implemented here; the do-nothing floor is `null_journeys.floor`, self-checked at load against the public
+composite of `wave42.null_journeys(...)["do_nothing"]`, and decided by W42-R1's own comparator `wave42.above_floor`,
+which W42-R2 carries (Q-186 m-1); the one-sided check beside each limit is W42-R2's `limit_check` (normal z, B-10's
+form; Q-186 n-1). Every limit W42-R2 declares must be `set` (m-2); its `inactivity_guards` and each limit's vacuous
+flag are written beside the candidates. **Under a pin the values file's provenance is checked** (Q-186 m-3, Q-186b
+F-2): its `parameters.pinned_commit` is 40 hex and equals this checkout's pin (`wave42_r2_apply.pinned_commit(ROOT)`,
+`config/w42_r2_pin.json`), its `git_commit` is 40 hex and clean (no `-dirty`), names a commit of this repository
+(`git cat-file -e`) that is an ancestor of the run's HEAD, and `wave42_r2_apply.commit_problem(ROOT, pinned_commit,
+head=git_commit)` is None (the pinned commit, or a descendant touching none of W42-R2's imported files, W42-R1's
+among them); and `extended.results.verify_result` passes. (That import puts the vendored
 tree at the front of `sys.path` for the rest of the process: from then on a bare import in any part resolves to the
 vendored scripts first; every import of the survey's own is qualified `extended.`.) A malformed sidecar refuses as
 `SpecRefused` (n-5). The no-harm margin is the declaration's (`no_harm: {margin, margin_row}`): under a pin its row
 exists, comes before the declaration's pin row, names the no-harm margin, and the **first number after that name**
 (directly, or after `is`, `of`, `at`, `=` or `:`) is the margin itself -- a plain decimal, no sign, exponent or
-percent, equal as a float (Q-186 m-2, Q-186b F-3); the values' row names `W42-R1` (not `W42-R10`) and
-`w42_r1_values.csv` as a whole word and carries the file's sha256 as a whole 64-hex word.
+percent, equal as a float (Q-186 m-2, Q-186b F-3); the values' row names `W42-R2` (not `W42-R20`) and
+`w42_r2_values.csv` as a whole word and carries the file's sha256 as a whole 64-hex word.
 
 **The calendar** (M-3): the runner reports each start's date; the survey checks every one against the pinned search
 calendar (Q-197's `results/search_calendar.csv` through `extended.search_calendar.load_search_calendar`, its sha256
-`wave42.SEARCH_CALENDAR_SHA256`, its dates the ones W42-R1 was set on) and the protocol's blocks, and computes each
+`wave42.SEARCH_CALENDAR_SHA256`, its dates the ones W42-R2 was set on) and the protocol's blocks, and computes each
 start's sessions left itself, on W42-R1's definition (the calendar's sessions from the start to 2023-12-29, the start
 counted): a start whose horizon needs a session after 2023-12-29 is incomplete. The runner's values are checked as
-W42-R1 checks the baselines' (m-3): finite and inside `wave42.REQUIRED`'s ranges on each key's complete starts, and no
-unit paid before its first pass.
+W42-R1 checks the baselines' (m-3): finite and inside W42-R2's `REQUIRED` (`wave42_r2.REQUIRED`, W42-R1's keys and
+`net_month_12`) ranges on each key's complete starts, and no unit paid before its first pass.
 
 **The loop** (each step a function, so a test can mutate it): `draw_survey` (the survey's `begin` checks the
 protocol against the declaration's protocol sha256, Q-192); `read_design` (held-out first, F-4; then the report, the
@@ -92,8 +97,8 @@ search on real parts is refused, so every real cell is counted by a pinned run.
 - n-3, the baselines: nothing here ties the runner's naive-coin, P-14, P-15 and P-16 arms to H4's readings; the
   runner's own identity (CLAUDE.md: every new runner has its own identity) covers every baseline arm path for path,
   since every gap is measured against them.
-- n-7: `wave42.SEARCH_CALENDAR_SHA256` is filled at W42-R1's pin; until then a real-pin run refuses at
-  `load_calendar`, by design.
+- n-7: `wave42.SEARCH_CALENDAR_SHA256` (W42-R1's constant, read by W42-R2) is filled at W42-R1's pin; until then a
+  real-pin run refuses at `load_calendar`, by design.
 """
 from __future__ import annotations
 
@@ -108,6 +113,7 @@ import os
 import re
 import subprocess
 import sys
+import types
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
 from types import MappingProxyType
@@ -120,8 +126,8 @@ from extended import reader as R
 
 TASK = "Wave 5"
 ENGINE_COMMIT = "3452952"                               # Wave 3.4 with Q-192, Q-192b and rm3-b (1024 midpoints)
-W42_RULE = "W42-R1"
-W42_SCRIPT = "scripts/wave42_apply.py"
+W42_RULE = "W42-R2"                                     # E-296, E-299: the rule applied to H4; W42-R1 never is
+W42_SCRIPT = "scripts/wave42_r2_apply.py"                # W42-R2's application (pinned at 5ae351d, E-299)
 ENTRY_SCRIPT = "scripts/survey_run.py"
 DESIGN_ARM = "design"
 BASELINE_ROLE = "baseline"
@@ -182,7 +188,7 @@ class NotPinned(SurveyRefused):
 
 
 class SpecRefused(SurveyRefused):
-    """The declaration's survey-spec block, or W42-R1's result, is missing, malformed or off its form."""
+    """The declaration's survey-spec block, or W42-R2's result, is missing, malformed or off its form."""
 
 
 class PartRefused(SurveyRefused):
@@ -198,7 +204,7 @@ class HeldOutRow(SurveyRefused):
 
 
 class LimitDisagrees(SurveyRefused):
-    """W42-R1's own `limit_check` reads a limit otherwise than the survey's reading (Q-186 n-1): not one limit."""
+    """W42-R2's own `limit_check` reads a limit otherwise than the survey's reading (Q-186 n-1): not one limit."""
 
 
 class _Refused(Exception):
@@ -216,8 +222,9 @@ class _Refused(Exception):
 class RunOutput:
     """The three-way runner's report for one design on one protocol: `starts` each start's date (ISO, on the search
     calendar, increasing); `arms[arm][key]` a start-by-seed matrix for `DESIGN_ARM` and each baseline, every key
-    `wave42.REQUIRED` names and the gate's keys; `real_path[AS_TRADED | REFLECTED][key]` the design's real-path
-    readings -- `AS_TRADED` its trigger's own sides, `REFLECTED` the coin side on the as-walked (reflected) path, same
+    W42-R2's `REQUIRED` (`wave42_r2.REQUIRED`) names and the gate's keys; `real_path[AS_TRADED | REFLECTED][key]`
+    the design's real-path readings -- `AS_TRADED` its trigger's own sides, `REFLECTED` the coin side on the as-walked
+    (reflected) path, same
     fills, same seeds (CHARTER 3.8's exception) -- never the deciding reading; `side_source` where the playbook's sides
     come from (`TRIGGER`); `positions[path]` every `components.Position` of one (start, seed) path, across the user's
     accounts and firms; `data` the sha256 of every data file the run read (path relative to the repository); the
@@ -358,7 +365,7 @@ def engine_sha(E: Engine) -> str:
     return _digest({m.__name__: code_closure(m.__name__) for m in E.modules().values()})
 
 
-OBJECTIVE_MODULES = ("extended.wave42", "extended.search_calendar")
+OBJECTIVE_MODULES = ("extended.wave42_r2", "extended.wave42", "extended.search_calendar")
 DRIVER_MODULE = "extended.survey"
 
 
@@ -378,7 +385,7 @@ def w42_script_file() -> Path:
 
 def objective_code() -> dict[str, Any]:
     """What `objective.code_sha256` binds (m-4): the objective's modules, the driver's own closure, the entry script
-    and W42-R1's application script, each file by its LF sha256 (the application script `None` while it is not in the
+    and W42-R2's application script, each file by its LF sha256 (the application script `None` while it is not in the
     tree; a real pin then refuses at the values' provenance, which loads it)."""
     def lf(p: Path) -> str | None:
         return _lf_sha(p) if p.is_file() else None
@@ -586,7 +593,7 @@ def check_process(results_dir: Path, modules: Sequence[str], declaration: Path) 
         raise PartRefused(f"REFUSED: a pinned survey writes only under {ROOT / 'results'}, not {results_dir}")
     if os.path.normcase(str(driver_tree())) != os.path.normcase(str(ROOT.resolve())):
         raise PartRefused(f"REFUSED: the driver's tree {driver_tree()} is not the checkout {ROOT}: the bound entry "
-                          "script and W42-R1's script are the checkout's own (m-4)")
+                          f"script and {W42_RULE}'s script are the checkout's own (m-4)")
     return {"commit": R._commit(ROOT, "a pinned survey"), "entry_sha256": _raw_sha(main)}
 
 
@@ -691,7 +698,7 @@ def load_spec(raw: bytes | str) -> Spec:
                           "sha256")
     rule = pl["rule"]
     if not isinstance(rule, dict) or rule.get("margin") != DELTA_STAR or rule.get("side") != "worse":
-        raise SpecRefused("the plateau rule's margin is the word 'delta_star' (W42-R1's, never typed) and its side "
+        raise SpecRefused("the plateau rule's margin is the word 'delta_star' (the rule's, never typed) and its side "
                           "'worse' (n-c)")
     for k in PART_NAMES:
         b = parts[k]
@@ -791,7 +798,7 @@ def _num_literal(x: float) -> str:
     return json.dumps(x)
 
 
-VALUES_NAME = "w42_r1_values.csv"                        # W42-R1's OUTPUT_NAME, which the values' row names
+VALUES_NAME = "w42_r2_values.csv"                        # W42-R2's OUTPUT_NAME, which the values' row names
 _MARGIN_NAME = r"no[-_ ]harm[-_ ]margin"
 
 
@@ -840,8 +847,8 @@ def margin_row_carries(line: str, margin: float) -> bool:
 
 
 def values_row_carries(line: str, values_sha: str, values_name: str = VALUES_NAME) -> bool:
-    """Q-186 m-2, Q-186b F-3: the row names `W42-R1` (never `W42-R10`), its values file as a whole word (never
-    `old_w42_r1_values.csv.bak`) and carries the file's sha256 as a whole 64-hex word."""
+    """Q-186 m-2, Q-186b F-3: the row names `W42-R2` (never `W42-R20`), its values file as a whole word (never
+    `old_w42_r2_values.csv.bak`) and carries the file's sha256 as a whole 64-hex word."""
     return re.search(re.escape(W42_RULE) + r"(?!\d)", line) is not None and \
         re.search(r"(?<![\w.])" + re.escape(values_name) + r"(?![\w.])", line) is not None and \
         re.search(r"(?<![0-9a-f])" + re.escape(values_sha) + r"(?![0-9a-f])", line) is not None
@@ -849,7 +856,7 @@ def values_row_carries(line: str, values_sha: str, values_name: str = VALUES_NAM
 
 def check_rows(spec: Spec, pin_row: str, values_sha: str, fixture: bool, values_name: str = VALUES_NAME) -> None:
     """The margin's row and the values' row: each a row of this repository's log before the declaration's pin row, the
-    margin's naming the no-harm margin and carrying its number (`margin_row_carries`), the values' naming W42-R1 and
+    margin's naming the no-harm margin and carrying its number (`margin_row_carries`), the values' naming W42-R2 and
     its file and carrying the file's sha256 (`values_row_carries`). Under a fixture pin a row may be `FIXTURE_ROW`;
     any other row is checked as under a pin."""
     text = _decisions()
@@ -857,7 +864,7 @@ def check_rows(spec: Spec, pin_row: str, values_sha: str, fixture: bool, values_
     for what, rid, carries, must in (
             ("the no-harm margin's", spec.margin_row, lambda ln: margin_row_carries(ln, spec.no_harm_margin),
              f"the no-harm margin {_num_literal(spec.no_harm_margin)}"),
-            ("W42-R1's values'", spec.values_row, lambda ln: values_row_carries(ln, values_sha, values_name),
+            (f"{W42_RULE}'s values'", spec.values_row, lambda ln: values_row_carries(ln, values_sha, values_name),
              f"{W42_RULE}, {values_name} and sha256 {values_sha}")):
         if rid == FIXTURE_ROW:
             if not fixture:
@@ -1033,7 +1040,7 @@ def lock_problem(start: Path | None = None, env: Mapping[str, str] | None = None
 
 @dataclass(frozen=True)
 class Objective:
-    """W42-R1's pinned values as the survey reads them (the module docstring)."""
+    """W42-R2's pinned values as the survey reads them (the module docstring)."""
 
     values: Mapping[str, Any]
     values_sha256: str
@@ -1045,21 +1052,57 @@ class Objective:
     guards: Mapping[str, Any]
 
 
+#: the names the survey reads from W42-R2's module: its tables and its limits (the headroom-corrected values and the
+#: floor on the median `net_month_12`, E-296), and the public scoring path it re-exports; every other name the survey
+#: reads (the composite's tables, the null journeys, delta*'s constants, the calendars) is W42-R1's, whose code W42-R2
+#: runs unchanged (`wave42_r2`'s docstring: "one code path")
+W42_R2_NAMES = ("RULE_ID", "OUTPUT_NAME", "APPLY_SCRIPT", "LIMITS", "REQUIRED", "HORIZONS", "CONSTANTS",
+                "limit_estimate", "limit_check", "limit_per_seed_sd", "composite_per_seed", "null_composites",
+                "do_nothing_floor", "above_floor", "values_from_rows")
+
+
+class ObjectiveRule(types.ModuleType):
+    """W42-R2 as the survey calls it (the module docstring): `W42_R2_NAMES` from `extended.wave42_r2`, every other
+    name looked up on `extended.wave42` at call time (so a value set there -- a pinned calendar sha -- is the one read).
+    Its `__file__` is W42-R2's module, whose raw sha256 the values' sidecar records."""
+
+    def __init__(self, r2: Any, r1: Any) -> None:
+        super().__init__("extended.survey.objective_rule", "W42-R2 over W42-R1's code (E-296, E-299)")
+        self.__file__ = r2.__file__
+        self._r2, self._r1 = r2, r1
+        for n in W42_R2_NAMES:
+            setattr(self, n, getattr(r2, n))
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("__") or name in ("_r1", "_r2") or name in W42_R2_NAMES:
+            raise AttributeError(f"{name}: a W42-R2 name never falls back to W42-R1's" if name in W42_R2_NAMES
+                                 else name)
+        return getattr(self._r1, name)
+
+
+_RULE: list[Any] = []
+
+
 def _wave42() -> Any:
-    from extended import wave42
-    return wave42
+    """The objective's rule, W42-R2 (`ObjectiveRule`), one object a process."""
+    if not _RULE:
+        from extended import wave42, wave42_r2
+        if wave42_r2.PARENT_RULE_ID != wave42.RULE_ID or wave42_r2.RULE_ID != W42_RULE:
+            raise PartRefused(f"REFUSED: extended.wave42_r2 is not {W42_RULE} over {wave42.RULE_ID}")
+        _RULE.append(ObjectiveRule(wave42_r2, wave42))
+    return _RULE[0]
 
 
 def read_values(path: Path, W: Any | None = None) -> dict[str, Any]:
-    """W42-R1's output, `key` / `value_json` rows (its section 9.1 row schema), into its values dict by W42-R1's own
-    `values_from_rows`."""
+    """W42-R2's output, `key` / `value_json` rows (W42-R1's section 9.1 row schema, which W42-R2 keeps), into its
+    values dict by the rule's own `values_from_rows`."""
     import csv as _csv
     import io
 
     W = W or _wave42()
     rows = list(_csv.DictReader(io.StringIO(path.read_bytes().decode("utf-8"))))
     if not rows or set(rows[0]) != {"key", "value_json"}:
-        raise SpecRefused(f"REFUSED: {path.name} is not W42-R1's output: its columns are key and value_json")
+        raise SpecRefused(f"REFUSED: {path.name} is not {W42_RULE}'s output: its columns are key and value_json")
     try:
         return W.values_from_rows(rows)
     except ValueError as e:
@@ -1078,12 +1121,12 @@ def _sidecar(side: Path) -> dict[str, Any]:
 
 
 def _w42_apply() -> Any:
-    """W42-R1's application script, loaded by its path in this checkout, for its own `commit_problem` (m-3)."""
+    """W42-R2's application script, loaded by its path in this checkout, for its own `commit_problem` (m-3)."""
     p = ROOT / W42_SCRIPT
     if not p.is_file():
         raise PartRefused(f"REFUSED: {W42_SCRIPT} is not in this checkout: the values' provenance is checked by its "
                           "own commit rule")
-    spec = importlib.util.spec_from_file_location("_survey_wave42_apply", p)
+    spec = importlib.util.spec_from_file_location("_survey_wave42_r2_apply", p)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -1099,7 +1142,7 @@ def _verify_result(p: Path) -> tuple[bool, str]:
 
 
 _SHA40 = re.compile(r"[0-9a-f]{40}")
-W42_PIN_FILE = "config/w42_r1_pin.json"                 # wave42_apply.PIN_FILE: the checkout's W42-R1 pin
+W42_PIN_FILE = "config/w42_r2_pin.json"                 # wave42_r2_apply.PIN_FILE: the checkout's W42-R2 pin
 
 
 def _git_in(repo: Path, *args: str) -> subprocess.CompletedProcess:
@@ -1107,7 +1150,7 @@ def _git_in(repo: Path, *args: str) -> subprocess.CompletedProcess:
 
 
 def head_pinned_commit(repo: Path) -> str | None:
-    """Q-186c n-1: W42-R1's pinned commit as the run's commit holds it (`git show HEAD:config/w42_r1_pin.json`, never
+    """Q-186c n-1: W42-R2's pinned commit as the run's commit holds it (`git show HEAD:config/w42_r2_pin.json`, never
     the working tree, which `--skip-worktree` could hide from `git status`); None when HEAD has no pin file;
     `SpecRefused` when it is malformed (not JSON, not an object, its `commit` not 40 hex)."""
     r = _git_in(Path(repo), "show", f"HEAD:{W42_PIN_FILE}")
@@ -1126,12 +1169,12 @@ def head_pinned_commit(repo: Path) -> str | None:
 def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: Path | None = None,
                                apply: Any = None, verify: Callable[[Path], tuple[bool, str]] | None = None
                                ) -> list[str]:
-    """Q-186 m-3, Q-186b F-2, under a pin: W42-R1's values file is a pinned application -- `parameters.pinned_commit`
-    40 hex and equal to the run's commit's pin (`head_pinned_commit`: HEAD's `config/w42_r1_pin.json`); the
+    """Q-186 m-3, Q-186b F-2, under a pin: W42-R2's values file is a pinned application -- `parameters.pinned_commit`
+    40 hex and equal to the run's commit's pin (`head_pinned_commit`: HEAD's `config/w42_r2_pin.json`); the
     manifest's `git_commit` 40 hex and clean (no `-dirty`), a commit of this repository (`git cat-file -e`) and an
-    ancestor of the run's HEAD (`git merge-base --is-ancestor`); `wave42_apply.commit_problem(repo, pinned_commit,
-    head=git_commit)` None (the pinned commit itself, or a descendant touching none of W42-R1's imported files: the
-    rule's own test) -- and `extended.results.verify_result` passes. Empty when all hold."""
+    ancestor of the run's HEAD (`git merge-base --is-ancestor`); `wave42_r2_apply.commit_problem(repo, pinned_commit,
+    head=git_commit)` None (the pinned commit itself, or a descendant touching none of W42-R2's imported files, W42-R1's
+    among them: the rule's own test) -- and `extended.results.verify_result` passes. Empty when all hold."""
     params = man.get("parameters") if isinstance(man.get("parameters"), Mapping) else {}
     pin, head = params.get("pinned_commit"), man.get("git_commit")
     out = []
@@ -1154,7 +1197,7 @@ def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: 
         else:
             why = A.commit_problem(repo_, pin, head=head)
             if why is not None:
-                out.append(f"W42-R1's commit rule refuses it: {why}")
+                out.append(f"{W42_RULE}'s commit rule refuses it: {why}")
     ok, msg = (verify or _verify_result)(Path(csv_path))
     if not ok:
         out.append(f"verify_result: {msg}")
@@ -1162,23 +1205,23 @@ def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: 
 
 
 def load_objective(W: Any) -> Objective:
-    """W42-R1's result file by name, its sidecar checked (C-1), its public functions required, its floor self-checked,
+    """W42-R2's result file by name, its sidecar checked (C-1), its public functions required, its floor self-checked,
     every limit set (m-2)."""
     missing = [n for n in W42_PUBLIC if not callable(getattr(W, n, None))]
     eps = getattr(W, "DO_NOTHING_EPS", None)
     if isinstance(eps, bool) or not isinstance(eps, (int, float)) or not (math.isfinite(eps) and eps > 0):
         missing.append("DO_NOTHING_EPS")
     if missing:
-        raise PartRefused(f"REFUSED: W42-R1's public functions {missing} are not on this commit (the survey calls the "
+        raise PartRefused(f"REFUSED: {W42_RULE}'s public functions {missing} are not on this commit (the survey calls the "
                           "rule's own code, never a copy of it)")
     p = ROOT / "results" / W.OUTPUT_NAME
     side = Path(f"{p}.manifest.json")
     if not p.is_file() or not side.is_file():
-        raise SpecRefused(f"REFUSED: W42-R1's output {p.name} and its sidecar are both required")
+        raise SpecRefused(f"REFUSED: {W42_RULE}'s output {p.name} and its sidecar are both required")
     man = _sidecar(side)
     params = man.get("parameters") or {}
     if not isinstance(params, dict):
-        raise SpecRefused(f"REFUSED: W42-R1's sidecar {side.name}: its parameters are not a JSON object")
+        raise SpecRefused(f"REFUSED: {W42_RULE}'s sidecar {side.name}: its parameters are not a JSON object")
     values = read_values(p, W)
     rule_sha = _raw_sha(inspect.getsourcefile(W))
     for what, got, want in (("its file's sha256", man.get("sha256"), _raw_sha(p)),
@@ -1187,7 +1230,7 @@ def load_objective(W: Any) -> Objective:
                             ("the rule module's sha256 (raw bytes)", params.get("rule_module_sha256"), rule_sha),
                             ("its values' digest", params.get("values_sha256"), W.Wave42Values(values).digest())):
         if got != want:
-            raise SpecRefused(f"REFUSED: W42-R1's output: {what} is {str(got)[:16]!r}, not {str(want)[:16]!r}")
+            raise SpecRefused(f"REFUSED: {W42_RULE}'s output: {what} is {str(got)[:16]!r}, not {str(want)[:16]!r}")
     if values.get("rule_id") != W42_RULE or W.RULE_ID != W42_RULE:
         raise SpecRefused(f"REFUSED: the values are not {W42_RULE}'s")
     try:
@@ -1195,21 +1238,21 @@ def load_objective(W: Any) -> Objective:
         lims = {x["name"]: x for x in values["limits"]["values"]}
         unset = sorted(n for n in names if n not in lims or lims[n].get("status") != "set")
         if unset:
-            raise SpecRefused(f"REFUSED: W42-R1's limits {unset} are not set: a limit is never dropped (m-2)")
+            raise SpecRefused(f"REFUSED: {W42_RULE}'s limits {unset} are not set: a limit is never dropped (m-2)")
         limits = tuple({"name": n, "direction": "<=" if lims[n]["direction"] == "ceiling" else ">=",
                         "bound": float(lims[n]["value"]), "vacuous": bool(lims[n].get("vacuous")),
                         "vacuous_reason": lims[n].get("vacuous_reason")}
                        for n in [lim.name for lim in W.LIMITS])
         nj = values["null_journeys"]
         if nj["floor"]["name"] != DO_NOTHING:
-            raise SpecRefused("REFUSED: W42-R1's floor is not the do-nothing journey's")
+            raise SpecRefused(f"REFUSED: {W42_RULE}'s floor is not the do-nothing journey's")
         ob = Objective(values, W.Wave42Values(values).digest(), float(values["delta_star"]["value"]), limits,
                        float(values["limits"]["check_level"]), float(nj["floor"]["value"]),
                        float(values["budgets"]["fee_unit"]), dict(values.get("inactivity_guards", {})))
     except (KeyError, TypeError, ValueError) as e:
-        raise SpecRefused(f"REFUSED: W42-R1's values lack {e}") from e
+        raise SpecRefused(f"REFUSED: {W42_RULE}'s values lack {e}") from e
     if not ob.delta > 0:
-        raise SpecRefused("REFUSED: W42-R1's delta* is above zero")
+        raise SpecRefused(f"REFUSED: {W42_RULE}'s delta* is above zero")
     horizon = max(W.HORIZONS)
     arm = {k: np.asarray([[float(x)]]) for k, x in W.null_journeys(ob.fee_unit)[DO_NOTHING].items()}
     for k in W.REQUIRED:
@@ -1217,15 +1260,15 @@ def load_objective(W: Any) -> Objective:
     got = float(np.asarray(W.composite_per_seed(values, [horizon], arm)).ravel()[0])
     rule = float(W.do_nothing_floor(values, ob.fee_unit))
     if abs(got - ob.floor) > FLOOR_SELF_CHECK or abs(rule - ob.floor) > FLOOR_SELF_CHECK:
-        raise SpecRefused(f"REFUSED: the public composite of the do-nothing journey is {got!r} (W42-R1's own "
+        raise SpecRefused(f"REFUSED: the public composite of the do-nothing journey is {got!r} (the rule's own "
                           f"do_nothing_floor {rule!r}), the values' floor {ob.floor!r}: the composite is not the "
                           "one the values were set with (C-1)")
     return ob
 
 
 def load_calendar(W: Any, values: Mapping[str, Any]) -> Any:
-    """The pinned search calendar (Q-197), through its loader, by `wave42.SEARCH_CALENDAR_SHA256`, its dates the ones
-    W42-R1 was set on (M-3)."""
+    """The pinned search calendar (Q-197), through its loader, by `wave42.SEARCH_CALENDAR_SHA256` (W42-R1's constant,
+    which W42-R2 reads), its dates the ones W42-R2 was set on (M-3)."""
     try:
         loader = importlib.import_module("extended.search_calendar").load_search_calendar
     except (ImportError, AttributeError) as e:
@@ -1237,22 +1280,23 @@ def load_calendar(W: Any, values: Mapping[str, Any]) -> Any:
         raise SpecRefused(f"REFUSED: {W.SEARCH_CALENDAR}'s sha256 is not the pinned one")
     dates = tuple(str(d) for d in cal.dates)
     if W.calendar_digest(dates) != values["h4"]["calendar_sha256"]:
-        raise SpecRefused("REFUSED: the search calendar is not the one W42-R1's values were set on")
+        raise SpecRefused(f"REFUSED: the search calendar is not the one {W42_RULE}'s values were set on")
     if not dates or dates[-1] != SEARCH_LAST:
         raise SpecRefused(f"REFUSED: the search calendar ends on {SEARCH_LAST}")
     if [int(cal.sessions_left(d)) for d in dates[:1] + dates[-1:]] != [len(dates), 1]:
-        raise SpecRefused("REFUSED: the calendar's sessions left are not W42-R1's (len - position, the start counted)")
+        raise SpecRefused("REFUSED: the calendar's sessions left are not the rule's (len - position, the start "
+                          "counted)")
     return cal
 
 
 def composite(ctx: "Context", arm: Mapping[str, Any], sl: Sequence[int]) -> np.ndarray:
-    """W42-R1's composite per seed (higher better), by its own public function."""
+    """The rule's composite per seed (higher better), by its own public function (W42-R1's, which W42-R2 keeps)."""
     return np.asarray(ctx.W.composite_per_seed(ctx.obj.values, list(sl), arm), float).ravel()
 
 
 def limit_value(ctx: "Context", arm: Mapping[str, Any], sl: Sequence[int], lim: Mapping[str, Any]
                 ) -> tuple[float, np.ndarray]:
-    """A limit's point estimate (W42-R1's `limit_estimate`: its declared statistic over its complete starts, pooled
+    """A limit's point estimate (W42-R2's `limit_estimate`: its declared statistic over its complete starts, pooled
     over seeds) and the same estimate seed by seed (each seed's column)."""
     W, v, name = ctx.W, ctx.obj.values, lim["name"]
     point = float(W.limit_estimate(v, list(sl), arm, name))
@@ -1353,11 +1397,11 @@ def sessions_left(ctx: Context, starts: Sequence[str]) -> np.ndarray:
 def _check_real_path(out: RunOutput, keys: set[str]) -> None:
     if set(out.real_path) != {AS_TRADED, REFLECTED} or any(not keys <= set(v) for v in out.real_path.values()):
         raise SurveyRefused(f"the runner reports exactly the real path's {AS_TRADED} and {REFLECTED} readings, each on "
-                            f"every key W42-R1 reads; got {sorted(out.real_path)}")
+                            f"every key {W42_RULE} reads; got {sorted(out.real_path)}")
 
 
 def validate_values(ctx: Context, name: str, arm: Mapping[str, Any], sl: np.ndarray) -> None:
-    """m-3: as W42-R1 checks the baselines': each key finite and inside `REQUIRED`'s range on its complete starts, and
+    """m-3: as the rule checks the baselines': each key finite and inside `REQUIRED`'s range on its complete starts, and
     no unit paid before its first pass. A NaN refuses under its own label."""
     W = ctx.W
     for key, (h, lo, hi) in W.REQUIRED.items():
@@ -1369,7 +1413,7 @@ def validate_values(ctx: Context, name: str, arm: Mapping[str, Any], sl: np.ndar
         if not np.isfinite(xe).all():
             raise SurveyRefused(f"the runner's {name} {key!r} is not finite (a NaN or an infinity) on E_{h} (m-3)")
         if (xe < lo).any() or (xe > hi).any():
-            raise SurveyRefused(f"the runner's {name} {key!r} lies outside W42-R1's range [{lo}, {hi}] (m-3)")
+            raise SurveyRefused(f"the runner's {name} {key!r} lies outside {W42_RULE}'s range [{lo}, {hi}] (m-3)")
     rW = sl >= W.W
     payout, first = np.asarray(arm["first_payout_days"], float)[rW], np.asarray(arm["first_pass_days"], float)[rW]
     paid = payout <= W.W
@@ -1391,7 +1435,7 @@ def _check_output(ctx: Context, out: Any, protocol: Any) -> np.ndarray:
     need = set(ctx.W.REQUIRED)
     missing = [a for a in (DESIGN_ARM,) + ctx.spec.baselines if a not in out.arms or not need <= set(out.arms[a])]
     if missing or not set(ctx.gate_keys) <= set(out.arms.get(DESIGN_ARM, {})):
-        raise SurveyRefused(f"the runner reports the design's and every baseline's arm on every key W42-R1 reads "
+        raise SurveyRefused(f"the runner reports the design's and every baseline's arm on every key {W42_RULE} reads "
                             f"and the gate's keys; incomplete: {missing or 'the gate keys'}")
     _check_real_path(out, need)
     shapes = {np.asarray(x).shape for arm in list(out.arms.values()) + list(out.real_path.values())
@@ -1576,7 +1620,7 @@ def beats_baselines(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[st
 
 def limits_inside(ctx: Context, reread: Mapping[str, Any], selection: Mapping[str, Any]) -> tuple[bool, dict]:
     """F-3, E-230: each limit's **re-read** point estimate inside its bound decides; beside it, never deciding, the
-    selection reading, W42-R1's vacuous flag and the one-sided check of crossing -- W42-R1's own `limit_check` (normal
+    selection reading, W42-R2's vacuous flag and the one-sided check of crossing -- W42-R2's own `limit_check` (normal
     z_(1 - level) at the values' `check_level`, B-10's form; Q-186 n-1) on the re-read run, whose estimate and inside
     verdict must equal the survey's exactly."""
     out, ok = {}, True
@@ -1587,7 +1631,7 @@ def limits_inside(ctx: Context, reread: Mapping[str, Any], selection: Mapping[st
         inside = v <= b if lim["direction"] == "<=" else v >= b
         chk = ctx.W.limit_check(ctx.obj.values, list(sl), arm, lim["name"], b, ctx.obj.check_level)
         if float(chk["estimate"]) != v or bool(chk["inside"]) != inside:
-            raise LimitDisagrees(f"W42-R1's limit_check reads {lim['name']} as {chk['estimate']!r} (inside "
+            raise LimitDisagrees(f"{W42_RULE}'s limit_check reads {lim['name']} as {chk['estimate']!r} (inside "
                                 f"{chk['inside']}), the survey {v!r} (inside {inside}): not one limit")
         out[lim["name"]] = {"value": v, "bound": b, "direction": lim["direction"], "inside": inside,
                             "selection_value": None if s is None else float(s.value),
@@ -1823,7 +1867,7 @@ def emit(ctx: Context, finalists: Sequence[Mapping[str, Any]], *, params: Mappin
                      "rounds, the re-reads, the baselines and the plateau checks (search years only)", **common)
     cpath, _ = write(_records_frame(ctx), f"{name}_candidates", description=f"{ctx.spec.prereg_id}: every "
                      "candidate of the finalist order rule, kept or refused and why; the floored cells as rank 0; "
-                     "W42-R1's inactivity guards and vacuous limits beside", **common)
+                     f"{W42_RULE}'s inactivity guards and vacuous limits beside", **common)
     out = []
     for i, f in enumerate(finalists, 1):
         text = str(ctx.playbook(dict(f["design"]))).replace("\r\n", "\n")
@@ -1933,7 +1977,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
     if not fixture:
         bad = values_provenance_problems(_sidecar(Path(f"{values_path}.manifest.json")), values_path)
         if bad:
-            raise SpecRefused(f"REFUSED: W42-R1's values file is not a pinned application (Q-186 m-3): {bad}")
+            raise SpecRefused(f"REFUSED: {W42_RULE}'s values file is not a pinned application (Q-186 m-3): {bad}")
     check_rows(spec, pin_row, _raw_sha(values_path), fixture, values_name=W.OUTPUT_NAME)
     cal = load_calendar(W, obj.values)
     parts = {k: build_part(spec.parts[k], fixture=fixture) for k in PART_NAMES}
@@ -1944,7 +1988,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
     limit_names = tuple(lim["name"] for lim in obj.limits)
     if E.SS.protocol_sha256(protocol, spec.reread_seeds, limit_names) != spec.protocol_sha256:
         raise SpecRefused("REFUSED: the declared protocol sha256 is not the protocol's (Q-192's protocol_sha256 of the "
-                          "measure, blocks, seeds, horizon, re-read seeds and W42-R1's limits)")
+                          f"measure, blocks, seeds, horizon, re-read seeds and {W42_RULE}'s limits)")
     bad = heldout_problems(_existing_rows(out_dir / "variants.jsonl"))
     if bad:
         raise HeldOutRow(f"REFUSED: the variants ledger in {out_dir} already holds a held-out row: {bad[:3]}")
@@ -2003,7 +2047,7 @@ def declare_parts(parts: Mapping[str, Mapping[str, Any]], engine: Engine | None 
     return out
 
 
-__all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "W42_SCRIPT", "ENTRY_SCRIPT", "DESIGN_ARM", "BASELINE_ROLE",
+__all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "W42_SCRIPT", "W42_R2_NAMES", "ObjectiveRule", "ENTRY_SCRIPT", "DESIGN_ARM", "BASELINE_ROLE",
            "BASELINES", "AS_TRADED", "REFLECTED", "TRIGGER", "SEARCH_TAG", "SEARCH_LAST", "DELTA_STAR", "NOT_PAID",
            "DO_NOTHING", "W42_PUBLIC", "FIXTURE_PREFIX", "FIXTURE_ROW", "FIXTURE_TOKEN", "REAL_TOKEN", "DATA_LINKS",
            "ONCE_FILE", "INVOCATION_ENV", "VALUES_NAME", "DRIVER_MODULE", "PART_NAMES",

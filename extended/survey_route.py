@@ -1,0 +1,978 @@
+"""Q-215: the survey's real-bar route -- a survey point of the Topstep $50K lever space (the design dict
+`search_space.from_lever_space` decodes) turned into `extended.design_trades` specs, and through `build_trades` and
+`facts_for` into the trade table, its aux frame and the `three_way_baseline.TradeFacts` the survey's evaluation
+consumes. **One convention with H4-B**: nothing here walks, fills, costs or formats a trade -- every one of those steps
+is `design_trades`' (itself H4's `h4_coin_source` plumbing, held to P-16's registered trades hash by Q-213's identity);
+this module only maps levers to a spec and stitches the per-day specs' tables into the design's one table.
+
+    from extended import survey_route as SR
+    rt = SR.route(space, design, side_rules={"p14": "with_breakout", "rl3": "fade"},
+                  source_params={"rl3": {"kind": "pd", "cutoff": cutoff}})       # every lever mapped or refused
+    out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fee_for_stop=fee,
+                   tick_value=tv, market_entry_ticks=slip)                       # -> RouteTrades(trades, aux, ...)
+    facts = SR.facts(out, hist.days, tick_value=tv)                              # (day, j) -> TB.TradeFacts
+    SR.check_policy_reads(args["path"]["risk_policy"], out)   # every trading leaf reads each trade at its own w
+    rec, acct = SR.route_simulate(out, blocks, args, facts, start, seeds, horizon, seed=..., part=..., history=...,
+                                  block_sessions=..., dates=...)  # the race, accounted; every lane's log checked
+
+**Every lever is mapped, passed on, or refused, by name** (`LEVER_ROUTE`, a partition of `lever_space.LEVERS` that a
+test holds equal to the table): the slot levers T1 (the source), T2 (the slot on), T3 (the window's offsets), T4 (L),
+T5 (the entry), S1 (the stop multiple) and S2 (w) are the route's; T7 is the route's and maps only `off` (`admit` needs
+the admission forecast wired into the route, which it is not: refused by name); the declared T2b, T6 and T8 are read
+through the library (the space's NY split; `triggers.LIMIT_WINDOW`; T8's coin is the evaluation's redraw, the table
+carrying the design's own trigger side, as `design_trades` does); the dollar-risk, mix and account-policy levers (S3 to
+S5, A1 to A21) are the firm path's and are returned unchanged in `Route.firm_levers`; the dropped S6 to S9, A13 and
+A14 hold their table settings (no time stop, no breakeven move -- the walk is `triggers.JOURNEY` --, one bracket, the
+contracts derived downstream). A design key whose lever is in none of these, a source with no playbook side
+(`trigger_sides.NO_SIDE`: `coin`, `p16`), a missing side rule, RL3 without its declared level kind and cutoff, a space
+without S1 or S2, a design the space refuses, or a T8 other than the coin: each refuses (`RouteRefused`), never a
+default. The declared side rules and source parameters the point's components use are written into
+`Route.provenance` and into `Route.design_id` (the point's own id beside, `Route.point_id`), so two routings that differ
+only there are two designs.
+
+**A component on a date**: the slot's offsets read from that date's session start (`Space.windows_on`), and an offer
+belonging to it when its order goes live inside the window (`Windowed`) -- `components.schedule_day`'s **window filter
+only**. The table is an unchained offer list, as H4-B's naive coin is: the chain (one position at a time across the
+firm, five minutes flat between trades, busy until the last working stretch ends, the worse trade on a same-bar tie)
+is the firm path's router's (Stage 2 D-429; F-13 section 5), never applied here. Within one component the
+one-cancels-other rule is `design_trades`' (`oco`: the first fill of a group stands; a same-bar tie goes to the lower
+`sub`), so every P-14 breakout, each its own group, fills. P-14's alerts are the window less L, clipped to P-14's span
+-- the playbook's `_trigger_on` (C3-2), so the playbook and the route build one trigger (a test holds them equal);
+RL3's tickets are its declared kind's, alert 08:30 and live 09:00 CT (the space holds that slot inside the window), cut
+off at the declared cutoff. The side is the design's own (`trigger_sides.trigger_side` under the declared rules); the
+evaluation's redraw removes direction later (CHARTER 2).
+
+**The stop (S1)**: k times the session's trailing range T(d) (`s1_range.LEVER_SESSIONS`: `ny_am` and `ny_pm` take
+`ny`'s `trail20_range_pts`, an overnight session its own), computed here from the history exactly as
+`s1_range.add_trailing` computes it (`trailing`: the same window ranges, eligibility, void rule and trailing mean,
+from **earlier days only**; an identity on synthetic bars holds the two equal). A day stands aside -- counted by reason,
+never traded -- when T(d) is undefined (`no_trail`) or k x T(d) points lies outside `lever_space.stop_caps()`
+(unrounded, both edges inclusive: S1's declared translation, `s1_range.k_bounds`; `below_floor`, `above_cap`). Inside
+the caps the stop is k x T(d) in whole ticks, half up, at least one (`vol_descriptive.band_ticks`, RD-04's and Q-121's
+rule for a bracket scaled by the trailing range; the caps hold after rounding since they are whole ticks; the tick is
+NQ's, the one `band_ticks` rounds on, and any other refuses).
+
+**The target and R (S2; the lead's ruling on B-1).** Each trade is walked at **its own component's w only**: the
+design's table carries a column block at every component's w (`RouteTrades.rr_grid`, so one schema), but a row's
+outcome, cost, MAE, exit and kind columns at any other w are NaN, its `exit_t` and `flat` are its own w's (never the
+engine's `fresh_rr`), and its facts carry a kind at its own w only. A read at another R so finds nothing -- the race
+refuses ("carries no kind at R"), the vendored router passes a NaN trade on -- and never a silent outcome at another
+component's target. **The rule** (for F-13 to state): S2 maps onto the engine's R as each trade's own component w; the
+policy reads every trade at its own w. **The own-w rule refuses a design whose components' w differ, until F-13's
+runner reads each trade at its own w** (a policy of fixed leaves reads one R a state). Three refusing checks hold it
+where the table meets the engine:
+- `check_policy_reads(policy, out)` reads the policy's own leaves (never the vendored `policy_rrs`, which drops a leaf
+  without an R). A trading leaf (risk above zero, not abandon, a trade limit other than zero) of source `strategy`
+  must ask for every trade's own w; one with `rr=None` is refused outright, at w = 1 too -- the race refuses a trade
+  read at no R (`three_way_baseline`'s C2-6), and the router's holding clock would read the protocol leg's R; a
+  `collect` leaf (a take-profit at the shortfall, D-379, whose read of the table is not traced here) is refused by
+  name. **A flip leaf is exempt**: it trades the account's own scheduled bracket (D-339), reads nothing of the table,
+  and gets no R check (it is listed apart in the check's report) -- **but the baseline-mode race cannot run it yet**
+  (`three_way_baseline.replay` refuses a flip stream), so a policy the check admits with a flip leaf fails loudly at
+  the engine when a flip decision is taken: a condition on F-13's runner. A policy with no trading leaf that reads the
+  table takes none of the design's trades and is refused.
+- `check_taken_rr(race_log, own_rr(out, dates))`: every trade the race took was read at its own w (`aux["rr"]`).
+- `route_simulate(out, blocks, args, facts, ...)`: `three_way_baseline.simulate` with every account's vendored draw
+  under an **accounting** (`AccountingDraw`), which sees **the draws it is handed** -- every slot's call, whether or
+  not the router gives it a trade -- and nothing else:
+  - **a state-R check on every call**: the R the account's state asks for (the draw's `_rr`) is the table's w, else
+    refused (`rr=None` refused too). Because the draw is called on every slot even when the router hands it nothing,
+    this catches an R mismatch whatever the router does;
+  - each trade the draw is handed is `handed_to_race`, stood aside (D-272) or unsized; one it drops with a NaN outcome,
+    or one with no outcome at the state's R (the vendored `no_outcome`, D-315), refuses;
+  - **reconciled against the race log**, lane by lane: `taken` is the log's booked records (`missed` and `day_end`
+    apart), and the records logged never exceed the trades handed to the race (the difference, `day_ended`, is the
+    race's own un-logged rule for an account whose day has ended); every lane's log goes through `check_taken_rr`.
+  The router's declines are the engine's own counts, **outside the accounting**: D-318's `passed_over` and `skipped`
+  (a trade with no outcome at an account's R, which the vendored router passes on), D-429's `skipped_busy` and
+  D-339's `skipped_opposite`.
+  **The swap.** `three_way_baseline.replay` builds each draw through the module global `RaceOver`; `route_simulate`
+  installs its wrapper there for the call, under a module lock held for the whole swap, refusing on entry unless the
+  original (captured at import, `RACE_OVER`) is in place, and restoring it whatever happens.
+
+**The vendored pnl channel.** A block's `pnl` is the vendored `r_1` (`score_fv3_grid.gate_blocks`), which the mask
+makes NaN on every row whose own w is not 1 (and absent from a design without a w = 1 component, so the caller pads
+it). Its vendored readers -- `SharedDayDraw` (and `EmpiricalDraw`), a `TierSizedDraw` whose state R is None,
+`gate.shifted_blocks` and `gate.mean_r`, and `three_way_baseline`'s `outcome="vendored"` -- would read NaN there. Where
+this module hands a route table to one of them it refuses by name (`refuse_pnl_reader`), unless every trade's own w is 1:
+`route_simulate` refuses `outcome="vendored"`, a draw that is not a `TierSizedDraw`, and a `TierSizedDraw` reading at
+no R; nothing here calls `gate`'s readers. The runner reads every trade per R (`set_risk(risk, w)`). **`PNL_READERS` is
+enforced by the runner**: this module refuses where it hands the table over; F-13's runner must call no other reader
+of the list, reach the engine only through `facts` and `route_simulate`, and a mutant runner that bypasses them must
+fail a test (a condition on F-13's runner).
+
+The target is floor(w x stop) whole ticks (`walker.target_ticks`, the lever table's S2).
+
+**Costs** are `design_trades`' (Stage 2's): `fee_for_stop(stop)` is the caller's `atlas_a3.fee_by_stop` at the day's
+stop, a market fill pays `market_entry_ticks`, a resting fill none; each trade's entry ticks go to its facts (each
+component's own, since one design may mix a market and a resting component).
+
+**Nothing here reads a file or a bar store**: the bars come in as a `triggers.History` the caller built inside
+`extended.search_cut` (search years only: refused past 2023-12-29 and in the confirmation window, on every call), the
+void calendar as `day_calendar.Sources`, the day kinds as Stage 2's days table gives them (every day named, never
+defaulted). A passed-in trailing range is checked against the history's length and sessions, passed-in caps against
+`lever_space.stop_caps()`. Nothing here draws randomness.
+"""
+from __future__ import annotations
+
+import dataclasses
+import json
+import math
+import threading
+from dataclasses import dataclass, field
+from datetime import date
+from typing import Any, Callable, Mapping, Sequence
+
+import numpy as np
+import pandas as pd
+
+from extended import day_calendar as DC
+from extended import design_trades as DT
+from extended import h4_coin_source as CS
+from extended import lever_space as LS
+from extended import s1_range as S1R
+from extended import search_space as SS
+from extended import three_way_baseline as TB
+from extended import trigger_sides as TS
+from extended import triggers as T
+from extended import vol_descriptive as V
+from extended import walker as W
+
+TASK = "Q-215"
+FIRM = "topstep_50k"                       # `search_space.from_lever_space`'s firm: the only lever space routed here
+MARKET_NAME = "NQ"                         # the void calendar's market (`day_calendar.MARKETS`)
+
+#: how the route handles each lever of the table (`lever_space.LEVERS`): a partition, held equal to the table
+ROUTE, LIBRARY, FIRM_PATH, DROPPED = "route", "library", "firm_path", "dropped"
+LEVER_ROUTE: dict[str, str] = {
+    "T1": ROUTE, "T2": ROUTE, "T3": ROUTE, "T4": ROUTE, "T5": ROUTE, "T7": ROUTE, "S1": ROUTE, "S2": ROUTE,
+    "T2b": LIBRARY, "T6": LIBRARY, "T8": LIBRARY,
+    "S3": FIRM_PATH, "S4": FIRM_PATH, "S5": FIRM_PATH,
+    "A1": FIRM_PATH, "A2": FIRM_PATH, "A3": FIRM_PATH, "A4": FIRM_PATH, "A5": FIRM_PATH, "A6": FIRM_PATH,
+    "A7": FIRM_PATH, "A8": FIRM_PATH, "A9": FIRM_PATH, "A10": FIRM_PATH, "A11": FIRM_PATH, "A12": FIRM_PATH,
+    "A15": FIRM_PATH, "A16": FIRM_PATH, "A17": FIRM_PATH, "A18": FIRM_PATH, "A19": FIRM_PATH, "A20": FIRM_PATH,
+    "A21": FIRM_PATH,
+    "S6": DROPPED, "S7": DROPPED, "S8": DROPPED, "S9": DROPPED, "A13": DROPPED, "A14": DROPPED,
+}
+#: a slot dimension's key (after `<session>.<i>.`) and the lever it carries (`search_space.from_lever_space`)
+SLOT_KEYS = {"on": "T2", "T1": "T1", "T4": "T4", "T5": "T5", "first": "T3", "last": "T3", "S1": "S1", "S2": "S2"}
+#: the sources a component may take here: those with a playbook side (`trigger_sides.RULES`)
+SIDED = tuple(TS.RULES)
+RL3_PARAMS = ("kind", "cutoff")
+T7_MAPPED = ("off",)                       # T7's cells the route maps: no admission forecast is wired into it
+T8_EVALUATION = "coin"                     # the lever table's T8: the evaluation's coin (CHARTER 3.2), never traded
+STAND_ASIDE = ("no_trail", "below_floor", "above_cap")
+#: aux columns this route adds beside `design_trades`' own
+AUX_ADDED = ("component", "source", "rr", "k", "stop_ticks", "entry_ticks", "latency")
+#: the per-R columns of the trade table (`h4_coin_source._format_cell_trades`) and of the aux frame (`design_trades`)
+TRADE_R_PREFIXES = ("r_", "g_", "c_", "mae_", "exit_t_", "o_")
+AUX_R_PREFIXES = ("mirr_g_", "rule_g_")
+RR_TOL = 1e-12                             # a taken trade's R and its own w: one float, compared to this
+
+
+class RouteRefused(ValueError):
+    """A survey point, a lever or an input the route cannot stand behind (the module docstring)."""
+
+
+# ------------------------------------------------------------------------------------------------ the component
+
+
+@dataclass(frozen=True)
+class Windowed:
+    """A trigger restricted to a component's window: an offer belongs to it when its order goes live inside
+    [first, last] (`components.schedule_day`'s filter). Its `source` and `calendar_reads` are the trigger's."""
+
+    trigger: Any
+    first: int
+    last: int
+
+    @property
+    def source(self) -> str:
+        return self.trigger.source
+
+    def calendar_reads(self) -> tuple[bool, bool]:
+        return self.trigger.calendar_reads()
+
+    def offers(self, hist: T.History, i: int, ctx: T.DayContext) -> list[T.Offer]:
+        return [o for o in self.trigger.offers(hist, i, ctx) if int(self.first) <= int(o.live) <= int(self.last)]
+
+
+def p14_alerts(first: int, last: int, latency: int) -> tuple[int, int]:
+    """P-14's alert slots for a window [first, last] of live slots: the window less L, clipped to P-14's span (the
+    playbook's `_trigger_on`, C3-2)."""
+    lat = int(latency)
+    lo = min(max(int(first) - lat, 0), T.P14_LAST)
+    hi = max(min(int(last) - lat, T.P14_LAST), lo)
+    return lo, hi
+
+
+@dataclass(frozen=True)
+class SlotRoute:
+    """One active slot of the point: its session, source, L, entry, window offsets, stop multiple k, w, side rule and
+    the source's declared parameters (RL3's kind and cutoff)."""
+
+    name: str
+    session: str
+    order: int
+    source: str
+    latency: int | None
+    entry: str
+    first: int
+    last: int
+    k: float
+    w: float
+    side_rule: Any
+    params: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def entry_kind(self) -> str:
+        return "market" if self.entry == T.MARKET else "resting"
+
+    @property
+    def s1_session(self) -> str:
+        return S1R.LEVER_SESSIONS[self.session]
+
+    def trigger(self, first: int, last: int) -> Any:
+        """The library's trigger for this slot on a date whose window is [first, last] (live slots)."""
+        try:
+            if self.source == "p14":
+                lo, hi = p14_alerts(first, last, int(self.latency))
+                return T.P14Breakout(latency=int(self.latency), entry=self.entry, first=lo, last=hi, k=T.P14_K)
+            return T.RL3Tickets(str(self.params["kind"]), int(self.params["cutoff"]))
+        except (T.TriggerRefused, T.OvernightRefused) as e:
+            raise RouteRefused(f"slot {self.name}: the trigger library refuses its {self.source} trigger on the window "
+                               f"[{first}, {last}]: {e}") from e
+
+    def side_of(self, trigger: Any) -> Callable[[T.Offer], int]:
+        rule = self.side_rule
+        if self.source == "rl3" and isinstance(rule, str):
+            rule = {n: rule for n in TS.rl3_names(trigger)}
+
+        def side(offer: T.Offer) -> int:
+            return int(TS.trigger_side(trigger, rule, offer).side)
+
+        return side
+
+
+@dataclass(frozen=True)
+class Route:
+    """A survey point as the route reads it: its id, its active slots in the space's order, the firm path's levers
+    unchanged, and how every lever of the point was handled (`provenance`)."""
+
+    design_id: str
+    slots: tuple[SlotRoute, ...]
+    firm_levers: Mapping[str, Any]
+    provenance: Mapping[str, str]
+    point_id: str
+    space: Any = field(repr=False, compare=False)
+    design: Mapping[str, Any] = field(repr=False, compare=False)
+
+    def windows_on(self, day: date) -> dict[str, tuple[int, int]]:
+        """The active slots' windows on trading day `day`, live slots after the reopen (`Space.windows_on`)."""
+        return {name: (int(a), int(b)) for name, _, a, b in self.space.windows_on(self.design, day)}
+
+
+def _lever_of(space: Any, key: str) -> str:
+    try:
+        return space.dim(key).lever
+    except KeyError:
+        return ""
+
+
+def route(space: Any, design: Mapping[str, Any], *, side_rules: Mapping[str, Any],
+          source_params: Mapping[str, Mapping[str, Any]]) -> Route:
+    """The point's route, every lever mapped, passed on to the firm path, or refused by name (the module docstring).
+    `side_rules` the declared playbook side rule per source used (`trigger_sides.RULES`; RL3's one word applies to every
+    level of its kind); `source_params` each source's declared parameters (RL3: exactly `kind` and `cutoff`)."""
+    if getattr(space, "firm", None) != FIRM:
+        raise RouteRefused(f"the route maps the Topstep $50K lever space (firm {FIRM!r}), not {space.firm!r}")
+    why = space.check(design)
+    if why is not None:
+        raise RouteRefused(f"REFUSED: a point the space refuses ({why[0]}: {why[1]})")
+    prov: dict[str, str] = {}
+    firm: dict[str, Any] = {}
+    slot_names = {s.name for s in space.slots}
+    for key, value in design.items():
+        if key in (SS.OVERLAP_KEY, SS.FIRMS_KEY):
+            prov[key] = f"checked by the space ({value!r})"
+            continue
+        lever = _lever_of(space, key)
+        slot, _, sub = key.rpartition(".")
+        how = LEVER_ROUTE.get(lever)
+        if how is None:
+            raise RouteRefused(f"REFUSED: the point's key {key!r} carries lever {lever or '(none)'!r}, which the route "
+                               "neither maps nor passes to the firm path")
+        if slot in slot_names:
+            if SLOT_KEYS.get(sub) != lever or how != ROUTE:
+                raise RouteRefused(f"REFUSED: slot key {key!r} ({lever}) is not one of the route's slot levers "
+                                   f"{sorted(SLOT_KEYS)}")
+            continue
+        if how == FIRM_PATH:
+            firm[key] = value
+            prov[key] = "firm path (passed on unchanged)"
+        elif lever == "T7":
+            if value not in T7_MAPPED:
+                raise RouteRefused(f"REFUSED: T7 = {value!r} -- the route maps only {T7_MAPPED}: no admission forecast "
+                                   "(t7_forecast) is wired into it")
+            prov[key] = "route: no admission (T7 off)"
+        else:
+            raise RouteRefused(f"REFUSED: the point's key {key!r} ({lever}, {how}) is not a design-wide lever the "
+                               "route reads")
+    for key, value in space.fixed.items():
+        if key in (SS.OVERLAP_KEY, SS.FIRMS_KEY):
+            continue
+        how = LEVER_ROUTE.get(key)
+        if how is None:
+            raise RouteRefused(f"REFUSED: the space fixes {key!r}, which the route neither maps nor passes on")
+        if how == FIRM_PATH:
+            firm[key] = value
+            prov[key] = "firm path (fixed by the space, passed on)"
+        elif key == "T8":
+            if tuple(value) != (T8_EVALUATION,):
+                raise RouteRefused(f"REFUSED: T8 is fixed at {value!r}, not the evaluation's {T8_EVALUATION!r}: the "
+                                   "route's side convention would need re-examining")
+            prov[key] = ("library: the evaluation's coin, applied by the redraw downstream; the table carries the "
+                         "design's own trigger side (trigger_sides)")
+        elif key == "T6":
+            if tuple(value) != (T.LIMIT_WINDOW,):
+                raise RouteRefused(f"REFUSED: T6 is fixed at {value!r}, the library's limit window is "
+                                   f"{T.LIMIT_WINDOW}")
+            prov[key] = "library: triggers.LIMIT_WINDOW"
+        elif key == "T2b":
+            prov[key] = "library: the space's NY split (lever_space.check_ny_boundary, Space.check)"
+        else:
+            raise RouteRefused(f"REFUSED: the space fixes {key!r} ({how}), which the route does not read")
+    for key, cls in space.refused.items():
+        if key in LEVER_ROUTE:
+            prov.setdefault(key, f"refused by the loader ({cls})")
+    slots = []
+    for order, sl in enumerate(space.slots):
+        if design.get(SS.slot_dim(sl.name, "on")) != SS.ON:
+            continue
+        slots.append(_slot(space, design, sl, order, side_rules, source_params))
+    if not slots:
+        raise RouteRefused("REFUSED: no component is on")
+    for lever in ("T1", "T2", "T3", "T4", "T5", "S1", "S2"):
+        prov[lever] = "route: per slot"
+    used = sorted({sl.source for sl in slots})
+    rules = {src: side_rules[src] if isinstance(side_rules[src], str) else dict(sorted(side_rules[src].items()))
+             for src in used}
+    params = {src: dict(sorted(source_params[src].items())) for src in used if src in source_params}
+    prov["route.side_rules"] = json.dumps(rules, sort_keys=True)
+    prov["route.source_params"] = json.dumps(params, sort_keys=True)
+    did = SS.design_id({**design, "route.side_rules": rules, "route.source_params": params})
+    return Route(did, tuple(slots), dict(firm), dict(prov), SS.design_id(design), space, dict(design))
+
+
+def _slot(space: Any, design: Mapping[str, Any], sl: Any, order: int, side_rules: Mapping[str, Any],
+          source_params: Mapping[str, Mapping[str, Any]]) -> SlotRoute:
+    name = sl.name
+    g = lambda k: design.get(SS.slot_dim(name, k))  # noqa: E731
+    src = g("T1")
+    if src in TS.NO_SIDE:
+        raise RouteRefused(f"REFUSED: slot {name}'s source {src!r} offers no playbook side: {TS.NO_SIDE[src]}")
+    if src not in SIDED:
+        raise RouteRefused(f"REFUSED: slot {name}'s source {src!r} is not one of the route's sources {SIDED}")
+    if SS.slot_dim(name, "S1") not in space.names():
+        cls = space.refused.get("S1", "absent from the space")
+        raise RouteRefused(f"REFUSED: slot {name} has no stop width: S1 is not a lever of the space ({cls}); the "
+                           "route never types a stop")
+    if src not in side_rules:
+        raise RouteRefused(f"REFUSED: no declared side rule for source {src!r} (slot {name})")
+    rule = side_rules[src]
+    lat, entry = g("T4"), g("T5")
+    params: dict[str, Any] = {}
+    if src == "p14":
+        if entry not in T.ENTRIES or lat not in LS.latency_cells("p14"):
+            raise RouteRefused(f"REFUSED: slot {name}: P-14 takes an entry of {T.ENTRIES} and an L of "
+                               f"{LS.latency_cells('p14')}, got {entry!r}, {lat!r}")
+        probe = T.P14Breakout(latency=int(lat), entry=entry, first=T.RTH_OPEN, last=T.P14_LAST)
+        try:
+            TS.check_rule(probe, rule)
+        except TS.SideRefused as e:
+            raise RouteRefused(f"REFUSED: slot {name}: {e}") from e
+    else:
+        if entry != SS.TICKET or lat is not None:
+            raise RouteRefused(f"REFUSED: slot {name}: RL3 takes its tickets, latency-free, got {entry!r}, {lat!r}")
+        got = source_params.get("rl3")
+        if not isinstance(got, Mapping) or sorted(got) != sorted(RL3_PARAMS):
+            raise RouteRefused(f"REFUSED: slot {name}: RL3's declared parameters are exactly {RL3_PARAMS}, got "
+                               f"{None if got is None else sorted(got)}")
+        params = {"kind": str(got["kind"]), "cutoff": int(got["cutoff"])}
+        try:
+            probe = T.RL3Tickets(params["kind"], params["cutoff"])
+        except T.TriggerRefused as e:
+            raise RouteRefused(f"REFUSED: slot {name}: {e}") from e
+        full = {n: rule for n in TS.rl3_names(probe)} if isinstance(rule, str) else rule
+        try:
+            TS.check_rule(probe, full)
+        except TS.SideRefused as e:
+            raise RouteRefused(f"REFUSED: slot {name}: {e}") from e
+    if sl.session not in S1R.LEVER_SESSIONS:
+        raise RouteRefused(f"REFUSED: slot {name}: session {sl.session!r} has no trailing range (s1_range)")
+    if SS.slot_dim(name, "S2") not in space.names() or g("S2") is None:
+        raise RouteRefused(f"REFUSED: slot {name} has no reward-to-risk: S2 is not a lever of the space "
+                           f"({space.refused.get('S2', 'absent')}); the route never types a target")
+    k, w = float(g("S1")), float(g("S2"))
+    if not (math.isfinite(k) and k > 0 and math.isfinite(w) and w > 0):
+        raise RouteRefused(f"REFUSED: slot {name}: S1 and S2 are positive, got {k!r}, {w!r}")
+    return SlotRoute(name, sl.session, order, src, None if lat is None else int(lat), entry, int(g("first")),
+                     int(g("last")), k, w, rule if isinstance(rule, str) else dict(rule), params)
+
+
+# ------------------------------------------------------------------------------------------------ the stop (S1)
+
+
+def _date(d: str) -> date:
+    return date.fromisoformat(str(d)[:10])
+
+
+def _kinds(hist: T.History, day_kinds: Mapping[str, str]) -> np.ndarray:
+    missing = [d for d in hist.days if d not in day_kinds]
+    if missing:
+        raise RouteRefused(f"REFUSED: day kinds are given for every day, not for {len(missing)} (first {missing[0]})")
+    return np.array([str(day_kinds[d]) for d in hist.days])
+
+
+def day_ranges(hist: T.History, cal: DC.Sources) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
+    """Each day's own range per S1 session (`s1_range.day_table`'s `range_<session>`: `ny` the walker day's, the bars
+    ending 17:01 to 15:10 CT; an overnight session its window's) and its void per session (`s1_range.VOID_RULE`)."""
+    n = len(hist)
+    rng = {s: np.full(n, np.nan) for s in S1R.SESSIONS}
+    void = {s: np.zeros(n, dtype=bool) for s in S1R.SESSIONS}
+    for i, d in enumerate(hist.days):
+        o, h, l, _ = hist.day(i)
+        dd = _date(d)
+        rng["ny"][i] = S1R.window_range(h, l, 0, W.C_FLAT)
+        for s, (a, b) in S1R.session_windows(dd).items():
+            rng[s][i] = S1R.window_range(h, l, a, b)
+        for s in S1R.SESSIONS:
+            ro, r0829 = S1R.VOID_RULE[s]
+            void[s][i] = bool(DC.day_flags(cal, MARKET_NAME, dd, reads_overnight=ro, reads_0829=r0829).void)
+    return rng, void
+
+
+def trailing(hist: T.History, *, day_kinds: Mapping[str, str], cal: DC.Sources) -> dict[str, np.ndarray]:
+    """Each S1 session's trailing range T(d) on every day of the history, from **earlier days only**
+    (`s1_range.add_trailing`'s rule: the mean over the 20 most recent earlier eligible days, `eligible`)."""
+    DT.check_search_days(hist.days)
+    kinds = _kinds(hist, day_kinds)
+    rng, void = day_ranges(hist, cal)
+    walked = np.isin(kinds, S1R.WALKED_KINDS)
+    out = {}
+    for s in S1R.SESSIONS:
+        ok = walked if s == "ny" else walked & ~void[s]
+        out[s] = S1R.trailing_ranges(rng[s], ok)
+    return out
+
+
+def stop_on(k: float, trail_pts: float, caps: Mapping[str, Any], tick: float = W.TICK) -> tuple[int | None, str]:
+    """(stop ticks, '') or (None, the stand-aside reason): S1's translation, the caps checked unrounded, then whole
+    ticks half up (`vol_descriptive.band_ticks`, which rounds on NQ's tick: any other tick refuses)."""
+    if float(tick) != float(V.TICK):
+        raise RouteRefused(f"REFUSED: the tick {tick!r} is not the one band_ticks rounds on ({V.TICK})")
+    if not math.isfinite(float(trail_pts)):
+        return None, "no_trail"
+    x = float(k) * float(trail_pts)
+    if x < int(caps["floor_ticks"]) * tick:
+        return None, "below_floor"
+    if x > int(caps["cap_ticks"]) * tick:
+        return None, "above_cap"
+    s = V.band_ticks(float(trail_pts), float(k))
+    if s is None or not int(caps["floor_ticks"]) <= s <= int(caps["cap_ticks"]):
+        raise RouteRefused(f"the rounded stop {s} left the caps: {caps}")
+    return int(s), ""
+
+
+def check_caps(caps: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    """The caps: `lever_space.stop_caps()`, or a passed copy of it (a cache), refused when it differs."""
+    real = LS.stop_caps()
+    if caps is None:
+        return real
+    keys = ("floor_ticks", "cap_ticks", "tick_value_mnq")
+    if any(k not in caps or caps[k] != real[k] for k in keys):
+        raise RouteRefused(f"REFUSED: the caps passed are not lever_space.stop_caps() on {keys}")
+    return caps
+
+
+def check_trail(trail: Mapping[str, Any], hist: T.History) -> Mapping[str, np.ndarray]:
+    """A passed trailing range: one array per S1 session, each the history's length."""
+    bad = [s for s in S1R.SESSIONS if s not in trail or np.asarray(trail[s]).shape != (len(hist),)]
+    if bad:
+        raise RouteRefused(f"REFUSED: the trailing range passed has no array of the history's {len(hist)} days for "
+                           f"{bad}")
+    return trail
+
+
+def stops(rt: Route, trail: Mapping[str, np.ndarray], caps: Mapping[str, Any] | None = None, tick: float = W.TICK
+          ) -> dict[str, list[tuple[int | None, str]]]:
+    """Per slot, per history day: its stop in ticks, or why it stands aside."""
+    caps = check_caps(caps)
+    return {sl.name: [stop_on(sl.k, float(x), caps, tick) for x in trail[sl.s1_session]] for sl in rt.slots}
+
+
+# ------------------------------------------------------------------------------------------------ the trades
+
+
+@dataclass
+class RouteTrades:
+    """The design's one trade table (`resolved_coin.cell_trades`' schema, every component's, a column block at every
+    w of the design's R grid, each row live at its own w only), the aux frame row for row (with `AUX_ADDED`), the
+    counts per slot, and the R grid."""
+
+    trades: pd.DataFrame
+    aux: pd.DataFrame
+    counts: dict[str, Any]
+    rr_grid: tuple[float, ...]
+
+
+def rr_grid(rt: Route) -> tuple[float, ...]:
+    """The design's R grid: every component's w, refused when two distinct w share one column label (`:g`)."""
+    ws = sorted({float(sl.w) for sl in rt.slots})
+    labels = [f"{w:g}" for w in ws]
+    if len(set(labels)) != len(labels):
+        raise RouteRefused(f"REFUSED: two components' w {ws} share a column label {labels}")
+    return tuple(ws)
+
+
+def _context(trigger: Any, cal: DC.Sources, hist: T.History, i: int,
+             news_windows: Callable[[int], Sequence[T.Window]] | None) -> T.DayContext:
+    wins = tuple(news_windows(i)) if news_windows is not None else ()
+    return T.context_for(trigger, cal, _date(hist.days[i]), i, wins, market=MARKET_NAME, rules=T.JOURNEY)
+
+
+def _plans(rt: Route, hist: T.History, st: Mapping[str, list[tuple[int | None, str]]]
+           ) -> dict[str, dict[tuple[int, int, int], list[int]]]:
+    """Per slot, its traded days grouped by (stop, window first, window last) on each date."""
+    out: dict[str, dict[tuple[int, int, int], list[int]]] = {sl.name: {} for sl in rt.slots}
+    for i, d in enumerate(hist.days):
+        wins = rt.windows_on(_date(d))
+        for sl in rt.slots:
+            s, _ = st[sl.name][i]
+            if s is None:
+                continue
+            a, b = wins[sl.name]
+            out[sl.name].setdefault((int(s), a, b), []).append(i)
+    return out
+
+
+def _columns(frames: Sequence[pd.DataFrame], grid: Sequence[float], prefixes: Sequence[str],
+             tail: Sequence[str]) -> list[str]:
+    """One column order: the frames' own columns but the per-R ones (first frame's order), every R of the grid's
+    block in grid order, then `tail`."""
+    per_r = [f"{p}{R:g}" for R in grid for p in prefixes]
+    base = [c for c in frames[0].columns if c not in per_r and c not in tail
+            and not any(c.startswith(p) for p in prefixes)]
+    return base + per_r + [c for c in tail if any(c in f.columns for f in frames)]
+
+
+def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str, str],
+          news_windows: Callable[[int], Sequence[T.Window]] | None,
+          fee_for_stop: Callable[[int], float], tick_value: float, market_entry_ticks: float,
+          trail: Mapping[str, np.ndarray] | None = None, caps: Mapping[str, Any] | None = None,
+          tick: float = W.TICK) -> RouteTrades:
+    """The design's trades on the history's days (the module docstring), every step `design_trades.build_trades`'
+    on each slot's days grouped by their stop and window, **walked at the slot's own w only** (its `exit_t` and `flat`
+    at that w); the slots' tables joined on the design's R grid, a row's columns at another w NaN. `news_windows(i)`
+    the verified news windows of day i, or None where none reaches the firm's accounts (the caller states which;
+    never defaulted). `trail` may be passed when already computed (`trailing`), checked against the history."""
+    DT.check_search_days(hist.days)
+    _kinds(hist, day_kinds)
+    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else check_trail(trail, hist)
+    st = stops(rt, trail, caps, tick)
+    grid = rr_grid(rt)
+    frames, auxes = [], []
+    counts: dict[str, Any] = {}
+    cache: dict[tuple[tuple[bool, bool], int], T.DayContext] = {}
+    for sl, (name, groups) in zip(rt.slots, _plans(rt, hist, st).items()):
+        c: dict[str, Any] = {"days": len(hist), "traded_days": 0, "stand_aside": {r: 0 for r in STAND_ASIDE},
+                             "offers": 0, "admitted": 0, "filled": 0, "oco_cancelled": 0, "dropped_sigma_lt_2": 0,
+                             "refused": {}, "unfilled": {}}
+        for s, why in st[name]:
+            if s is None:
+                c["stand_aside"][why] += 1
+        own = (float(sl.w),)
+        for (s, a, b), days in sorted(groups.items()):
+            trig = sl.trigger(a, b)
+            reads = trig.calendar_reads()
+            for i in days:
+                if (reads, i) not in cache:
+                    cache[(reads, i)] = _context(trig, cal, hist, i, news_windows)
+            fee = float(fee_for_stop(int(s)))
+            if not (math.isfinite(fee) and fee >= 0):
+                raise RouteRefused(f"REFUSED: the fee at stop {s} is {fee!r}")
+            spec = DT.DesignSpec(f"{name}@{s}:{a}-{b}", Windowed(trig, a, b), sl.side_of(trig), int(s), T.JOURNEY,
+                                 "journey", True, sl.entry_kind)
+            out = DT.build_trades(spec, hist, lambda i, r=reads: cache[(r, i)], day_kinds=day_kinds, rr_grid=own,
+                                  fresh_rr=own[0], fee_micro_eq=fee, tick_value=tick_value,
+                                  market_entry_ticks=market_entry_ticks, days=days, tick=tick)
+            c["traded_days"] += len(days)
+            for key in ("offers", "admitted", "filled", "oco_cancelled", "dropped_sigma_lt_2"):
+                c[key] += int(out.counts[key])
+            for key in ("refused", "unfilled"):
+                for why, n in out.counts[key].items():
+                    c[key][why] = c[key].get(why, 0) + int(n)
+            if len(out.trades):
+                ax = out.aux.copy()
+                ax["component"], ax["source"], ax["rr"], ax["k"] = name, sl.source, float(sl.w), float(sl.k)
+                ax["stop_ticks"], ax["entry_ticks"] = int(s), float(out.counts["entry_ticks"])
+                ax["latency"] = sl.latency
+                ax["_slot"] = int(sl.order)
+                frames.append(out.trades)
+                auxes.append(ax)
+        c["refused"] = dict(sorted(c["refused"].items()))
+        c["unfilled"] = dict(sorted(c["unfilled"].items()))
+        counts[name] = c
+    if not frames:
+        return RouteTrades(pd.DataFrame(), pd.DataFrame(), counts, grid)
+    tcols = _columns(frames, grid, TRADE_R_PREFIXES, ("exit_t", "flat"))
+    acols = _columns(auxes, grid, AUX_R_PREFIXES, AUX_ADDED + ("_slot",))
+    trades = pd.concat(frames, ignore_index=True).reindex(columns=tcols)
+    aux = pd.concat(auxes, ignore_index=True).reindex(columns=acols)
+    order = np.lexsort((np.arange(len(aux)), aux["_slot"].to_numpy(int),
+                        trades["decision_slot_minutes"].to_numpy(int), trades["entry_t"].to_numpy(float),
+                        trades["date"].astype(str).str.replace("-", "").astype(np.int64).to_numpy()))
+    trades = trades.iloc[order].reset_index(drop=True)
+    aux = aux.iloc[order].drop(columns="_slot").reset_index(drop=True)
+    return RouteTrades(trades, aux, counts, grid)
+
+
+def masked_problems(rt_trades: RouteTrades) -> list[str]:
+    """B-1 (a), checked: every row live at its own w (`aux["rr"]`) and NaN at every other w of the grid, its
+    `exit_t` and `flat` its own w's. Empty when all hold."""
+    t, a = rt_trades.trades, rt_trades.aux
+    out: list[str] = []
+    if not len(t):
+        return out
+    own = a["rr"].to_numpy(float)
+    for R in rt_trades.rr_grid:
+        mine = own == float(R)
+        for p in TRADE_R_PREFIXES:
+            col = f"{p}{R:g}"
+            if col not in t.columns:
+                out.append(f"no column {col}")
+                continue
+            v = t[col]
+            live = v.notna().to_numpy()
+            if (live & ~mine).any():
+                out.append(f"{int((live & ~mine).sum())} rows carry {col} at another component's w")
+            if (~live & mine).any():
+                out.append(f"{int((~live & mine).sum())} rows of w {R:g} lack {col}")
+        if mine.any():
+            ex = t.loc[mine, f"exit_t_{R:g}"].to_numpy(float)
+            if not np.array_equal(t.loc[mine, "exit_t"].to_numpy(float), ex):
+                out.append(f"exit_t is not the own w's on rows of w {R:g}")
+            if not np.array_equal(t.loc[mine, "flat"].to_numpy(bool),
+                                  (t.loc[mine, f"o_{R:g}"].astype(str) == "f").to_numpy()):
+                out.append(f"flat is not the own w's on rows of w {R:g}")
+    return out
+
+
+def facts(rt_trades: RouteTrades, dates: Sequence[str], *, tick_value: float) -> dict[tuple[int, int], TB.TradeFacts]:
+    """`design_trades.facts_for` on the design's table, each trade's facts from its own component's rows at its own w
+    only (its kinds and walks at that w; its entry ticks its component's), keyed as one table: (block day, index
+    within the day) in the table's order."""
+    t, a = rt_trades.trades, rt_trades.aux
+    if not len(t):
+        return {}
+    bad = masked_problems(rt_trades)
+    if bad:
+        raise RouteRefused(f"REFUSED: the table is not masked to each row's own w: {bad[:3]}")
+    per: dict[str, list[TB.TradeFacts]] = {}
+    for comp in dict.fromkeys(a["component"]):
+        m = (a["component"] == comp).to_numpy()
+        w = float(a.loc[m, "rr"].iloc[0])
+        e = set(a.loc[m, "entry_ticks"].astype(float))
+        if len(e) != 1 or set(a.loc[m, "rr"].astype(float)) != {w}:
+            raise RouteRefused(f"REFUSED: component {comp} carries more than one w or entry cost")
+        got = DT.facts_for(t[m].reset_index(drop=True), a[m].reset_index(drop=True), dates, tick_value=tick_value,
+                           rr_cols=(w,), entry_ticks=float(e.pop()))
+        per[comp] = list(got.values())
+    at = {str(d): i for i, d in enumerate(dates)}
+    used = {comp: 0 for comp in per}
+    day_n: dict[int, int] = {}
+    out: dict[tuple[int, int], TB.TradeFacts] = {}
+    for p in range(len(t)):
+        comp = a["component"].iloc[p]
+        di = at[str(t["date"].iloc[p])]
+        j = day_n.get(di, 0)
+        day_n[di] = j + 1
+        out[(di, j)] = per[comp][used[comp]]
+        used[comp] += 1
+    return out
+
+
+def own_rr(rt_trades: RouteTrades, dates: Sequence[str]) -> dict[tuple[int, int], float]:
+    """Each trade's own w, keyed as `facts` keys it (block day, index within the day)."""
+    at = {str(d): i for i, d in enumerate(dates)}
+    day_n: dict[int, int] = {}
+    out: dict[tuple[int, int], float] = {}
+    for d, w in zip(rt_trades.trades["date"].astype(str), rt_trades.aux["rr"].astype(float)):
+        di = at[d]
+        j = day_n.get(di, 0)
+        day_n[di] = j + 1
+        out[(di, j)] = float(w)
+    return out
+
+
+def check_taken_rr(taken: Sequence[Mapping[str, Any]], own: Mapping[tuple[int, int], float]) -> int:
+    """B-1 (b), where the table meets the engine: every trade the race took (`three_way_baseline`'s race log: its
+    block day `i`, its index `j`, the R it was read at `R`) was read at its own w (`own_rr`), else refused. Returns the
+    count checked."""
+    n = 0
+    for rec in taken:
+        key = (int(rec["i"]), int(rec["j"]))
+        if key not in own:
+            raise RouteRefused(f"REFUSED: the engine took trade {key}, which is not one of the route's")
+        R = rec.get("R")
+        if R is None or not abs(float(R) - own[key]) <= RR_TOL:
+            raise RouteRefused(f"REFUSED: the engine read trade {key} at R {R!r}, not its own w {own[key]!r}")
+        n += 1
+    return n
+
+
+#: a leaf's sources (`risk_policy.SOURCES`): those reading the trade table, and the flip stream's (D-339), apart
+TABLE_SOURCES = ("strategy",)
+FLIP_SOURCE = "flip"
+COLLECT_SOURCE = "collect"
+#: the vendored readers of a block's pnl channel (`r_1`), named in the refusals
+PNL_READERS = ("SharedDayDraw", "EmpiricalDraw", "TierSizedDraw at rr=None", "gate.shifted_blocks", "gate.mean_r",
+               "three_way_baseline outcome='vendored'")
+
+
+def own_ws(rt_trades: RouteTrades) -> list[float]:
+    """The distinct own w of the table's trades (the grid's when it holds none)."""
+    return sorted({float(w) for w in rt_trades.aux["rr"]}) if len(rt_trades.aux) else list(rt_trades.rr_grid)
+
+
+def pnl_channel_is_own(rt_trades: RouteTrades) -> bool:
+    """Whether the vendored pnl channel (`r_1`) is every trade's own outcome: every own w is 1."""
+    ws = own_ws(rt_trades)
+    return bool(ws) and all(abs(w - 1.0) <= RR_TOL for w in ws)
+
+
+def refuse_pnl_reader(reader: str, rt_trades: RouteTrades) -> None:
+    """Refuse handing the route's table to a reader of the vendored pnl channel unless `r_1` is every trade's own."""
+    if not pnl_channel_is_own(rt_trades):
+        raise RouteRefused(f"REFUSED: {reader} reads the vendored pnl channel (r_1), NaN on every row whose own w is "
+                           f"not 1; the design's w are {own_ws(rt_trades)}")
+
+
+def _policy_leaves(policy: Any) -> list[tuple[Any, frozenset]]:
+    import sys
+
+    phases = getattr(sys.modules.get(type(policy).__module__), "PHASES", None)
+    root = getattr(policy, "root", None)
+    if phases is None or root is None or not callable(getattr(root, "leaves", None)):
+        raise RouteRefused(f"REFUSED: {type(policy).__name__} is not a risk policy whose leaves can be read")
+    return list(root.leaves(frozenset(phases)))
+
+
+def check_policy_reads(policy: Any, rt_trades: RouteTrades) -> dict[str, Any]:
+    """B-1 (b) and (c2): the policy's own leaves against each trade's own w (the module docstring). Returns the
+    leaves read and the flip leaves exempted; refuses otherwise."""
+    ws = own_ws(rt_trades)
+    if len(ws) != 1:
+        raise RouteRefused(f"REFUSED: the design's trades are read at the w {ws}: the own-w rule refuses a design whose "
+                           "components' w differ until F-13's runner reads each trade at its own w (a fixed-leaf "
+                           "policy reads one R a state; a trade asked for at another is padded to NaN and never taken)")
+    w = ws[0]
+    reads, flips = [], []
+    for leaf, phases in _policy_leaves(policy):
+        trading = not bool(getattr(leaf, "abandon", False)) and float(leaf.risk) > 0 and leaf.max_trades != 0
+        if not trading:
+            continue
+        src = str(getattr(leaf, "source", "strategy"))
+        where = f"leaf {leaf.name!r} ({src}, {sorted(phases)})"
+        if src == FLIP_SOURCE:
+            flips.append(leaf.name)                         # the account's own bracket: reads nothing of the table
+            continue
+        if src == COLLECT_SOURCE:
+            raise RouteRefused(f"REFUSED: {where} is a collect leaf (D-379), whose read of the route's table is not "
+                               "traced: never admitted here")
+        if src not in TABLE_SOURCES:
+            raise RouteRefused(f"REFUSED: {where}: an unknown leaf source")
+        if leaf.rr is None:
+            raise RouteRefused(f"REFUSED: {where} at rr=None: the race refuses a trade read at no R (C2-6), and the "
+                               "leaf would read the vendored pnl channel; every trading leaf asks for the design's w")
+        if abs(float(leaf.rr) - w) > RR_TOL:
+            raise RouteRefused(f"REFUSED: {where} asks for R {float(leaf.rr)}, the design's trades are each read at "
+                               f"their own w {w}: a trade asked for at another R is padded to NaN and never taken "
+                               "(S2 maps onto the engine's R as each trade's own w)")
+        reads.append(leaf.name)
+    if not reads:
+        raise RouteRefused("REFUSED: no trading leaf of the policy reads the route's table: the design's trades would "
+                           "never be taken")
+    return {"reads": reads, "flip_exempt": flips, "w": w}
+
+
+_TALLY_KEYS = ("trades", "stood_aside", "unsized", "no_outcome")
+
+
+class AccountingDraw:
+    """One account's vendored draw under the route's accounting (the module docstring): every attribute and call its
+    own; on every call the state's R checked against the table's w (`rr=None` refused); each call classed -- no trade
+    at the slot, handed to the race, stood aside (D-272), unsized -- into the lane's `tally`; a trade dropped with a
+    NaN outcome, or one with no outcome at the state's R (`no_outcome`, D-315), refuses. A draw that is not a
+    `TierSizedDraw` reads the pnl channel and refuses."""
+
+    def __init__(self, inner: Any, tally: dict[str, int], rt_trades: RouteTrades):
+        ws = own_ws(rt_trades)
+        if len(ws) != 1:
+            raise RouteRefused(f"REFUSED: the accounting reads one w a design, got {ws}")
+        object.__setattr__(self, "_inner", inner)
+        object.__setattr__(self, "_tally", tally)
+        object.__setattr__(self, "_rt", rt_trades)
+        object.__setattr__(self, "_w", float(ws[0]))
+        if type(inner).__name__ != "TierSizedDraw":
+            refuse_pnl_reader(f"the vendored draw {type(inner).__name__}", rt_trades)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_inner"), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        setattr(object.__getattribute__(self, "_inner"), name, value)
+
+    def __call__(self, n: int, day: int, slot: int, cushion: Any, **kw: Any) -> Any:
+        inner, tally = object.__getattribute__(self, "_inner"), object.__getattribute__(self, "_tally")
+        w = object.__getattribute__(self, "_w")
+        rr = getattr(inner, "_rr", None)
+        if rr is None:
+            raise RouteRefused(f"REFUSED: the account's state asks for no R at day {day} slot {slot}: the race refuses "
+                               "a trade read at no R (C2-6), and the draw would read the vendored pnl channel")
+        if abs(float(rr) - w) > RR_TOL:
+            raise RouteRefused(f"REFUSED: the account's state asks for R {float(rr)} at day {day} slot {slot}, the "
+                               f"design's trades are each read at their own w {w}: the state-R check (a trade asked "
+                               "for at another R is passed over and never taken)")
+        st = getattr(inner, "stats", None)
+        before = tuple(int(getattr(st, k, 0)) for k in _TALLY_KEYS)
+        out = inner(n, day, slot, cushion, **kw)
+        after = tuple(int(getattr(st, k, 0)) for k in _TALLY_KEYS)
+        d = dict(zip(_TALLY_KEYS, (b_ - a_ for a_, b_ in zip(before, after))))
+        pnl = float(np.asarray(out, dtype=float).ravel()[0])
+        lt = getattr(inner, "last_trade", None)
+        tally["calls"] = tally.get("calls", 0) + 1
+        if d["no_outcome"]:
+            tally["no_outcome"] = tally.get("no_outcome", 0) + d["no_outcome"]
+            raise RouteRefused(f"REFUSED: a trade offered at day {day} slot {slot} has no outcome at the state's R "
+                               f"{rr} (D-315): under the own-w rule none may")
+        if lt is None and not any(d.values()):
+            tally["no_trade"] = tally.get("no_trade", 0) + 1
+            return out
+        tally["offered"] = tally.get("offered", 0) + 1
+        if lt is not None and lt.get("stood_aside"):
+            tally["stood_aside"] = tally.get("stood_aside", 0) + 1
+            return out
+        if d["unsized"]:
+            tally["unsized"] = tally.get("unsized", 0) + 1
+            return out
+        if not math.isfinite(pnl):
+            tally["nan_dropped"] = tally.get("nan_dropped", 0) + 1
+            raise RouteRefused(f"REFUSED: the draw dropped the trade at day {day} slot {slot} with a NaN outcome "
+                               f"(u = {None if lt is None else lt.get('u')!r}, R = {rr}): a trade offered to a "
+                               "trading leaf is taken or stood aside by a named rule")
+        tally["handed_to_race"] = tally.get("handed_to_race", 0) + 1
+        return out
+
+
+#: the race's per-account draw door, captured at import: `route_simulate` swaps it under `_SWAP_LOCK` and refuses
+#: on entry unless this original is in place
+RACE_OVER = TB.RaceOver
+_SWAP_LOCK = threading.Lock()
+UNBOOKED_LAWS = ("missed", "day_end")
+
+
+def reconcile(tally: Mapping[str, int], log: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """One lane's accounting against its race log: `taken` the booked records (laws other than `missed` and
+    `day_end`), those two apart, `day_ended` the trades handed to the race and not logged (the race's un-logged rule
+    for an account whose day has ended). Refused when the log holds more records than the trades handed."""
+    handed = int(tally.get("handed_to_race", 0))
+    logged = len(log)
+    if logged > handed:
+        raise RouteRefused(f"REFUSED: the race logged {logged} trades, the accounting handed it {handed}: a record "
+                           "the accounting never saw")
+    out = {"handed_to_race": handed, "logged": logged, "day_ended": handed - logged,
+           "taken": sum(1 for r in log if r.get("law") not in UNBOOKED_LAWS)}
+    for law in UNBOOKED_LAWS:
+        out[law] = sum(1 for r in log if r.get("law") == law)
+    return out
+
+
+def route_simulate(rt_trades: RouteTrades, blocks: Sequence[Any], args: Mapping[str, Any],
+                   facts_: Mapping[tuple[int, int], TB.TradeFacts], start: int, seed_indices: Sequence[int],
+                   horizon: int, *, dates: Sequence[str], **kw: Any) -> tuple[Any, dict[str, Any]]:
+    """`three_way_baseline.simulate` on the route's table (its `log` always kept): `outcome="vendored"` refused (a pnl
+    reader), the policy checked (`check_policy_reads`), every account's draw under `AccountingDraw` (the swap under
+    `_SWAP_LOCK`, refused on entry unless `RACE_OVER` is in place, restored whatever happens), every lane's race log
+    through `check_taken_rr` and reconciled with its accounting (`reconcile`). Returns the records and the accounting
+    (per lane, its reconciliation, and the policy check's report)."""
+    if kw.get("outcome", "race") == "vendored":
+        refuse_pnl_reader("three_way_baseline outcome='vendored'", rt_trades)
+    report = check_policy_reads(args["path"]["risk_policy"], rt_trades)
+    own = own_rr(rt_trades, dates)
+    tallies: list[dict[str, int]] = [dict() for _ in seed_indices]
+
+    def race_over(inner, unit, lane, outcome, log, counts, book=None):
+        return RACE_OVER(AccountingDraw(inner, tallies[int(lane)], rt_trades), unit, lane, outcome, log, counts, book)
+
+    with _SWAP_LOCK:
+        if TB.RaceOver is not RACE_OVER:
+            raise RouteRefused("REFUSED: three_way_baseline.RaceOver is not the original captured at import (a leaked "
+                               "or concurrent swap): the race would run under another accounting")
+        TB.RaceOver = race_over                          # the one door `three_way_baseline.replay` builds draws by
+        try:
+            rec = TB.simulate(blocks, args, facts_, start, seed_indices, horizon, dates=dates, **{**kw, "log": True})
+        finally:
+            TB.RaceOver = RACE_OVER
+    checked = [check_taken_rr(lg, own) for lg in rec.logs]
+    recon = [reconcile(t, lg) for t, lg in zip(tallies, rec.logs)]
+    return rec, {"lanes": tallies, "logged": checked, "reconciled": recon, "policy": report}
+
+
+# ------------------------------------------------------------------------------------------------ what is decided when
+
+
+def decisions(rt: Route, hist: T.History, i: int, *, cal: DC.Sources, day_kinds: Mapping[str, str],
+              news_windows: Callable[[int], Sequence[T.Window]] | None, trail: Mapping[str, np.ndarray] | None = None,
+              caps: Mapping[str, Any] | None = None, tick: float = W.TICK) -> list[dict[str, Any]]:
+    """Everything the route decides for day i's offers before any fill, by the code path `build` takes: per slot its
+    stop (or stand-aside), its window, and each offer of its windowed trigger with its moment, level, admission and
+    side, and the volatility at its alert. The shift-invariance test holds every record with alert <= t unchanged
+    when every bar stamped t or later is replaced."""
+    DT.check_search_days(hist.days)
+    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else check_trail(trail, hist)
+    caps = check_caps(caps)
+    wins = rt.windows_on(_date(hist.days[i]))
+    closes = [hist.c[j] for j in range(len(hist))]
+    out: list[dict[str, Any]] = []
+    for sl in rt.slots:
+        s, why = stop_on(sl.k, float(trail[sl.s1_session][i]), caps, tick)
+        a, b = wins[sl.name]
+        out.append({"slot": sl.name, "kind": "stop", "alert": -1, "stop": s, "why": why, "window": (a, b),
+                    "target": None if s is None else W.target_ticks(sl.w, s)})
+        trig = sl.trigger(a, b)
+        ctx = _context(trig, cal, hist, i, news_windows)
+        src = Windowed(trig, a, b)
+        offers = src.offers(hist, i, ctx)
+        kept, refused = T.admit(offers, ctx)
+        ref = {id(o): r for o, r in refused}
+        side = sl.side_of(trig)
+        for o in offers:
+            lvl = float(o.level)
+            out.append({"slot": sl.name, "kind": "offer", "alert": int(o.alert), "decision": int(o.decision),
+                        "sub": int(o.sub), "live": int(o.live), "entry": o.entry,
+                        "level": None if math.isnan(lvl) else lvl, "role": int(o.role), "expires": o.expires,
+                        "group": o.group, "tag": o.tag, "void": o.void, "refused": ref.get(id(o), ""),
+                        "segments": tuple(T.segments(o, ctx)) if id(o) not in ref else (),
+                        "side": int(side(o)) if not o.void else 0,
+                        "sigma": CS.alert_sigma_cross_session(closes, i, int(o.alert), tick=tick)})
+    return out
+
+
+__all__ = ["TASK", "FIRM", "LEVER_ROUTE", "ROUTE", "LIBRARY", "FIRM_PATH", "DROPPED", "SLOT_KEYS", "SIDED",
+           "RL3_PARAMS", "T7_MAPPED", "T8_EVALUATION", "STAND_ASIDE", "AUX_ADDED", "RouteRefused", "Windowed",
+           "p14_alerts", "SlotRoute", "Route", "route", "day_ranges", "trailing", "stop_on", "stops", "RouteTrades",
+           "rr_grid", "build", "facts", "decisions", "TRADE_R_PREFIXES", "AUX_R_PREFIXES", "RR_TOL",
+           "check_caps", "check_trail", "masked_problems", "own_rr", "check_taken_rr", "check_policy_reads",
+           "TABLE_SOURCES", "FLIP_SOURCE", "COLLECT_SOURCE", "PNL_READERS", "own_ws", "pnl_channel_is_own",
+           "refuse_pnl_reader", "AccountingDraw", "route_simulate", "RACE_OVER", "UNBOOKED_LAWS", "reconcile"]
