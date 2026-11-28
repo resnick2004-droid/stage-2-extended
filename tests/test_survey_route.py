@@ -13,7 +13,8 @@ the real Topstep $50K lever space with S1 stood in, synthetic NQ bars and void c
 * shift invariance: every decision with alert <= t unchanged when every bar stamped t or later is replaced, over many
   t on days around a roll and a clock change, each session's first minutes and offers' own alerts among them; two
   planted look-aheads (the trailing range reading its own day, a limit level read at its alert's bar) are caught;
-* the trailing range equals `s1_range.add_trailing` on the vendored walker arrays (a child process, synthetic bars).
+* the trailing range equals `s1_range.add_trailing` on the vendored walker arrays (a child process, synthetic bars);
+* the space without S1 refuses S1 whatever `results/` holds (a loadable S1 file planted where the loader looks).
 """
 from __future__ import annotations
 
@@ -211,6 +212,27 @@ def test_a_space_without_s1_refuses_and_never_types_a_stop():
         with pytest.raises(Exception) as e:
             _route(bare, d)
         assert "no stop width" not in str(e.value)
+
+
+def test_the_bare_space_ignores_a_present_s1_file(tmp_path, monkeypatch):
+    """Hermetic whatever `results/` holds (the main tree's git-ignored `results/s1_range.csv` made the test above
+    depend on the tree, found after Q-215's merge): a loadable synthetic S1 reading (`test_s1_range._written`: its toy
+    frame and a fake manifest) is planted where the loader looks. The control: the loader reaches it (S1 computed, and
+    the plain `from_lever_space` carries S1 unrefused). Then the world's bare space still refuses S1 as not computed,
+    the path is restored after, and `s1_absent` refuses to run under a stand-in."""
+    import test_s1_range as S1T
+
+    p = S1T._written(tmp_path)
+    monkeypatch.setattr(LS, "S1_PATH", p)
+    assert LS._COMPUTED["S1"]() and "S1" not in SS.from_lever_space(slots=dict(RW.SLOTS)).refused
+    bare = RW.space(with_s1=False)
+    assert bare.refused["S1"] == "NotComputed" and not [n for n in bare.names() if n.endswith(".S1")]
+    assert LS.S1_PATH == p
+    with RW.s1_loaded():
+        with pytest.raises(AssertionError, match="a stand-in is active"):
+            with RW.s1_absent():
+                pass
+    assert LS.S1_PATH == p and LS._COMPUTED["S1"] is LS._s1_computed
 
 
 def test_another_firms_space_and_another_t8_refuse(sp):

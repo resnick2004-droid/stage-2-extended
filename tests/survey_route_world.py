@@ -11,7 +11,9 @@ the k-th cut taking the k-th child (`numpy.random.SeedSequence(SEED_ROUTE_SHIFT)
 from __future__ import annotations
 
 import contextlib
+import tempfile
 from datetime import date
+from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
@@ -55,9 +57,29 @@ def s1_loaded(ranges: Mapping[str, tuple[float, float]] = K_RANGES):
         LS._COMPUTED["S1"], LS._s1_reading = old
 
 
+@contextlib.contextmanager
+def s1_absent():
+    """S1's reading absent wherever the tree runs (a worktree, a clean checkout, or the main tree with its git-ignored
+    `results/s1_range.csv`): `lever_space.S1_PATH`, which `_s1_computed` (`_COMPUTED["S1"]`) and `_s1_reading` read at
+    call time, pointed at a file in a fresh temporary folder that does not exist. Refuses if S1 still reads as computed
+    (a stand-in such as `s1_loaded` active around it)."""
+    with tempfile.TemporaryDirectory(prefix="s2x_no_s1_") as d:
+        old = LS.S1_PATH
+        LS.S1_PATH = Path(d) / "absent" / "s1_range.csv"
+        try:
+            if LS._COMPUTED["S1"]():
+                raise AssertionError("s1_absent: S1 still reads as computed (a stand-in is active)")
+            yield
+        finally:
+            LS.S1_PATH = old
+
+
 def space(slots: Mapping[str, int] = SLOTS, *, with_s1: bool = True) -> SS.Space:
+    """The real lever space for `slots`: S1 stood in by `K_RANGES` (`s1_loaded`), or, with `with_s1=False`, S1's
+    reading absent whatever `results/` holds (`s1_absent`)."""
     if not with_s1:
-        return SS.from_lever_space(slots=dict(slots))
+        with s1_absent():
+            return SS.from_lever_space(slots=dict(slots))
     with s1_loaded():
         return SS.from_lever_space(slots=dict(slots))
 
