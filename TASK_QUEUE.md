@@ -66,9 +66,9 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-172 | The exact-run difference count on P-14's search years (MEASURES section 6), a clean run, counts only | lead | queued (E-232) | E-232 | heavy | 0 | E-232 |
 | Q-179 | Q-173 merged with the O-7 pins' SUPERSEDED fill; every shared identity re-held once at that commit | lead | queued (E-246) | Q-173, Q-178 | heavy | 0 | E-246 |
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | closed (E-293: remainder in Q-203; the red team's read of the four rows not found on record) | E-232 | light | 0 | E-246 |
-| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | held (E-290: H3-A waits on Q-216) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
+| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | running (E-295: slots A1, A2, A4 under run.lock; A3 deferred to H3-D) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | held (E-289: no H4-B output used until Q-188b closes) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
-| Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
+| Q-189 | W42-R2 applied to H4's readings (`scripts/wave42_r2_apply.py`, pinned E-299); the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-299) | Q-188, Q-221 | light | 0 | E-246, E-296, E-299 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
 | Q-198 | The sizing experiment on the three-way runner (after its follow-up) | wt-three | queued (E-255) | Q-187 | light | 0 | E-255 |
@@ -80,17 +80,19 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-208 | The pre-merge-commit hook (a merge commit verified like any other) | wt-report | built on wt/wt-report, not merged (E-280, E-293) | Q-207 | light | 0 | E-273 |
 | Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | built on wt/wt-report, not merged (E-280, E-293) | Q-208 | light | 0 | E-274 |
 | Q-188b | H4's fixes after the audit and the re-check: F-3 (the sigma-rule drops) diagnosed first, B-1, F-2's coin identity, B-2's exact-run classification, tests that can fail, rc-3 disk, labels, the worker-count lever, P-15 p5's re-run | wt-h4fix | running (E-289) | Q-188 | light | 0 | E-289 |
-| Q-214 | The first design search's draft, `DRAFT_F-13` (Topstep NQ survey), W42-R1's values blank | wt-fs1 | running (E-290) | - | light | 0 | E-290 |
+| Q-214 | The first design search's draft, `DRAFT_F-13` (Topstep NQ survey), W42-R1's values blank | wt-fs1 | running (E-298: fix pass after the red team's BLOCK and the form read) | - | light | 0 | E-290 |
 | Q-215 | The survey's real-bar route: wire the lever space to `extended/design_trades.py` (after Q-213) | - | queued (E-290) | Q-213 | light | 0 | E-290 |
-| Q-216 | H3-A's report code and runner after BUILD_H3A_REPORT's BLOCK | wt-h3a | running (E-290) | Q-187 | light | 0 | E-290 |
+| Q-216 | H3-A's report code and runner after BUILD_H3A_REPORT's BLOCK | wt-h3a | done (E-295) | Q-187 | light | 0 | E-290 |
 | Q-217 | The test-encoding defect: `_git` helpers decode `git show` with utf-8 (in Q-188b) | wt-h4fix | running (E-289) | - | light | 0 | E-289 |
 | Q-218 | The seed guards' literal scan: no match inside a decimal value (digit boundary on both sides, '.' included) | - | queued (E-290) | - | light | 0 | E-290 |
 | Q-220 | The race's law and draws made faster in `extended/` under a refusing bit-for-bit identity (and the per-lane SharedDayDraws rebuild) | - | queued (E-292) | Q-219 | light | 0 | E-292 |
-| Q-221 | W42-R2: one floor limit on the median `net_month_12` (h 252), its value only from the formula; red team and a power check before its pin | wt-w42r2 | running (E-293) | Q-176 | light | 0 | E-293 |
+| Q-221 | W42-R2: one floor limit on the median `net_month_12` (h 252), its value only from the formula; red team and a power check before its pin | wt-w42r2 | done (E-299: merged and pinned) | Q-176 | light | 0 | E-293 |
 | Q-223 | F-13's exact-bound screen: gate keys on the trade table before the campaign; plateau gate-first; lazy real-path arms; baseline arms once per protocol; identities S-I1 to S-I3 | wt-survey | queued (E-294) | Q-215, Q-189 | light (S-I3's real-bar part heavy) | 0 | E-294 |
 | Q-224 | MEASURES rows 28 and 29's stress arms (missed, late, worse fills) for F-13's finalists, as declared in F-13 | - | queued (E-294) | F-13's pin | light | 0 | E-294 |
 | Q-225 | Parameterised trigger sources (the breakout's k, the marks' step and window), each with a shift-invariance test | - | queued (E-294) | Q-215 | light | 0 | E-294 |
 | Q-226 | The fast tier's duration: per-test durations from one full run, then shared fixtures and smaller synthetic sizes only where the same mutants still die; no selection, no skipped test | - | queued (E-294) | memory | light | 0 | E-294 |
+| Q-228 | The Mac as a second run host: setup (OPERATOR_SETUP item 12), the engine identity, then the exact H4 slice gate | operator, lead | running (E-298) | Q-229's port | heavy (the slice, on the Mac) | 0 | E-298 |
+| Q-229 | macOS port of the clean run and the lock (store links excluded, memory from vm_stat), then the Mac run agent after Q-228's gate | wt-mac | running (E-298) | - | light | 0 | E-298 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
