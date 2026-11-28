@@ -20,7 +20,7 @@ session's file would stamp it `-dirty`. So a run gets its own tree:
    Under the lock it also sets `S2X_LOCK_HOLDER=<name>` (the lock's job), by which the root `conftest.py` lets this
    command, and no other process, run tests marked `heavy` while the lock is held (Q-118).
    Its output goes to `<name>.log` beside the checkout (never inside it: an untracked log would stamp it `-dirty`),
-   ending with an `EXIT <code>` line.
+   starting with a `host: <name> (<platform>)` line (Q-229) and ending with an `EXIT <code>` line.
 4. **The lock** (E-005, E-006): with `--hours H --mem-gb G` (and `--task`), `run.lock` is taken through
    `scripts/run_lock.py` before anything else, the command's pid and log are recorded in it, and it is released after,
    whatever the exit; a refused lock (held: 3; memory short: 4) means the command does not run. Heavy runs use it.
@@ -49,6 +49,7 @@ import argparse
 import filecmp
 import os
 import shutil
+import socket
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -129,6 +130,12 @@ def checkout(name: str, commit: str) -> Path:
     return wt
 
 
+def host_line() -> str:
+    """The log's first line (Q-229): the machine the run ran on, so a run from a second host (the Mac) names it even
+    when its commit's manifests predate their own host field."""
+    return f"host: {socket.gethostname()} ({sys.platform})"
+
+
 def run(wt: Path, cmd: list[str], lock_job: str | None = None) -> int:
     run_id = f"{wt.name}@{datetime.now(timezone.utc):%Y%m%dT%H%M%S.%fZ}"
     env = {**os.environ, **BLAS, "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1", CLEAN_RUN_ENV: wt.name,
@@ -138,6 +145,10 @@ def run(wt: Path, cmd: list[str], lock_job: str | None = None) -> int:
     log = wt.parent / f"{wt.name}.log"
     print(f"running in {wt}: {' '.join(cmd)}  (log: {log}; run id {run_id})", flush=True)
     with log.open("w", encoding="utf-8") as f:
+        host = host_line()
+        f.write(host + "\n")
+        f.flush()
+        print(host, flush=True)
         p = subprocess.Popen(cmd, cwd=wt, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                              encoding="utf-8", errors="replace")
         if lock_job is not None:

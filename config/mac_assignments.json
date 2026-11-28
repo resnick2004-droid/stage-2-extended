@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "about": "The Mac run agent's assignments (Q-229; E-298 (4)). Edited by the lead only, on master; scripts/mac_agent.py reads it from origin/master, never from a local copy. The schema and its refusals: extended/mac_assignments.py. Each run: name, commit (full sha), command (python scripts/... or python identity/...), hours, mem_gb, task, outputs (results/<file>.csv, each with its manifest).",
+  "runs": [],
+  "failures_acknowledged": []
+}

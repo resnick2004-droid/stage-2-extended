@@ -7,7 +7,7 @@
 
 The lock is `run.lock` at the **main** repository's root (found from `git rev-parse --git-common-dir`, so every
 worktree and clean checkout sees the same file); git-ignored. `take` refuses (exit 3) when the lock is held, and
-(exit 4) when the machine's available physical memory is below `--mem-gb` -- a heavy run never starts short of the
+(exit 4) when the machine's available physical memory is below `--mem-gb`, or cannot be read (Q-229) -- a heavy run never starts short of the
 memory it needs. The file is created atomically (`open(..., "x")`), so two takers cannot both win. `release` removes
 it only for the job that holds it. A lock older than its expected end plus one hour is reported **STALE**: it is
 investigated (is its process alive, is its log growing?) and reported to the lead -- never stolen; `release --force`
@@ -54,6 +54,8 @@ def available_gb() -> float | None:
         if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
             return m.ullAvailPhys / 2**30
         return None
+    if sys.platform == "darwin":
+        return _darwin_available_gb()
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemAvailable:"):
@@ -90,13 +92,47 @@ def describe(lock: dict) -> str:
     return "HELD: " + ", ".join(f"{k}={lock.get(k)}" for k in keys if lock.get(k) is not None) + stale
 
 
+def _darwin_available_gb(vm_stat: str | None = None) -> float | None:
+    """macOS (Q-229): free + inactive + speculative pages from `vm_stat`, times its page size -- the memory a new
+    process can have without the system swapping. None when `vm_stat` cannot be read (the lock then refuses)."""
+    import re
+    import subprocess
+    if vm_stat is None:
+        try:
+            vm_stat = subprocess.run(["vm_stat"], capture_output=True, text=True, check=True, timeout=30).stdout
+        except (OSError, subprocess.SubprocessError):
+            return None
+    m = re.search(r"page size of (\d+) bytes", vm_stat)
+    if not m:
+        return None
+    pages = 0
+    for key in ("Pages free", "Pages inactive", "Pages speculative"):
+        k = re.search(re.escape(key) + r":\s+(\d+)", vm_stat)
+        if not k:
+            return None
+        pages += int(k.group(1))
+    return pages * int(m.group(1)) / 2**30
+
+
+def memory_words(lock: dict) -> str:
+    """The memory the lock's own record holds, for its TAKEN line (Q-229): what was read at the take, what the job
+    needs."""
+    have, need = lock.get("mem_gb_available_at_start"), lock.get("mem_gb_needed")
+    have_s = "unread" if have is None else f"{float(have):.2f} GB"
+    need_s = "unstated" if need is None else f"{float(need):.2f} GB"
+    return f"memory available at the take {have_s}, needed {need_s}"
+
+
 def take(a) -> int:
     held = read()
     if held is not None:
         print(f"REFUSED: {describe(held)}")
         return 3
     gb = available_gb()
-    if gb is not None and gb < a.mem_gb:
+    if gb is None:
+        print("REFUSED: this machine's available memory cannot be read; a heavy run never starts unchecked (Q-229)")
+        return 4
+    if gb < a.mem_gb:
         print(f"REFUSED: {gb:.1f} GB available, the job needs {a.mem_gb:.1f} GB; it waits (STATUS.md, OPERATOR_SETUP item 9)")
         return 4
     start = now()
@@ -109,7 +145,8 @@ def take(a) -> int:
     except FileExistsError:
         print(f"REFUSED: taken a moment ago -- {describe(read() or {})}")
         return 3
-    print(f"TAKEN: {LOCK} by {a.holder} for {a.job} ({a.task}), expected end {lock['expected_end']}")
+    print(f"TAKEN: {LOCK} by {a.holder} for {a.job} ({a.task}), expected end {lock['expected_end']}; "
+          f"{memory_words(lock)}")
     return 0
 
 
