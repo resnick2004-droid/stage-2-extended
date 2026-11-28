@@ -83,6 +83,15 @@ def finalists(row: int, fid: str, text: str, lst: str) -> str:
 
 
 def make_tree(base: Path, rows=()) -> Path:
+    """The synthetic tree at `<base>/runs/<RUN>`: built once a process for these rows and copied (Q-226,
+    `tests/tree_template.py`)."""
+    import tree_template
+
+    rows = tuple(rows)
+    return tree_template.copied(("heldout", rows), lambda b: _build_tree(b, rows), base / "runs" / RUN)
+
+
+def _build_tree(base: Path, rows=()) -> Path:
     t = base / "runs" / RUN
     for d in ("prereg", "identity", "scripts"):
         (t / d).mkdir(parents=True)
