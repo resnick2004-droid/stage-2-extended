@@ -36,19 +36,20 @@ reading, and the red team checks the diff (section 14 step 1).
 - **The build before the pin** (E-297 (2), (3); section 14 step 2), each item built, reviewed and merged before the
   hash row, its files on the deciding-files line (section 1):
   1. **W42-R2 merged and pinned** (wt/wt-w42r2 after its fix pass, its red-team read, its pinning row before H4 is
-     read, E-296), and the survey's objective moved to it: `survey.W42_RULE` and `load_objective` read W42-R2's rule id,
-     module and output, and the limits come only from `extended.wave42_r2` -- `limit_estimate`, `limit_check` and
+     read, E-296); the survey's objective is already moved to it by Q-215's merge (`6289f87`): `survey.W42_RULE` is
+     W42-R2, `load_objective` reads its rule id, module, script and output through `survey.W42_R2_NAMES`, and the limits
+     come only from `extended.wave42_r2` -- `limit_estimate`, `limit_check` and
      `limit_per_seed_sd` imported from it, never from `extended.wave42` -- whose headroom uses sd\*, the largest
      per-seed sd of the four baselines, for both the test's and the search's noise;
   2. **the parts**, `extended/survey_parts.py`: the space (T1 narrowed to the declared triggers, `p14` and `rl3`, by
      its `sources` parameter, and T7 held at `off`), the gate, the schedule builder, the design runner over Q-215's
-     real-bar route `extended/survey_route.py` (wt/wt-survey `d64aced`, under its red team) and
+     real-bar route `extended/survey_route.py` (merged on master at `6289f87`; its docstrings state this runner's conditions, cited by their merged names in item 3) and
      `extended/design_trades.py` (E-291), with its identities B-I1 to B-I3, and the playbook writer; the route refuses
      `coin` and `p16` by name (`trigger_sides.NO_SIDE`), `rl3` without its declared level kind and cutoff, and any T7
      but `off`;
   3. **the runner's calls to the route's boundary checks** (the route's re-read, m-1): on every cell the runner calls
      `survey_route.check_policy_reads` (as corrected under that read's B-1) before it builds the job,
-     `survey_route.check_taken_rr` on every lane's log (`three_way_baseline.simulate(log=True)`, or a per-lane
+     `survey_route.check_taken_rr` on every lane's log (`survey_route.route_simulate`'s accounting, or a per-lane
      assertion with the same keys) and `survey_route.own_rr`, reads facts only through `survey_route.facts` (never
      `design_trades.facts_for` directly, so `masked_problems` runs), and reads outcomes only per R (`set_risk(risk,
      w)`), its identity never using `outcome="vendored"` on a table without w = 1; **it enforces
@@ -150,10 +151,10 @@ declaration citing this one.
   (`extended/three_way_s1.py`), the firm path, the lever space with S1's and T7's loaders, the features, the naive
   coin's builder, W42-R1's module (which W42-R2 runs) and the calendars -- with the entry scripts, the identity of the
   registered constants, and the configuration and calendar files they read. `tests/test_f13_draft.py` recomputes the
-  closure of every listed `extended` module and refuses a missing one. `extended/survey_parts.py`,
-  `extended/survey_route.py`, `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` are written by the build before the pin (the head's list,
-  items 1 and 2; the last two on wt/wt-w42r2 now), and the build's closure is re-checked against this line before the
-  hash row; every other file of the line exists at this commit. The reader's `go_row_present` holds each
+  closure of every listed `extended` module and refuses a missing one. `extended/survey_parts.py` is
+  written by the build before the pin (the head's list, item 2); `extended/survey_route.py` (Q-215, `6289f87`),
+  `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` are merged; the build's closure is re-checked against this
+  line before the hash row; every other file of the line exists at this commit. The reader's `go_row_present` holds each
   file byte-identical at HEAD and at the go row's runner commit and unchanged in the working tree (U-1; section 14
   step 4).
 - **Its own execution protocol** (E-202; never another firm's reused): Topstep's $50K lever table,

@@ -74,8 +74,7 @@ W42_ROWS = {
     "the **no-harm margin**": "`delta_star`",
     "**the do-nothing floor**": "`null_journeys`",
 }
-TO_BUILD = ("extended/survey_parts.py", "extended/survey_route.py", "extended/wave42_r2.py",
-            "scripts/wave42_r2_apply.py")
+TO_BUILD = ("extended/survey_parts.py",)
 HELD_FIRST, HELD_LAST, CONFIRM, SEARCH_LAST = "2024-01-02", "2026-07-16", "2026-07-17", "2023-12-29"
 RECORD_DATES_FROM = "2026-11-01"
 UNREAD = re.compile(r"never read|refus|unread|held-out years|confirmation window|read ledger|written after")
@@ -153,8 +152,9 @@ def test_the_scope_fields_read_as_the_reader_reads_them(text: str) -> None:
         assert (ROOT / f).is_file() or f in TO_BUILD, f"a deciding file that is neither here nor declared to build: {f}"
     for f in TO_BUILD:
         assert f in files, f
-    assert ("`extended/survey_parts.py`, `extended/survey_route.py`, `extended/wave42_r2.py` and "
-            "`scripts/wave42_r2_apply.py` are written by the build before the pin") in _flat(text)
+    assert ("`extended/survey_parts.py` is written by the build before the pin (the head's list, item 2); "
+            "`extended/survey_route.py` (Q-215, `6289f87`), `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` "
+            "are merged") in _flat(text)
     # planted controls: each field in another form is a problem
     line = next(ln for ln in text.splitlines() if ln.startswith("- **The market:**"))
     assert R.design_search_problems(text.replace(line, line.replace("NQ --", "ES --", 1)))
@@ -259,9 +259,8 @@ def test_the_spec_loads_once_filled_and_is_refused_unfilled(text: str) -> None:
     with pytest.raises(SV.SpecRefused):                    # today's runner refuses the screen key: a build item
         SV.load_spec(f"```survey-spec\n{json.dumps(filled)}\n```\n")
     filled.pop("screen")
-    with pytest.raises(SV.SpecRefused):                    # today's runner refuses W42-R2's rule id: build item 1
-        SV.load_spec(f"```survey-spec\n{json.dumps(filled)}\n```\n")
-    filled["objective"]["rule_id"] = SV.W42_RULE           # the form check only, at today's rule id
+    assert SV.W42_RULE == "W42-R2", "Q-215's merge rebound the survey to W42-R2 (6289f87)"
+    assert filled["objective"]["rule_id"] == SV.W42_RULE
     body = json.dumps(filled, indent=2)
     got = SV.load_spec(f"```survey-spec\n{body}\n```\n")
     assert got.survey_n == 512 and got.rounds == 8 and got.candidates == 4 and got.z == 2.0
@@ -765,7 +764,7 @@ def test_q215_the_routes_three_declarations_and_t1s_narrowing(text: str) -> None
     assert f"LF sha256 `{sha}`" in row, "RL3's draft cited at its own hash"
     head = _head(text)
     assert "the route refuses `coin` and `p16` by name (`trigger_sides.NO_SIDE`)" in head
-    assert "`extended/survey_route.py` (wt/wt-survey `d64aced`" in head
+    assert "`extended/survey_route.py` (merged on master at `6289f87`" in head
 
 
 def test_q215_red_team_s2_onto_r_and_refused_points(text: str) -> None:
@@ -815,3 +814,16 @@ def test_q215_c3_m5_flip_outside_and_m7_the_pnl_readers(text: str) -> None:
               "`EmpiricalDraw` or `outcome=\"vendored\"`", "never `three_way_baseline.simulate` directly",
               "which checks these calls and readers"):
         assert x in head, x
+
+
+def test_the_routes_merged_names_are_cited_and_exist(text: str) -> None:
+    """Q-215 merged (6289f87): every `survey_route.<name>` the draft cites is a name the merged module defines, and
+    the runner's conditions name `route_simulate`'s accounting."""
+    src = (ROOT / "extended" / "survey_route.py").read_text(encoding="utf-8")
+    cited = set(re.findall(r"`survey_route\.([A-Za-z_][A-Za-z0-9_]*)", text))
+    assert {"check_policy_reads", "check_taken_rr", "own_rr", "route_simulate", "facts", "PNL_READERS",
+            "T7_MAPPED", "RouteRefused"} <= cited, sorted(cited)
+    for name in sorted(cited):
+        assert re.search(rf"^(?:def|class) {name}\b|^{name}\s*[:=]", src, re.M), f"survey_route.{name} is not defined"
+    assert "`survey_route.route_simulate`'s accounting" in _head(text)
+    assert "`survey.W42_R2_NAMES`" in _head(text)
