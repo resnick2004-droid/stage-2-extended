@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "about": "The Mac run agent's assignments (Q-229; E-298 (4)). Edited by the lead only, on master; scripts/mac_agent.py reads it from origin/master, never from a local copy. The schema and its refusals: extended/mac_assignments.py. Each run: name, commit (full sha), command (python scripts/... or python identity/...), hours, mem_gb, task, outputs (results/<file>.csv, each with its manifest).",
+  "runs": [
+    {
+      "name": "h4-b-coin-p1",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 0 --start-hi 150 --part-tag p1 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p1.csv",
+        "results/h4_trades_naive_coin_p1.csv",
+        "results/h4_readings_naive_coin_p1.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p2",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 150 --start-hi 300 --part-tag p2 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p2.csv",
+        "results/h4_trades_naive_coin_p2.csv",
+        "results/h4_readings_naive_coin_p2.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p3",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 300 --start-hi 450 --part-tag p3 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p3.csv",
+        "results/h4_trades_naive_coin_p3.csv",
+        "results/h4_readings_naive_coin_p3.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p4",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 450 --start-hi 600 --part-tag p4 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p4.csv",
+        "results/h4_trades_naive_coin_p4.csv",
+        "results/h4_readings_naive_coin_p4.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p5",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 600 --start-hi 750 --part-tag p5 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p5.csv",
+        "results/h4_trades_naive_coin_p5.csv",
+        "results/h4_readings_naive_coin_p5.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p6",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 750 --start-hi 900 --part-tag p6 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p6.csv",
+        "results/h4_trades_naive_coin_p6.csv",
+        "results/h4_readings_naive_coin_p6.csv"
+      ]
+    },
+    {
+      "name": "h4-b-coin-p7",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline naive_coin --start-lo 900 --start-hi 1034 --part-tag p7 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_naive_coin_p7.csv",
+        "results/h4_trades_naive_coin_p7.csv",
+        "results/h4_readings_naive_coin_p7.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p1",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 0 --start-hi 150 --part-tag p1 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p1.csv",
+        "results/h4_trades_p16_p1.csv",
+        "results/h4_readings_p16_p1.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p2",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 150 --start-hi 300 --part-tag p2 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p2.csv",
+        "results/h4_trades_p16_p2.csv",
+        "results/h4_readings_p16_p2.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p3",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 300 --start-hi 450 --part-tag p3 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p3.csv",
+        "results/h4_trades_p16_p3.csv",
+        "results/h4_readings_p16_p3.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p4",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 450 --start-hi 600 --part-tag p4 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p4.csv",
+        "results/h4_trades_p16_p4.csv",
+        "results/h4_readings_p16_p4.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p5",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 600 --start-hi 750 --part-tag p5 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p5.csv",
+        "results/h4_trades_p16_p5.csv",
+        "results/h4_readings_p16_p5.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p6",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 750 --start-hi 900 --part-tag p6 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p6.csv",
+        "results/h4_trades_p16_p6.csv",
+        "results/h4_readings_p16_p6.csv"
+      ]
+    },
+    {
+      "name": "h4-b-p16-p7",
+      "commit": "7ed79fb6e5a8179311548e3574f76a503b38a115",
+      "command": "python scripts/h4_rebaseline.py --part H4-B --baseline p16 --start-lo 900 --start-hi 1034 --part-tag p7 --workers 2",
+      "hours": 6,
+      "mem_gb": 3,
+      "task": "Q-188b",
+      "outputs": [
+        "results/h4_units_p16_p7.csv",
+        "results/h4_trades_p16_p7.csv",
+        "results/h4_readings_p16_p7.csv"
+      ]
+    }
+  ],
+  "failures_acknowledged": []
+}

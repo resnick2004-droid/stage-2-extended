@@ -71,7 +71,27 @@ def link(wt: Path, store: str) -> None:
     if os.name == "nt":
         subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], check=True, capture_output=True)
     else:
+        _exclude_store_links()
         os.symlink(src, dst, target_is_directory=True)
+
+
+def _exclude_store_links(root: Path = ROOT) -> None:
+    """Q-229: off Windows a store is linked by a symbolic link, which git sees as a file, so `.gitignore`'s
+    directory-only patterns (`vendor/stage2/data/bars/`) do not hide it and every checkout would read as untracked --
+    at any commit, old ones included. The repository's own `info/exclude` (shared by every worktree, never committed)
+    gets each store's path without the trailing slash, once."""
+    common = Path(git("rev-parse", "--git-common-dir", cwd=root).strip())
+    if not common.is_absolute():
+        common = (root / common).resolve()
+    ex = common / "info" / "exclude"
+    ex.parent.mkdir(parents=True, exist_ok=True)
+    text = ex.read_text(encoding="utf-8") if ex.is_file() else ""
+    have = [ln.strip() for ln in text.splitlines()]
+    add = [f"/{s}" for s in STORES if f"/{s}" not in have]
+    if add:
+        lead = "\n" if text and not text.endswith("\n") else ""
+        with ex.open("a", encoding="utf-8", newline="\n") as f:
+            f.write(lead + "# the licensed stores' symbolic links (scripts/worktrees.py, Q-229)\n" + "\n".join(add) + "\n")
 
 
 def unlink(wt: Path, store: str) -> None:
