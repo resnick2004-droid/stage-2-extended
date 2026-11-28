@@ -6,7 +6,7 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 
 ## Phase
 
-The journey objective (CHARTER 2, E-210): H4 re-baselines the four baselines on the search years; W42-R2 sets the limits from them (Q-221, Q-189); F-13, the first Topstep design search, is drafted (Q-214), its scope frozen (E-294); its survey follows (Q-215, Q-190). F-03 closed (k = 12 spent).
+The journey objective (CHARTER 2, E-210): H4 re-baselines the four baselines on the search years; W42-R2, pinned (E-299), sets the limits from them (Q-189); F-13, the first Topstep design search, is drafted (Q-214), its scope frozen (E-294); its survey follows (Q-215, Q-190). F-03 closed (k = 12 spent).
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 

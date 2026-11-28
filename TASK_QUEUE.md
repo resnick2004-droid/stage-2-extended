@@ -68,7 +68,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | closed (E-293: remainder in Q-203; the red team's read of the four rows not found on record) | E-232 | light | 0 | E-246 |
 | Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | running (E-295: slots A1, A2, A4 under run.lock; A3 deferred to H3-D) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | held (E-289: no H4-B output used until Q-188b closes) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
-| Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
+| Q-189 | W42-R2 applied to H4's readings (`scripts/wave42_r2_apply.py`, pinned E-299); the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-299) | Q-188, Q-221 | light | 0 | E-246, E-296, E-299 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
 | Q-198 | The sizing experiment on the three-way runner (after its follow-up) | wt-three | queued (E-255) | Q-187 | light | 0 | E-255 |
@@ -86,7 +86,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-217 | The test-encoding defect: `_git` helpers decode `git show` with utf-8 (in Q-188b) | wt-h4fix | running (E-289) | - | light | 0 | E-289 |
 | Q-218 | The seed guards' literal scan: no match inside a decimal value (digit boundary on both sides, '.' included) | - | queued (E-290) | - | light | 0 | E-290 |
 | Q-220 | The race's law and draws made faster in `extended/` under a refusing bit-for-bit identity (and the per-lane SharedDayDraws rebuild) | - | queued (E-292) | Q-219 | light | 0 | E-292 |
-| Q-221 | W42-R2: one floor limit on the median `net_month_12` (h 252), its value only from the formula; red team and a power check before its pin | wt-w42r2 | running (E-298: second and last fix pass after the red team's BLOCK) | Q-176 | light | 0 | E-293 |
+| Q-221 | W42-R2: one floor limit on the median `net_month_12` (h 252), its value only from the formula; red team and a power check before its pin | wt-w42r2 | done (E-299: merged and pinned) | Q-176 | light | 0 | E-293 |
 | Q-223 | F-13's exact-bound screen: gate keys on the trade table before the campaign; plateau gate-first; lazy real-path arms; baseline arms once per protocol; identities S-I1 to S-I3 | wt-survey | queued (E-294) | Q-215, Q-189 | light (S-I3's real-bar part heavy) | 0 | E-294 |
 | Q-224 | MEASURES rows 28 and 29's stress arms (missed, late, worse fills) for F-13's finalists, as declared in F-13 | - | queued (E-294) | F-13's pin | light | 0 | E-294 |
 | Q-225 | Parameterised trigger sources (the breakout's k, the marks' step and window), each with a shift-invariance test | - | queued (E-294) | Q-215 | light | 0 | E-294 |
