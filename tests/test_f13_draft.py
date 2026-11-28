@@ -25,6 +25,7 @@ move with it (as `tests/test_h4_draft.py`'s did).
 from __future__ import annotations
 
 import ast
+import hashlib
 import copy
 import importlib.util
 import json
@@ -73,7 +74,8 @@ W42_ROWS = {
     "the **no-harm margin**": "`delta_star`",
     "**the do-nothing floor**": "`null_journeys`",
 }
-TO_BUILD = ("extended/survey_parts.py", "extended/wave42_r2.py", "scripts/wave42_r2_apply.py")
+TO_BUILD = ("extended/survey_parts.py", "extended/survey_route.py", "extended/wave42_r2.py",
+            "scripts/wave42_r2_apply.py")
 HELD_FIRST, HELD_LAST, CONFIRM, SEARCH_LAST = "2024-01-02", "2026-07-16", "2026-07-17", "2023-12-29"
 RECORD_DATES_FROM = "2026-11-01"
 UNREAD = re.compile(r"never read|refus|unread|held-out years|confirmation window|read ledger|written after")
@@ -151,8 +153,8 @@ def test_the_scope_fields_read_as_the_reader_reads_them(text: str) -> None:
         assert (ROOT / f).is_file() or f in TO_BUILD, f"a deciding file that is neither here nor declared to build: {f}"
     for f in TO_BUILD:
         assert f in files, f
-    assert ("`extended/survey_parts.py`, `extended/wave42_r2.py` and `scripts/wave42_r2_apply.py` are written by the "
-            "build before the pin") in _flat(text)
+    assert ("`extended/survey_parts.py`, `extended/survey_route.py`, `extended/wave42_r2.py` and "
+            "`scripts/wave42_r2_apply.py` are written by the build before the pin") in _flat(text)
     # planted controls: each field in another form is a problem
     line = next(ln for ln in text.splitlines() if ln.startswith("- **The market:**"))
     assert R.design_search_problems(text.replace(line, line.replace("NQ --", "ES --", 1)))
@@ -725,3 +727,36 @@ def test_the_minors_of_both_reads(text: str) -> None:
     assert "**the H3-D placeholder**" in _head(text)
     for gone in ("the lead's ruling, Q-214", "the lead's ruling on Q-214", "on this text's first read (Q-214)"):
         assert gone not in f, gone
+
+
+RL3_DRAFT = ROOT / "prereg" / "DRAFT_F-RL3_resting_levels.md"
+
+
+def test_q215_the_routes_three_declarations_and_t1s_narrowing(text: str) -> None:
+    """Q-215's real-bar route cannot choose these: S1's whole-tick rule, RL3's level kind and cutoff, T7 at `off`; and
+    the space's T1 narrowed to the declared triggers."""
+    from extended import triggers as T, vol_descriptive as VD
+
+    s1 = next(r for r in _rows(_section(text, 3)) if r[0] == "S1")[4]
+    assert "rounded half up to whole ticks, at least one, by `vol_descriptive.band_ticks`" in s1
+    assert "the caps are checked on the unrounded k x T(d)" in s1
+    assert VD.band_ticks(1.0, 1.0) >= 1                          # the cited rule exists and rounds to whole ticks
+    t7 = next(r for r in _rows(_section(text, 3)) if r[0] == "T7")
+    assert t7[3].startswith("searched in the table, **held at `off` in this search**") and "`off` only" in t7[4]
+    sp = _spec(text)
+    assert sp["parts"]["space"]["params"]["held"] == {"T7": "off"}
+    src = sp["parts"]["space"]["params"]["sources"]
+    assert set(x for v in src.values() for x in v) == {"p14", "rl3"} and src["ny_am"] == ["p14", "rl3"]
+    rl3 = sp["parts"]["runner"]["params"]["source_params"]["rl3"]
+    assert rl3 == {"kind": "pd", "cutoff_ct": "14:30"}
+    assert rl3["kind"] in T.RL3_KINDS and rl3["kind"] == T.RL3_KINDS[0], "RL3's draft lists `pd` first"
+    hh, mm = (int(x) for x in rl3["cutoff_ct"].split(":"))
+    from extended import walker as W
+    assert W.slot(hh, mm) == max(T.RL3_CUTOFFS), "14:30 CT, the latest declared cutoff"
+    row = _flat(_section(text, 4))
+    assert "**its level kind `pd` (the prior regular session's high and low) and its cutoff 14:30 CT, fixed, not searched**" in row
+    sha = hashlib.sha256(_lf(RL3_DRAFT).encode("utf-8")).hexdigest()
+    assert f"LF sha256 `{sha}`" in row, "RL3's draft cited at its own hash"
+    head = _head(text)
+    assert "the route refuses `coin` and `p16` by name (`trigger_sides.NO_SIDE`)" in head
+    assert "`extended/survey_route.py` (wt/wt-survey `d64aced`" in head
