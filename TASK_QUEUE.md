@@ -81,7 +81,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | built on wt/wt-report, not merged (E-280, E-293) | Q-208 | light | 0 | E-274 |
 | Q-188b | H4's fixes after the audit and the re-check: F-3 (the sigma-rule drops) diagnosed first, B-1, F-2's coin identity, B-2's exact-run classification, tests that can fail, rc-3 disk, labels, the worker-count lever, P-15 p5's re-run | wt-h4fix | running (E-289) | Q-188 | light | 0 | E-289 |
 | Q-214 | The first design search's draft, `DRAFT_F-13` (Topstep NQ survey), W42-R1's values blank | wt-fs1 | running (E-298: fix pass after the red team's BLOCK and the form read) | - | light | 0 | E-290 |
-| Q-215 | The survey's real-bar route: wire the lever space to `extended/design_trades.py` (after Q-213) | - | queued (E-290) | Q-213 | light | 0 | E-290 |
+| Q-215 | The survey's real-bar route: wire the lever space to `extended/design_trades.py` (after Q-213) | - | built (E-300: wt/wt-survey d64aced; red team before merge; heavy identity next) | Q-213 | light | 0 | E-290 |
 | Q-216 | H3-A's report code and runner after BUILD_H3A_REPORT's BLOCK | wt-h3a | done (E-295) | Q-187 | light | 0 | E-290 |
 | Q-217 | The test-encoding defect: `_git` helpers decode `git show` with utf-8 (in Q-188b) | wt-h4fix | running (E-289) | - | light | 0 | E-289 |
 | Q-218 | The seed guards' literal scan: no match inside a decimal value (digit boundary on both sides, '.' included) | - | queued (E-290) | - | light | 0 | E-290 |
@@ -90,7 +90,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-223 | F-13's exact-bound screen: gate keys on the trade table before the campaign; plateau gate-first; lazy real-path arms; baseline arms once per protocol; identities S-I1 to S-I3 | wt-survey | queued (E-294) | Q-215, Q-189 | light (S-I3's real-bar part heavy) | 0 | E-294 |
 | Q-224 | MEASURES rows 28 and 29's stress arms (missed, late, worse fills) for F-13's finalists, as declared in F-13 | - | queued (E-294) | F-13's pin | light | 0 | E-294 |
 | Q-225 | Parameterised trigger sources (the breakout's k, the marks' step and window), each with a shift-invariance test | - | queued (E-294) | Q-215 | light | 0 | E-294 |
-| Q-226 | The fast tier's duration: per-test durations from one full run, then shared fixtures and smaller synthetic sizes only where the same mutants still die; no selection, no skipped test | - | queued (E-294) | memory | light | 0 | E-294 |
+| Q-226 | The fast tier's duration: per-test durations from one full run, then shared fixtures and smaller synthetic sizes only where the same mutants still die; no selection, no skipped test | - | done (E-300: merged; short of a third, test-side only) | memory | light | 0 | E-294 |
 | Q-228 | The Mac as a second run host: setup (OPERATOR_SETUP item 12), the engine identity, then the exact H4 slice gate | operator, lead | running (E-298) | Q-229's port | heavy (the slice, on the Mac) | 0 | E-298 |
 | Q-229 | macOS port of the clean run and the lock (store links excluded, memory from vm_stat), then the Mac run agent after Q-228's gate | wt-mac | running (E-298) | - | light | 0 | E-298 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
