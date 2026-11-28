@@ -54,6 +54,30 @@ from extended import survey as SV  # noqa: E402
 
 
 @pytest.fixture(scope="module", autouse=True)
+def _one_parse_a_file():
+    """Q-226 (the fast tier's time): every survey call binds its parts, engine and objective by `SV.code_closure`,
+    which parses each `extended` file it reaches again (most of a survey call here, profiled 2026-11-27). The parse is
+    one computed artefact reused: `SV._imports` is memoised on (path, module name, the file's bytes), so a file whose
+    bytes change -- a mutant, a changed engine in a temporary folder -- is parsed afresh, and every miss is the
+    production function itself. Nothing a test asserts changes; a subprocess run of the survey is unmemoised."""
+    orig = SV._imports
+    memo: dict = {}
+
+    def imports(path: str, name: str) -> set[str]:
+        key = (path, name, Path(path).read_bytes())
+        if key not in memo:
+            memo[key] = frozenset(orig(path, name))
+        return set(memo[key])
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr(SV, "_imports", imports)
+    try:
+        yield
+    finally:
+        mp.undo()
+
+
+@pytest.fixture(scope="module", autouse=True)
 def _survey_world_w42_shas():
     with W.world_w42_shas():
         yield
