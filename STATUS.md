@@ -2,11 +2,11 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-27 (E-294). Live board: `python scripts/status.py` (the queue, the run lock, the worktrees, the result files with their manifest check, the last test run). Held: H4-B's outputs until Q-188b closes (E-289); H3-A until Q-216 and its review (E-290). Next k = 13; search years 2020-01-02 to 2023-12-29; the held-out years unread by any design search; NQ from 2026-07-17 unread (a purchase).
+**Updated:** 2026-11-28 (E-301). Live board: `python scripts/status.py` (the queue, the run lock, the worktrees, the result files with their manifest check, the last test run). Held: H4-B's outputs until Q-188b closes (E-289); H3-A until Q-216 and its review (E-290). Next k = 13; search years 2020-01-02 to 2023-12-29; the held-out years unread by any design search; NQ from 2026-07-17 unread (a purchase).
 
 ## Phase
 
-The journey objective (CHARTER 2, E-210): H4 re-baselines the four baselines on the search years; W42-R2, pinned (E-299), sets the limits from them (Q-189); F-13, the first Topstep design search, is drafted (Q-214), its scope frozen (E-294); its survey follows (Q-215, Q-190). F-03 closed (k = 12 spent).
+The journey objective (CHARTER 2, E-210): H4 re-baselines the four baselines on the search years; W42-R2, pinned (E-299), sets the limits from them (Q-189); F-13, the first Topstep design search, is drafted (Q-214), its scope frozen (E-294); its survey follows (Q-215, Q-190; the route in its last corrective cycle, E-301). H4-B: P-15's parts run here, the naive coin's and P-16's on the Mac (qualified by an exact slice, its agent merged, E-301). F-03 closed (k = 12 spent).
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 

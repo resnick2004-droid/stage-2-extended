@@ -16,7 +16,8 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 | 9 | **Memory for heavy runs** | a campaign or a full identity needs about 3 GB; on 2026-11-15 the machine had about 1.7 GB available, the rest held by other applications | light work runs; a heavy run waits until the memory is there (the session checks before it starts) | open -- see below |
 | 10 | **Two written questions to other firms** (optional) -- DayTraders.com on its Terms s.26 item 3.c, TradeDay on its multiple-users sentence -- text below | the other-firms reading (`prereg/DRAFT_RD_firms.md`) names each question as open on its plan's rows | the reading runs as declared, those rows labelled | open |
 | 11 | **Alpha Futures' $50K terms, and Lucid's $50K prices, read by hand** (E-197) -- screenshots of public pages, saved unedited | Alpha's terms forbid automated access (E-020 (2)), and Lucid's, as modified on 2026-11-13, forbid copying or monitoring its content "by automated or unauthorized means", and an agent driving the operator's browser is still automated access, so no session reads Alpha's site | Alpha is carried as unread: no contract, no zero-edge map, no sizing grid; Lucid stays on Stage 2's verified LucidFlex record, unpriced for the other plans | open |
-| 12 | **The Mac as a second run host** (Apple M4, 16 GB; the operator's choice, E-298) | a second machine runs heavy parts beside this one, if its results match this machine's digit for digit | every heavy run on this machine, one at a time | open -- see below |
+| 12 | **The Mac as a second run host** (Apple M4, 16 GB; the operator's choice, E-298) | a second machine runs heavy parts beside this one, if its results match this machine's digit for digit | every heavy run on this machine, one at a time | **done** -- the Mac's exact H4 slice matched this machine's file for file (E-301) |
+| 13 | **Start the Mac run agent** (E-301) -- one hand start, then a timer | the Mac runs the heavy parts the lead assigns it, by itself, one at a time | those parts wait for this machine | open -- see below |
 
 ## Item 6 -- the repository outside OneDrive
 
@@ -142,3 +143,24 @@ decision). Five steps, about half an hour; the sessions do the rest.
    Mac's numbers match this machine's to the last digit; if any digit differs, the Mac is not used for results (that is
    expected on a different processor and costs nothing).
 
+## Item 13 -- start the Mac run agent (E-301)
+
+The agent runs, by itself, the heavy parts the lead assigns to the Mac: one at a time, under the Mac's own lock, and
+it pushes only that run's result files to a private `mac/<run>` branch after the price-level check. It never places an
+order, never touches `master`, never re-runs a failed part. In Terminal, on the Mac:
+
+1. **Start it once by hand** (checks that fetching and pushing work without a password prompt):
+   `cd ~/stage2x/stage-2-extended && git pull --ff-only && source ~/stage2x/venv/bin/activate`
+   then `python scripts/mac_agent.py --status` and then `python scripts/mac_agent.py`
+   (it runs one part, or says there is nothing to run, and exits).
+2. **Install the timer** (it wakes at load and every 30 minutes; keep the Mac on power with the lid open):
+   `mkdir -p ~/stage2-extended-runs/mac-agent`
+   `python scripts/mac_agent.py --plist > ~/Library/LaunchAgents/com.stage2x.mac-agent.plist`
+   `plutil -lint ~/Library/LaunchAgents/com.stage2x.mac-agent.plist`
+   `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.stage2x.mac-agent.plist`
+3. **To look:** `tail -n 40 ~/stage2-extended-runs/mac-agent/agent.log`, or `python scripts/mac_agent.py --status`.
+   A `PUSHED mac/<name>` line or a `FAILED:` block: tell any session here (the lead collects or diagnoses it).
+4. **To pause** without stopping a run: `touch ~/stage2-extended-runs/mac-agent/STOP` (remove the file to resume).
+   **To remove the timer**, only while `--status` shows the lock FREE:
+   `launchctl bootout gui/$(id -u)/com.stage2x.mac-agent` then `rm ~/Library/LaunchAgents/com.stage2x.mac-agent.plist`.
+   Removing it during a run stops the run and leaves the lock held: tell the lead.
