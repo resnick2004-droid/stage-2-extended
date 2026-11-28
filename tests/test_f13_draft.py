@@ -681,6 +681,8 @@ def test_k_max_is_the_loaded_spaces(text: str) -> None:
         slot = d.name.split(".")[0] if "." in d.name else None
         part = d.name.rsplit(".", 1)[-1]
         if slot is None:
+            if d.name in ("A1", "A2"):
+                continue                                         # held at `steady` (the route's c3 read, m-5)
             total += 2 if d.kind != SS.CAT else len(d.values) - 1
         elif part == "on":
             total += len(d.values) - 1
@@ -697,9 +699,9 @@ def test_k_max_is_the_loaded_spaces(text: str) -> None:
                 has_s1.add(slot)
     total += 2 * len(set(sources) - has_s1)                      # S1 where `results/s1_range.csv` is absent
     total += 2                                                   # the one design-wide S2
-    assert "S1" in LS.LEVERS and total == 77, total
-    assert "**k_max = 77**" in _flat(_section(text, 7)) and "4 x 77 = 308" in _flat(_section(text, 13))
-    assert "768 + 4 + 308 = 1080" in _flat(_section(text, 13))
+    assert "S1" in LS.LEVERS and total == 75, total
+    assert "**k_max = 75**" in _flat(_section(text, 7)) and "4 x 75 = 300" in _flat(_section(text, 13))
+    assert "768 + 4 + 300 = 1072" in _flat(_section(text, 13))
     assert _spec(text)["parts"]["space"]["params"].get("design_wide") == ["S2"]
 
 
@@ -748,7 +750,7 @@ def test_q215_the_routes_three_declarations_and_t1s_narrowing(text: str) -> None
     t7 = next(r for r in _rows(_section(text, 3)) if r[0] == "T7")
     assert t7[3].startswith("searched in the table, **held at `off` in this search**") and "`off` only" in t7[4]
     sp = _spec(text)
-    assert sp["parts"]["space"]["params"]["held"] == {"T7": "off"}
+    assert sp["parts"]["space"]["params"]["held"] == {"T7": "off", "A1": "steady", "A2": "steady"}
     src = sp["parts"]["space"]["params"]["sources"]
     assert set(x for v in src.values() for x in v) == {"p14", "rl3"} and src["ny_am"] == ["p14", "rl3"]
     rl3 = sp["parts"]["runner"]["params"]["source_params"]["rl3"]
@@ -797,3 +799,19 @@ def test_q215_c2_m1_m4_and_the_same_convention(text: str) -> None:
               "**The R schedule is not part of the convention but of each plan:**",
               "**The difference does not favour the designs:**"):
         assert x in conv, x
+
+
+def test_q215_c3_m5_flip_outside_and_m7_the_pnl_readers(text: str) -> None:
+    """The route's c3 read: m-5 (flip cannot run through the route: A1 and A2 held at `steady`, the cells removed
+    counted) and m-7 (the runner enforces `survey_route.PNL_READERS` and reaches the engine only through the route)."""
+    rows = {r[0]: r for r in _rows(_section(text, 3))}
+    for lever in ("A1", "A2"):
+        assert rows[lever][3].startswith("searched in the table, **held at `steady` in this search**"), lever
+        assert "the baseline-mode race reads no flip stream" in rows[lever][4], lever
+    assert "**the cells removed:** of the four (A1, A2) policy cells, the three holding a `flip`" in rows["A2"][4]
+    assert _spec(text)["parts"]["space"]["params"]["held"].get("A1") == "steady"
+    head = _head(text)
+    for x in ("**it enforces `survey_route.PNL_READERS`**", "`gate.shifted_blocks`, `gate.mean_r`, `SharedDayDraw`, "
+              "`EmpiricalDraw` or `outcome=\"vendored\"`", "never `three_way_baseline.simulate` directly",
+              "which checks these calls and readers"):
+        assert x in head, x
