@@ -36,7 +36,7 @@ SIDE_RULES = {"p14": "with_breakout", "rl3": "fade"}
 FEE = 1.22                                                # a toy fee a micro at any stop
 TICK_VALUE = 0.5
 ENTRY_TICKS = 1.0
-FRESH_RR = 1.5
+FRESH_RR = 1.5                                            # the engine's combine R in the toys (never a route input)
 
 
 @contextlib.contextmanager
@@ -134,5 +134,5 @@ def ts_of_slot(day: str, slot: int) -> int:
 
 
 def build_kw(hist: T.History, cal: DC.Sources) -> dict[str, Any]:
-    return dict(cal=cal, day_kinds=day_kinds(hist), news_windows=None, fresh_rr=FRESH_RR,
+    return dict(cal=cal, day_kinds=day_kinds(hist), news_windows=None,
                 fee_for_stop=lambda s: FEE, tick_value=TICK_VALUE, market_entry_ticks=ENTRY_TICKS)

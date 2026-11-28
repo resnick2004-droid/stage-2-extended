@@ -58,8 +58,8 @@ calendar (Q-197's `results/search_calendar.csv` through `extended.search_calenda
 `wave42.SEARCH_CALENDAR_SHA256`, its dates the ones W42-R2 was set on) and the protocol's blocks, and computes each
 start's sessions left itself, on W42-R1's definition (the calendar's sessions from the start to 2023-12-29, the start
 counted): a start whose horizon needs a session after 2023-12-29 is incomplete. The runner's values are checked as
-W42-R1 checks the baselines' (m-3): finite and inside `wave42.REQUIRED`'s ranges on each key's complete starts, and no
-unit paid before its first pass.
+W42-R1 checks the baselines' (m-3): finite and inside W42-R2's `REQUIRED` (`wave42_r2.REQUIRED`, W42-R1's keys and
+`net_month_12`) ranges on each key's complete starts, and no unit paid before its first pass.
 
 **The loop** (each step a function, so a test can mutate it): `draw_survey` (the survey's `begin` checks the
 protocol against the declaration's protocol sha256, Q-192); `read_design` (held-out first, F-4; then the report, the
@@ -222,8 +222,9 @@ class _Refused(Exception):
 class RunOutput:
     """The three-way runner's report for one design on one protocol: `starts` each start's date (ISO, on the search
     calendar, increasing); `arms[arm][key]` a start-by-seed matrix for `DESIGN_ARM` and each baseline, every key
-    `wave42.REQUIRED` names and the gate's keys; `real_path[AS_TRADED | REFLECTED][key]` the design's real-path
-    readings -- `AS_TRADED` its trigger's own sides, `REFLECTED` the coin side on the as-walked (reflected) path, same
+    W42-R2's `REQUIRED` (`wave42_r2.REQUIRED`) names and the gate's keys; `real_path[AS_TRADED | REFLECTED][key]`
+    the design's real-path readings -- `AS_TRADED` its trigger's own sides, `REFLECTED` the coin side on the as-walked
+    (reflected) path, same
     fills, same seeds (CHARTER 3.8's exception) -- never the deciding reading; `side_source` where the playbook's sides
     come from (`TRIGGER`); `positions[path]` every `components.Position` of one (start, seed) path, across the user's
     accounts and firms; `data` the sha256 of every data file the run read (path relative to the repository); the

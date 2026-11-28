@@ -8,9 +8,11 @@ this module only maps levers to a spec and stitches the per-day specs' tables in
     from extended import survey_route as SR
     rt = SR.route(space, design, side_rules={"p14": "with_breakout", "rl3": "fade"},
                   source_params={"rl3": {"kind": "pd", "cutoff": cutoff}})       # every lever mapped or refused
-    out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fresh_rr=crr, fee_for_stop=fee,
+    out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fee_for_stop=fee,
                    tick_value=tv, market_entry_ticks=slip)                       # -> RouteTrades(trades, aux, ...)
     facts = SR.facts(out, hist.days, tick_value=tv)                              # (day, j) -> TB.TradeFacts
+    SR.check_policy_reads(policy_rrs, out)          # the engine's policy reads every trade at its own w, or refused
+    SR.check_taken_rr(race_log, SR.own_rr(out, hist.days))      # every taken trade was read at its own w, or refused
 
 **Every lever is mapped, passed on, or refused, by name** (`LEVER_ROUTE`, a partition of `lever_space.LEVERS` that a
 test holds equal to the table): the slot levers T1 (the source), T2 (the slot on), T3 (the window's offsets), T4 (L),
@@ -22,39 +24,60 @@ S5, A1 to A21) are the firm path's and are returned unchanged in `Route.firm_lev
 A14 hold their table settings (no time stop, no breakeven move -- the walk is `triggers.JOURNEY` --, one bracket, the
 contracts derived downstream). A design key whose lever is in none of these, a source with no playbook side
 (`trigger_sides.NO_SIDE`: `coin`, `p16`), a missing side rule, RL3 without its declared level kind and cutoff, a space
-without S1, a design the space refuses, or a T8 other than the coin: each refuses (`RouteRefused`), never a default.
+without S1 or S2, a design the space refuses, or a T8 other than the coin: each refuses (`RouteRefused`), never a
+default. The declared side rules and source parameters the point's components use are written into
+`Route.provenance` and into `Route.design_id` (the point's own id beside, `Route.point_id`), so two routings that differ
+only there are two designs.
 
-**A component on a date** (`components.Design`'s convention): the slot's offsets read from that date's session start
-(`Space.windows_on`), an offer belonging to it when its order goes live inside the window (`Windowed`, the filter of
-`components.schedule_day`). P-14's alerts are the window less L, clipped to P-14's span -- the playbook's
-`_trigger_on` (C3-2), so the playbook and the route build one trigger (a test holds them equal); RL3's tickets are its
-declared kind's, alert 08:30 and live 09:00 CT (the space holds that slot inside the window), cut off at the declared
-cutoff, one-cancels-other by kind. The side is the design's own (`trigger_sides.trigger_side` under the declared
-rules); the evaluation's redraw removes direction later (CHARTER 2).
+**A component on a date**: the slot's offsets read from that date's session start (`Space.windows_on`), and an offer
+belonging to it when its order goes live inside the window (`Windowed`) -- `components.schedule_day`'s **window filter
+only**. The table is an unchained offer list, as H4-B's naive coin is: the chain (one position at a time across the
+firm, five minutes flat between trades, busy until the last working stretch ends, the worse trade on a same-bar tie)
+is the firm path's router's (Stage 2 D-429; F-13 section 5), never applied here. Within one component the
+one-cancels-other rule is `design_trades`' (`oco`: the first fill of a group stands; a same-bar tie goes to the lower
+`sub`), so every P-14 breakout, each its own group, fills. P-14's alerts are the window less L, clipped to P-14's span
+-- the playbook's `_trigger_on` (C3-2), so the playbook and the route build one trigger (a test holds them equal);
+RL3's tickets are its declared kind's, alert 08:30 and live 09:00 CT (the space holds that slot inside the window), cut
+off at the declared cutoff. The side is the design's own (`trigger_sides.trigger_side` under the declared rules); the
+evaluation's redraw removes direction later (CHARTER 2).
 
 **The stop (S1)**: k times the session's trailing range T(d) (`s1_range.LEVER_SESSIONS`: `ny_am` and `ny_pm` take
 `ny`'s `trail20_range_pts`, an overnight session its own), computed here from the history exactly as
 `s1_range.add_trailing` computes it (`trailing`: the same window ranges, eligibility, void rule and trailing mean,
 from **earlier days only**; an identity on synthetic bars holds the two equal). A day stands aside -- counted by reason,
-never traded -- when T(d) is undefined (`no_trail`) or k x T(d) points lies outside `lever_space.stop_caps()` (unrounded,
-both edges inclusive: S1's declared translation, `s1_range.k_bounds`; `below_floor`, `above_cap`). Inside the caps the
-stop is k x T(d) in whole ticks, half up, at least one (`vol_descriptive.band_ticks`, RD-04's and Q-121's rule for a
-bracket scaled by the trailing range; the caps hold after rounding since they are whole ticks). **The target** is
-floor(w x stop) whole ticks (`walker.target_ticks`, the lever table's S2). The walk is at every component's w (the
-design's R grid, `RouteTrades.rr_grid`), each trade's own w in the aux frame's `rr`.
+never traded -- when T(d) is undefined (`no_trail`) or k x T(d) points lies outside `lever_space.stop_caps()`
+(unrounded, both edges inclusive: S1's declared translation, `s1_range.k_bounds`; `below_floor`, `above_cap`). Inside
+the caps the stop is k x T(d) in whole ticks, half up, at least one (`vol_descriptive.band_ticks`, RD-04's and Q-121's
+rule for a bracket scaled by the trailing range; the caps hold after rounding since they are whole ticks; the tick is
+NQ's, the one `band_ticks` rounds on, and any other refuses).
+
+**The target and R (S2; the lead's ruling on B-1).** Each trade is walked at **its own component's w only**: the
+design's table carries a column block at every component's w (`RouteTrades.rr_grid`, so one schema), but a row's
+outcome, cost, MAE, exit and kind columns at any other w are NaN, its `exit_t` and `flat` are its own w's (never the
+engine's `fresh_rr`), and its facts carry a kind at its own w only. A read at another R so finds nothing -- the race
+refuses ("carries no kind at R"), the vendored router passes a NaN trade on -- and never a silent outcome at another
+component's target. **The rule** (for F-13 to state): S2 maps onto the engine's R as each trade's own component w; the
+policy reads every trade at its own w. Two refusing checks hold it where the table meets the engine:
+`check_policy_reads` (a fixed-leaf policy whose R is not every trade's own w would pad the trades to NaN and leave
+them untaken: refused -- so a one-component design is admitted only with a policy asking for its w and nothing else,
+and a design of several w only with a reader that takes each trade's own) and `check_taken_rr` (every trade the race
+took was read at its own w, its row's `aux["rr"]`). The target is floor(w x stop) whole ticks (`walker.target_ticks`,
+the lever table's S2).
 
 **Costs** are `design_trades`' (Stage 2's): `fee_for_stop(stop)` is the caller's `atlas_a3.fee_by_stop` at the day's
-stop, a market fill pays `market_entry_ticks`, a resting fill none; each trade's entry ticks go to its facts
-(`facts` sets `e_ticks` trade by trade, since one design may mix a market and a resting component).
+stop, a market fill pays `market_entry_ticks`, a resting fill none; each trade's entry ticks go to its facts (each
+component's own, since one design may mix a market and a resting component).
 
 **Nothing here reads a file or a bar store**: the bars come in as a `triggers.History` the caller built inside
-`extended.search_cut` (search years only: refused past 2023-12-29 and in the confirmation window), the void calendar
-as `day_calendar.Sources`, the day kinds as Stage 2's days table gives them (every day named, never defaulted). Nothing
-here draws randomness.
+`extended.search_cut` (search years only: refused past 2023-12-29 and in the confirmation window, on every call), the
+void calendar as `day_calendar.Sources`, the day kinds as Stage 2's days table gives them (every day named, never
+defaulted). A passed-in trailing range is checked against the history's length and sessions, passed-in caps against
+`lever_space.stop_caps()`. Nothing here draws randomness.
 """
 from __future__ import annotations
 
 import dataclasses
+import json
 import math
 from dataclasses import dataclass, field
 from datetime import date
@@ -101,6 +124,10 @@ T8_EVALUATION = "coin"                     # the lever table's T8: the evaluatio
 STAND_ASIDE = ("no_trail", "below_floor", "above_cap")
 #: aux columns this route adds beside `design_trades`' own
 AUX_ADDED = ("component", "source", "rr", "k", "stop_ticks", "entry_ticks", "latency")
+#: the per-R columns of the trade table (`h4_coin_source._format_cell_trades`) and of the aux frame (`design_trades`)
+TRADE_R_PREFIXES = ("r_", "g_", "c_", "mae_", "exit_t_", "o_")
+AUX_R_PREFIXES = ("mirr_g_", "rule_g_")
+RR_TOL = 1e-12                             # a taken trade's R and its own w: one float, compared to this
 
 
 class RouteRefused(ValueError):
@@ -196,6 +223,7 @@ class Route:
     slots: tuple[SlotRoute, ...]
     firm_levers: Mapping[str, Any]
     provenance: Mapping[str, str]
+    point_id: str
     space: Any = field(repr=False, compare=False)
     design: Mapping[str, Any] = field(repr=False, compare=False)
 
@@ -286,7 +314,14 @@ def route(space: Any, design: Mapping[str, Any], *, side_rules: Mapping[str, Any
         raise RouteRefused("REFUSED: no component is on")
     for lever in ("T1", "T2", "T3", "T4", "T5", "S1", "S2"):
         prov[lever] = "route: per slot"
-    return Route(SS.design_id(design), tuple(slots), dict(firm), dict(prov), space, dict(design))
+    used = sorted({sl.source for sl in slots})
+    rules = {src: side_rules[src] if isinstance(side_rules[src], str) else dict(sorted(side_rules[src].items()))
+             for src in used}
+    params = {src: dict(sorted(source_params[src].items())) for src in used if src in source_params}
+    prov["route.side_rules"] = json.dumps(rules, sort_keys=True)
+    prov["route.source_params"] = json.dumps(params, sort_keys=True)
+    did = SS.design_id({**design, "route.side_rules": rules, "route.source_params": params})
+    return Route(did, tuple(slots), dict(firm), dict(prov), SS.design_id(design), space, dict(design))
 
 
 def _slot(space: Any, design: Mapping[str, Any], sl: Any, order: int, side_rules: Mapping[str, Any],
@@ -335,6 +370,9 @@ def _slot(space: Any, design: Mapping[str, Any], sl: Any, order: int, side_rules
             raise RouteRefused(f"REFUSED: slot {name}: {e}") from e
     if sl.session not in S1R.LEVER_SESSIONS:
         raise RouteRefused(f"REFUSED: slot {name}: session {sl.session!r} has no trailing range (s1_range)")
+    if SS.slot_dim(name, "S2") not in space.names() or g("S2") is None:
+        raise RouteRefused(f"REFUSED: slot {name} has no reward-to-risk: S2 is not a lever of the space "
+                           f"({space.refused.get('S2', 'absent')}); the route never types a target")
     k, w = float(g("S1")), float(g("S2"))
     if not (math.isfinite(k) and k > 0 and math.isfinite(w) and w > 0):
         raise RouteRefused(f"REFUSED: slot {name}: S1 and S2 are positive, got {k!r}, {w!r}")
@@ -390,7 +428,9 @@ def trailing(hist: T.History, *, day_kinds: Mapping[str, str], cal: DC.Sources) 
 
 def stop_on(k: float, trail_pts: float, caps: Mapping[str, Any], tick: float = W.TICK) -> tuple[int | None, str]:
     """(stop ticks, '') or (None, the stand-aside reason): S1's translation, the caps checked unrounded, then whole
-    ticks half up (`vol_descriptive.band_ticks`)."""
+    ticks half up (`vol_descriptive.band_ticks`, which rounds on NQ's tick: any other tick refuses)."""
+    if float(tick) != float(V.TICK):
+        raise RouteRefused(f"REFUSED: the tick {tick!r} is not the one band_ticks rounds on ({V.TICK})")
     if not math.isfinite(float(trail_pts)):
         return None, "no_trail"
     x = float(k) * float(trail_pts)
@@ -404,11 +444,31 @@ def stop_on(k: float, trail_pts: float, caps: Mapping[str, Any], tick: float = W
     return int(s), ""
 
 
-def stops(rt: Route, trail: Mapping[str, np.ndarray], caps: Mapping[str, Any] | None = None
+def check_caps(caps: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    """The caps: `lever_space.stop_caps()`, or a passed copy of it (a cache), refused when it differs."""
+    real = LS.stop_caps()
+    if caps is None:
+        return real
+    keys = ("floor_ticks", "cap_ticks", "tick_value_mnq")
+    if any(k not in caps or caps[k] != real[k] for k in keys):
+        raise RouteRefused(f"REFUSED: the caps passed are not lever_space.stop_caps() on {keys}")
+    return caps
+
+
+def check_trail(trail: Mapping[str, Any], hist: T.History) -> Mapping[str, np.ndarray]:
+    """A passed trailing range: one array per S1 session, each the history's length."""
+    bad = [s for s in S1R.SESSIONS if s not in trail or np.asarray(trail[s]).shape != (len(hist),)]
+    if bad:
+        raise RouteRefused(f"REFUSED: the trailing range passed has no array of the history's {len(hist)} days for "
+                           f"{bad}")
+    return trail
+
+
+def stops(rt: Route, trail: Mapping[str, np.ndarray], caps: Mapping[str, Any] | None = None, tick: float = W.TICK
           ) -> dict[str, list[tuple[int | None, str]]]:
     """Per slot, per history day: its stop in ticks, or why it stands aside."""
-    caps = LS.stop_caps() if caps is None else caps
-    return {sl.name: [stop_on(sl.k, float(x), caps) for x in trail[sl.s1_session]] for sl in rt.slots}
+    caps = check_caps(caps)
+    return {sl.name: [stop_on(sl.k, float(x), caps, tick) for x in trail[sl.s1_session]] for sl in rt.slots}
 
 
 # ------------------------------------------------------------------------------------------------ the trades
@@ -416,8 +476,9 @@ def stops(rt: Route, trail: Mapping[str, np.ndarray], caps: Mapping[str, Any] | 
 
 @dataclass
 class RouteTrades:
-    """The design's one trade table (`resolved_coin.cell_trades`' schema, every component's, at the design's R grid),
-    the aux frame row for row (with `AUX_ADDED`), the counts per slot, and the R grid."""
+    """The design's one trade table (`resolved_coin.cell_trades`' schema, every component's, a column block at every
+    w of the design's R grid, each row live at its own w only), the aux frame row for row (with `AUX_ADDED`), the
+    counts per slot, and the R grid."""
 
     trades: pd.DataFrame
     aux: pd.DataFrame
@@ -455,19 +516,30 @@ def _plans(rt: Route, hist: T.History, st: Mapping[str, list[tuple[int | None, s
     return out
 
 
+def _columns(frames: Sequence[pd.DataFrame], grid: Sequence[float], prefixes: Sequence[str],
+             tail: Sequence[str]) -> list[str]:
+    """One column order: the frames' own columns but the per-R ones (first frame's order), every R of the grid's
+    block in grid order, then `tail`."""
+    per_r = [f"{p}{R:g}" for R in grid for p in prefixes]
+    base = [c for c in frames[0].columns if c not in per_r and c not in tail
+            and not any(c.startswith(p) for p in prefixes)]
+    return base + per_r + [c for c in tail if any(c in f.columns for f in frames)]
+
+
 def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str, str],
-          news_windows: Callable[[int], Sequence[T.Window]] | None, fresh_rr: float,
+          news_windows: Callable[[int], Sequence[T.Window]] | None,
           fee_for_stop: Callable[[int], float], tick_value: float, market_entry_ticks: float,
           trail: Mapping[str, np.ndarray] | None = None, caps: Mapping[str, Any] | None = None,
           tick: float = W.TICK) -> RouteTrades:
     """The design's trades on the history's days (the module docstring), every step `design_trades.build_trades`'
-    on each slot's days grouped by their stop and window. `news_windows(i)` the verified news windows of day i, or None
-    where none reaches the firm's accounts (the caller states which; never defaulted). `trail` may be passed when
-    already computed (`trailing`)."""
+    on each slot's days grouped by their stop and window, **walked at the slot's own w only** (its `exit_t` and `flat`
+    at that w); the slots' tables joined on the design's R grid, a row's columns at another w NaN. `news_windows(i)`
+    the verified news windows of day i, or None where none reaches the firm's accounts (the caller states which;
+    never defaulted). `trail` may be passed when already computed (`trailing`), checked against the history."""
     DT.check_search_days(hist.days)
     _kinds(hist, day_kinds)
-    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else trail
-    st = stops(rt, trail, caps)
+    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else check_trail(trail, hist)
+    st = stops(rt, trail, caps, tick)
     grid = rr_grid(rt)
     frames, auxes = [], []
     counts: dict[str, Any] = {}
@@ -479,6 +551,7 @@ def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str
         for s, why in st[name]:
             if s is None:
                 c["stand_aside"][why] += 1
+        own = (float(sl.w),)
         for (s, a, b), days in sorted(groups.items()):
             trig = sl.trigger(a, b)
             reads = trig.calendar_reads()
@@ -490,8 +563,8 @@ def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str
                 raise RouteRefused(f"REFUSED: the fee at stop {s} is {fee!r}")
             spec = DT.DesignSpec(f"{name}@{s}:{a}-{b}", Windowed(trig, a, b), sl.side_of(trig), int(s), T.JOURNEY,
                                  "journey", True, sl.entry_kind)
-            out = DT.build_trades(spec, hist, lambda i, r=reads: cache[(r, i)], day_kinds=day_kinds, rr_grid=grid,
-                                  fresh_rr=fresh_rr, fee_micro_eq=fee, tick_value=tick_value,
+            out = DT.build_trades(spec, hist, lambda i, r=reads: cache[(r, i)], day_kinds=day_kinds, rr_grid=own,
+                                  fresh_rr=own[0], fee_micro_eq=fee, tick_value=tick_value,
                                   market_entry_ticks=market_entry_ticks, days=days, tick=tick)
             c["traded_days"] += len(days)
             for key in ("offers", "admitted", "filled", "oco_cancelled", "dropped_sigma_lt_2"):
@@ -512,11 +585,10 @@ def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str
         counts[name] = c
     if not frames:
         return RouteTrades(pd.DataFrame(), pd.DataFrame(), counts, grid)
-    cols = list(frames[0].columns)
-    if any(list(f.columns) != cols for f in frames):
-        raise RouteRefused("the components' tables differ in their columns")
-    trades = pd.concat(frames, ignore_index=True)
-    aux = pd.concat(auxes, ignore_index=True)
+    tcols = _columns(frames, grid, TRADE_R_PREFIXES, ("exit_t", "flat"))
+    acols = _columns(auxes, grid, AUX_R_PREFIXES, AUX_ADDED + ("_slot",))
+    trades = pd.concat(frames, ignore_index=True).reindex(columns=tcols)
+    aux = pd.concat(auxes, ignore_index=True).reindex(columns=acols)
     order = np.lexsort((np.arange(len(aux)), aux["_slot"].to_numpy(int),
                         trades["decision_slot_minutes"].to_numpy(int), trades["entry_t"].to_numpy(float),
                         trades["date"].astype(str).str.replace("-", "").astype(np.int64).to_numpy()))
@@ -525,16 +597,111 @@ def build(rt: Route, hist: T.History, *, cal: DC.Sources, day_kinds: Mapping[str
     return RouteTrades(trades, aux, counts, grid)
 
 
+def masked_problems(rt_trades: RouteTrades) -> list[str]:
+    """B-1 (a), checked: every row live at its own w (`aux["rr"]`) and NaN at every other w of the grid, its
+    `exit_t` and `flat` its own w's. Empty when all hold."""
+    t, a = rt_trades.trades, rt_trades.aux
+    out: list[str] = []
+    if not len(t):
+        return out
+    own = a["rr"].to_numpy(float)
+    for R in rt_trades.rr_grid:
+        mine = own == float(R)
+        for p in TRADE_R_PREFIXES:
+            col = f"{p}{R:g}"
+            if col not in t.columns:
+                out.append(f"no column {col}")
+                continue
+            v = t[col]
+            live = v.notna().to_numpy()
+            if (live & ~mine).any():
+                out.append(f"{int((live & ~mine).sum())} rows carry {col} at another component's w")
+            if (~live & mine).any():
+                out.append(f"{int((~live & mine).sum())} rows of w {R:g} lack {col}")
+        if mine.any():
+            ex = t.loc[mine, f"exit_t_{R:g}"].to_numpy(float)
+            if not np.array_equal(t.loc[mine, "exit_t"].to_numpy(float), ex):
+                out.append(f"exit_t is not the own w's on rows of w {R:g}")
+            if not np.array_equal(t.loc[mine, "flat"].to_numpy(bool),
+                                  (t.loc[mine, f"o_{R:g}"].astype(str) == "f").to_numpy()):
+                out.append(f"flat is not the own w's on rows of w {R:g}")
+    return out
+
+
 def facts(rt_trades: RouteTrades, dates: Sequence[str], *, tick_value: float) -> dict[tuple[int, int], TB.TradeFacts]:
-    """`design_trades.facts_for` on the design's table, each trade's entry ticks its own component's."""
-    if not len(rt_trades.trades):
+    """`design_trades.facts_for` on the design's table, each trade's facts from its own component's rows at its own w
+    only (its kinds and walks at that w; its entry ticks its component's), keyed as one table: (block day, index
+    within the day) in the table's order."""
+    t, a = rt_trades.trades, rt_trades.aux
+    if not len(t):
         return {}
-    got = DT.facts_for(rt_trades.trades, rt_trades.aux, dates, tick_value=tick_value, rr_cols=rt_trades.rr_grid,
-                       entry_ticks=0.0)
-    e = rt_trades.aux["entry_ticks"].to_numpy(float)
-    if len(got) != len(e):
-        raise RouteRefused("the facts and the aux frame differ in length")
-    return {key: dataclasses.replace(f, e_ticks=float(x)) for (key, f), x in zip(got.items(), e)}
+    bad = masked_problems(rt_trades)
+    if bad:
+        raise RouteRefused(f"REFUSED: the table is not masked to each row's own w: {bad[:3]}")
+    per: dict[str, list[TB.TradeFacts]] = {}
+    for comp in dict.fromkeys(a["component"]):
+        m = (a["component"] == comp).to_numpy()
+        w = float(a.loc[m, "rr"].iloc[0])
+        e = set(a.loc[m, "entry_ticks"].astype(float))
+        if len(e) != 1 or set(a.loc[m, "rr"].astype(float)) != {w}:
+            raise RouteRefused(f"REFUSED: component {comp} carries more than one w or entry cost")
+        got = DT.facts_for(t[m].reset_index(drop=True), a[m].reset_index(drop=True), dates, tick_value=tick_value,
+                           rr_cols=(w,), entry_ticks=float(e.pop()))
+        per[comp] = list(got.values())
+    at = {str(d): i for i, d in enumerate(dates)}
+    used = {comp: 0 for comp in per}
+    day_n: dict[int, int] = {}
+    out: dict[tuple[int, int], TB.TradeFacts] = {}
+    for p in range(len(t)):
+        comp = a["component"].iloc[p]
+        di = at[str(t["date"].iloc[p])]
+        j = day_n.get(di, 0)
+        day_n[di] = j + 1
+        out[(di, j)] = per[comp][used[comp]]
+        used[comp] += 1
+    return out
+
+
+def own_rr(rt_trades: RouteTrades, dates: Sequence[str]) -> dict[tuple[int, int], float]:
+    """Each trade's own w, keyed as `facts` keys it (block day, index within the day)."""
+    at = {str(d): i for i, d in enumerate(dates)}
+    day_n: dict[int, int] = {}
+    out: dict[tuple[int, int], float] = {}
+    for d, w in zip(rt_trades.trades["date"].astype(str), rt_trades.aux["rr"].astype(float)):
+        di = at[d]
+        j = day_n.get(di, 0)
+        day_n[di] = j + 1
+        out[(di, j)] = float(w)
+    return out
+
+
+def check_taken_rr(taken: Sequence[Mapping[str, Any]], own: Mapping[tuple[int, int], float]) -> int:
+    """B-1 (b), where the table meets the engine: every trade the race took (`three_way_baseline`'s race log: its
+    block day `i`, its index `j`, the R it was read at `R`) was read at its own w (`own_rr`), else refused. Returns the
+    count checked."""
+    n = 0
+    for rec in taken:
+        key = (int(rec["i"]), int(rec["j"]))
+        if key not in own:
+            raise RouteRefused(f"REFUSED: the engine took trade {key}, which is not one of the route's")
+        R = rec.get("R")
+        if R is None or not abs(float(R) - own[key]) <= RR_TOL:
+            raise RouteRefused(f"REFUSED: the engine read trade {key} at R {R!r}, not its own w {own[key]!r}")
+        n += 1
+    return n
+
+
+def check_policy_reads(policy_rrs: Sequence[float], rt_trades: RouteTrades) -> None:
+    """B-1 (b), the policy's side: a fixed-leaf policy (`zero_edge_decomposition.policy_rrs`) reads every trade at
+    the R its leaves ask for; a trade whose own w is not that R is padded to NaN (`zero_edge_decomposition.pad`) and
+    never taken. Admitted only when every R the policy can ask for is every trade's own w -- one component's w and
+    nothing else; a design of several w needs a reader that takes each trade's own (F-13's rule), refused here."""
+    ws = sorted({float(w) for w in rt_trades.aux["rr"]}) if len(rt_trades.aux) else list(rt_trades.rr_grid)
+    asks = sorted({float(R) for R in policy_rrs})
+    if not asks or len(ws) != 1 or any(abs(R - ws[0]) > RR_TOL for R in asks):
+        raise RouteRefused(f"REFUSED: the policy asks for R {asks}, the design's trades are each read at their own w "
+                           f"{ws}: a trade asked for at another R is padded to NaN and never taken (S2 maps onto the "
+                           "engine's R as each trade's own w)")
 
 
 # ------------------------------------------------------------------------------------------------ what is decided when
@@ -547,8 +714,9 @@ def decisions(rt: Route, hist: T.History, i: int, *, cal: DC.Sources, day_kinds:
     stop (or stand-aside), its window, and each offer of its windowed trigger with its moment, level, admission and
     side, and the volatility at its alert. The shift-invariance test holds every record with alert <= t unchanged
     when every bar stamped t or later is replaced."""
-    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else trail
-    caps = LS.stop_caps() if caps is None else caps
+    DT.check_search_days(hist.days)
+    trail = trailing(hist, day_kinds=day_kinds, cal=cal) if trail is None else check_trail(trail, hist)
+    caps = check_caps(caps)
     wins = rt.windows_on(_date(hist.days[i]))
     closes = [hist.c[j] for j in range(len(hist))]
     out: list[dict[str, Any]] = []
@@ -579,4 +747,5 @@ def decisions(rt: Route, hist: T.History, i: int, *, cal: DC.Sources, day_kinds:
 __all__ = ["TASK", "FIRM", "LEVER_ROUTE", "ROUTE", "LIBRARY", "FIRM_PATH", "DROPPED", "SLOT_KEYS", "SIDED",
            "RL3_PARAMS", "T7_MAPPED", "T8_EVALUATION", "STAND_ASIDE", "AUX_ADDED", "RouteRefused", "Windowed",
            "p14_alerts", "SlotRoute", "Route", "route", "day_ranges", "trailing", "stop_on", "stops", "RouteTrades",
-           "rr_grid", "build", "facts", "decisions"]
+           "rr_grid", "build", "facts", "decisions", "TRADE_R_PREFIXES", "AUX_R_PREFIXES", "RR_TOL",
+           "check_caps", "check_trail", "masked_problems", "own_rr", "check_taken_rr", "check_policy_reads"]

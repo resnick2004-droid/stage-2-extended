@@ -352,13 +352,15 @@ def test_the_routes_rows_are_design_trades_frame_for_frame(sp, world, built):
     spec = DT.rl3_spec(RW.RL3_PARAMS["kind"], RW.RL3_PARAMS["cutoff"], {"hi": "fade", "lo": "fade"}, s)
     ctx = {i: T.context_for(spec.source, world["cal"], date.fromisoformat(hist.days[i]), i, rules=T.JOURNEY)
            for i in days}
-    ref = DT.build_trades(spec, hist, lambda i: ctx[i], day_kinds=kw["day_kinds"], rr_grid=out.rr_grid,
-                          fresh_rr=RW.FRESH_RR, fee_micro_eq=RW.FEE, tick_value=RW.TICK_VALUE,
+    ref = DT.build_trades(spec, hist, lambda i: ctx[i], day_kinds=kw["day_kinds"], rr_grid=(sl.w,),
+                          fresh_rr=sl.w, fee_micro_eq=RW.FEE, tick_value=RW.TICK_VALUE,
                           market_entry_ticks=RW.ENTRY_TICKS, days=days)
     mine = (out.aux["component"] == sl.name) & out.trades["date"].isin([hist.days[i] for i in days]).to_numpy()
     assert len(ref.trades) > 0 and int(mine.sum()) == len(ref.trades)
-    pd.testing.assert_frame_equal(out.trades[mine].reset_index(drop=True), ref.trades.reset_index(drop=True),
-                                  check_exact=True)
+    pd.testing.assert_frame_equal(out.trades.loc[mine, list(ref.trades.columns)].reset_index(drop=True),
+                                  ref.trades.reset_index(drop=True), check_exact=True)
+    others = [c for c in out.trades.columns if c not in ref.trades.columns]
+    assert others and out.trades.loc[mine, others].isna().all().all()     # every other w's block NaN on its rows
     keep = [c for c in ref.aux.columns]
     pd.testing.assert_frame_equal(out.aux.loc[mine, keep].reset_index(drop=True), ref.aux.reset_index(drop=True),
                                   check_exact=True)
@@ -410,13 +412,200 @@ def test_the_facts_follow_with_each_components_entry_ticks(world, built):
         ax, tr = out.aux.iloc[p], out.trades.iloc[p]
         assert x.e_ticks == (RW.ENTRY_TICKS if ax["source"] == "p14" and tr["decision_slot_minutes"] >= 0
                              and next(s for s in rt.slots if s.name == ax["component"]).entry == "market" else 0.0)
-        assert x.stop_ticks == int(tr["S"]) and sorted(x.kinds) == list(out.rr_grid)
+        assert x.stop_ticks == int(tr["S"]) and x.entry == int(tr["entry_t"])
+        assert list(x.kinds) == [float(ax["rr"])] and list(x.walked) == [float(ax["rr"])]   # its own w only (B-1)
         assert x.be_open is None and not x.has_move                          # S7 dropped: no breakeven move
         assert x.decision <= x.entry <= x.limit and x.sigma > 0
-    m = _edit("facts", "return {key: dataclasses.replace(f, e_ticks=float(x)) for (key, f), x in zip(got.items(), e)}",
-              "return got")
+    m = _edit("facts", "rr_cols=(w,), entry_ticks=float(e.pop()))", "rr_cols=(w,), entry_ticks=0.0)")
     g = m(out, world["hist"].days, tick_value=RW.TICK_VALUE)
     assert any(g[k].e_ticks != f[k].e_ticks for k in f)                      # the mutant's facts differ
+
+
+# ------------------------------------------------------------------------------------------------ B-1: each row its own w
+
+
+def test_every_row_is_live_at_its_own_w_only(world, built):
+    """B-1 (a): each trade's outcome, cost, MAE, exit and kind columns at another component's w are NaN, its own w's
+    live, its `exit_t` and `flat` its own w's; the planted unmasked walk (every slot at the whole grid) and the
+    planted `exit_t` at the engine's combine R are caught, and the facts refuse an unmasked table."""
+    rt, out = built
+    hist, kw = world["hist"], RW.build_kw(world["hist"], world["cal"])
+    t, a = out.trades, out.aux
+    assert SR.masked_problems(out) == []
+    for R in out.rr_grid:
+        other = a["rr"].to_numpy(float) != R
+        assert other.any() and t.loc[other, f"r_{R:g}"].isna().all() and t.loc[other, f"o_{R:g}"].isna().all()
+        assert t.loc[~other, f"r_{R:g}"].notna().all()
+        assert (t.loc[~other, "exit_t"].to_numpy(float) == t.loc[~other, f"exit_t_{R:g}"].to_numpy(float)).all()
+    m = _edit("build", "day_kinds=day_kinds, rr_grid=own,", "day_kinds=day_kinds, rr_grid=grid,")
+    bad = m(rt, hist, **kw)
+    assert any("at another component's w" in x for x in SR.masked_problems(bad))
+    with pytest.raises(SR.RouteRefused, match="not masked"):
+        SR.facts(bad, hist.days, tick_value=RW.TICK_VALUE)
+    src = textwrap.dedent(inspect.getsource(SR.build))                       # the code before the ruling, both edits
+    old = src.replace("day_kinds=day_kinds, rr_grid=own,", "day_kinds=day_kinds, rr_grid=grid,").replace(
+        "fresh_rr=own[0], fee_micro_eq=fee,", f"fresh_rr={RW.FRESH_RR!r}, fee_micro_eq=fee,")
+    ns: dict = {}
+    exec(compile("from __future__ import annotations\n" + old, SR.__file__, "exec"), SR.__dict__, ns)
+    probs = SR.masked_problems(ns["build"](rt, hist, **kw))
+    assert any("exit_t is not the own w's" in x for x in probs)              # exit_t at the combine R, caught
+
+
+def _race_log(out, dates, shift=None):
+    """A race log as `three_way_baseline` writes it (block day `i`, index `j`, the R read), every trade taken at
+    its own w; `shift` plants one trade read at another component's w."""
+    own = SR.own_rr(out, dates)
+    log = [{"i": i, "j": j, "R": w, "law": "race"} for (i, j), w in own.items()]
+    if shift is not None:
+        k = next(n for n, r in enumerate(log) if r["R"] != shift)
+        log[k] = dict(log[k], R=shift)
+    return log, own
+
+
+def test_every_taken_trade_was_read_at_its_own_w(world, built):
+    """B-1 (b): the refusing check where the table meets the engine, its keys the facts' own; a trade the engine read
+    at another component's w is refused, and the check with its comparison removed lets it through."""
+    rt, out = built
+    days = world["hist"].days
+    f = SR.facts(out, days, tick_value=RW.TICK_VALUE)
+    log, own = _race_log(out, days)
+    assert set(own) == set(f) and all(list(f[k].kinds) == [own[k]] for k in f)
+    assert SR.check_taken_rr(log, own) == len(f)
+    bad, _ = _race_log(out, days, shift=2.0)
+    with pytest.raises(SR.RouteRefused, match="not its own w"):
+        SR.check_taken_rr(bad, own)
+    with pytest.raises(SR.RouteRefused, match="not one of the route's"):
+        SR.check_taken_rr([{"i": 0, "j": 99, "R": 1.0}], own)
+    m = _edit("check_taken_rr", "if R is None or not abs(float(R) - own[key]) <= RR_TOL:", "if R is None:")
+    assert m(bad, own) == len(bad)                                          # the mutant takes the wrong R
+
+
+def test_the_policy_must_read_every_trade_at_its_own_w(sp, world, built):
+    """B-1 (b), the single-component case: padded to the policy's R by `zero_edge_decomposition.pad`'s rule, its
+    trades are live at its own w, so a policy asking for that w alone takes them, and admitted; a policy asking for
+    another R would leave them NaN and untaken, and is refused; several components' w under one fixed-leaf policy
+    are refused."""
+    rt, out = built
+    d = RW.with_slot(sp, RW.base_point(sp), "ny_am.0", T1="rl3", T4=None, T5=SS.TICKET, first=30, last=120,
+                     S1=0.2, S2=1.5)
+    one = SR.build(_route(sp, d), world["hist"], **RW.build_kw(world["hist"], world["cal"]))
+    assert one.rr_grid == (1.5,) and len(one.trades) > 5
+    SR.check_policy_reads([1.5], one)
+    assert one.trades["r_1.5"].notna().all()                                 # at its own w every trade is offered
+    for asks in ([1.0], [1.0, 1.5], [1.5, 2.0]):
+        padded = one.trades.copy()
+        for R in asks:                                                      # pad's rule: an R not carried is NaN
+            for c in ("r", "mae", "exit_t"):
+                if f"{c}_{R:g}" not in padded.columns:
+                    padded[f"{c}_{R:g}"] = np.nan
+        assert any(padded[f"r_{R:g}"].isna().all() for R in asks)          # a leaf at another R takes none
+        with pytest.raises(SR.RouteRefused, match="padded to NaN and never taken"):
+            SR.check_policy_reads(asks, one)
+    with pytest.raises(SR.RouteRefused, match="never taken"):
+        SR.check_policy_reads([1.0, 1.5, 2.0], out)                         # three w, one fixed-leaf policy
+    tail = " or any(abs(R - ws[0]) > RR_TOL for R in asks):"
+    m = _edit("check_policy_reads", "if not asks or len(ws) != 1" + tail, "if not asks or len(ws) != 1:")
+    m([1.0], one)                                                           # the mutant admits a policy at another R
+
+
+# ------------------------------------------------------------------------------------------------ the minor findings
+
+
+def test_the_side_rules_and_source_parameters_are_in_the_provenance_and_the_id(sp):
+    """m-2: RL3's kind and cutoff and the side rules a point uses are written into the provenance and change the
+    route's design id (the point's own id beside, unchanged)."""
+    d = RW.point(sp)
+    a = _route(sp, d)
+    other_cut = next(c for c in T.RL3_CUTOFFS if c != RW.RL3_PARAMS["cutoff"])
+    b = _route(sp, d, source_params={"rl3": {**RW.RL3_PARAMS, "cutoff": other_cut}})
+    c = _route(sp, d, side_rules={**RW.SIDE_RULES, "p14": "against_breakout"})
+    assert json.loads(a.provenance["route.source_params"]) == {"rl3": RW.RL3_PARAMS}
+    assert json.loads(a.provenance["route.side_rules"]) == RW.SIDE_RULES
+    assert len({a.design_id, b.design_id, c.design_id}) == 3 and a.point_id == b.point_id == c.point_id
+    assert a.design_id != a.point_id == SS.design_id(d)
+    m = _edit("route", 'did = SS.design_id({**design, "route.side_rules": rules, "route.source_params": params})',
+              "did = SS.design_id(design)")
+    kw = {"side_rules": RW.SIDE_RULES}
+    assert m(sp, d, source_params={"rl3": RW.RL3_PARAMS}, **kw).design_id == \
+        m(sp, d, source_params={"rl3": {**RW.RL3_PARAMS, "cutoff": other_cut}}, **kw).design_id
+
+
+def _edit_mod(mod, fn_name: str, old: str, new: str):
+    orig = getattr(mod, fn_name)
+    src = textwrap.dedent(inspect.getsource(orig))
+    assert src.count(old) == 1, (fn_name, old)
+    ns: dict = {}
+    exec(compile("from __future__ import annotations\n" + src.replace(old, new), mod.__file__, "exec"), mod.__dict__,
+         ns)
+    return ns[fn_name]
+
+
+def test_the_survey_never_learns_a_route_refusal_as_an_infeasible_cell(sp):
+    """m-3: a runner raising `RouteRefused` is not one of the survey's recorded refusals (`survey._Refused`, which
+    `read_all` passes over and records as a refused cell): it propagates and stops the run. The mutant that catches
+    it as a refused cell swallows it."""
+    from types import SimpleNamespace
+
+    from extended import survey as SV
+
+    assert not issubclass(SR.RouteRefused, SV._Refused)
+
+    def runner(schedule, protocol):
+        raise SR.RouteRefused("REFUSED: T7 = 'admit' -- the route maps only ('off',)")
+
+    ctx = SimpleNamespace(E=SimpleNamespace(SS=SS), memo={}, runner=runner, build_schedule=lambda d: d,
+                          protocol=SimpleNamespace(seeds=(0,)), readings=[])
+    with pytest.raises(SR.RouteRefused, match="T7"):
+        SV.read_all(ctx, [RW.point(sp)], "survey")
+    m = _edit_mod(SV, "read_all", "        except _Refused:\n            continue",
+                  "        except (_Refused, ValueError):\n            continue")
+    m(ctx, [RW.point(sp)], "survey")                                        # the mutant swallows it as a refused cell
+    assert ctx.readings == []
+
+
+def test_the_tick_the_overrides_and_a_missing_s2_refuse(sp, world, built):
+    """m-8: a tick other than the one `band_ticks` rounds on, a trailing range of another history's length or
+    sessions, caps other than `lever_space.stop_caps()`, a space without S2, and a held-out day under `decisions` with
+    a trailing range passed: each refuses by name, each with its mutant."""
+    rt, _ = built
+    hist, kw = world["hist"], RW.build_kw(world["hist"], world["cal"])
+    with pytest.raises(SR.RouteRefused, match="band_ticks rounds on"):
+        SR.stop_on(0.2, 80.0, LS.stop_caps(), tick=0.5)
+    m = _edit("stop_on", "if float(tick) != float(V.TICK):", "if False:")
+    assert m(0.2, 200.0, LS.stop_caps(), tick=0.5)[0] is not None
+    with pytest.raises(SR.RouteRefused, match="band_ticks rounds on"):
+        SR.build(rt, hist, **kw, tick=0.5)                                  # build hands its tick to the stops
+    trail = SR.trailing(hist, day_kinds=kw["day_kinds"], cal=world["cal"])
+    short = {k: v[:-1] for k, v in trail.items()}
+    with pytest.raises(SR.RouteRefused, match="trailing range passed"):
+        SR.build(rt, hist, **kw, trail=short)
+    with pytest.raises(SR.RouteRefused, match="trailing range passed"):
+        SR.decisions(rt, hist, 30, cal=world["cal"], day_kinds=kw["day_kinds"], news_windows=None,
+                     trail={k: v for k, v in trail.items() if k != "asia"})
+    mt = _edit("check_trail", "if bad:", "if False:")
+    assert mt(short, hist) is short
+    caps = dict(LS.stop_caps(), floor_ticks=LS.stop_caps()["floor_ticks"] - 1)
+    with pytest.raises(SR.RouteRefused, match="not lever_space.stop_caps"):
+        SR.stops(rt, trail, caps)
+    mc = _edit("check_caps", "if any(k not in caps or caps[k] != real[k] for k in keys):", "if False:")
+    assert mc(caps) is caps
+    d = RW.point(sp)
+    nos2 = dataclasses.replace(sp, dims=tuple(x for x in sp.dims if x.lever != "S2"))
+    d2 = {k: v for k, v in d.items() if not k.endswith(".S2")}
+    with pytest.raises(SR.RouteRefused, match="no reward-to-risk: S2 is not a lever"):
+        _route(nos2, d2)
+    ms = _edit("_slot", 'if SS.slot_dim(name, "S2") not in space.names() or g("S2") is None:', "if False:")
+    with pytest.raises(TypeError):                                          # the mutant crashes, unnamed
+        ms(nos2, d2, next(x for x in nos2.slots if x.name == "london.0"), 0, RW.SIDE_RULES, {"rl3": RW.RL3_PARAMS})
+    arr = tuple(np.full((1, W.C_FLAT + 1), 1.0) for _ in range(4))
+    late = T.History.from_arrays(["2024-01-02"], [""], *arr)
+    lt = {k: np.full(1, np.nan) for k in trail}
+    with pytest.raises(DT.DesignRefused, match="E-208"):
+        SR.decisions(rt, late, 0, cal=world["cal"], day_kinds={"2024-01-02": "n"}, news_windows=None, trail=lt)
+    md = _edit("decisions", "    DT.check_search_days(hist.days)\n", "")
+    with pytest.raises(Exception) as e:                                     # the mutant goes on past the held-out day
+        md(rt, late, 0, cal=world["cal"], day_kinds={"2024-01-02": "n"}, news_windows=None, trail=lt)
+    assert "E-208" not in str(e.value)
 
 
 def _flat_days(n: int, base: float = 18000.0, half: float = 50.0):
@@ -541,3 +730,16 @@ def test_the_trailing_range_is_s1_ranges_on_the_vendored_arrays():
     out = json.loads(lines[-1])
     assert out["equal"] is True and out["finite"] >= 200 and out["sessions"] == 4, out
     assert out["mutant_equal"] is False, out                                   # the look-ahead mutant differs
+
+
+def test_mixed_stops_and_fees_go_through_the_vendored_pad_and_gate_blocks():
+    """m-4: the route's table, a stop a day and a fee a stop, through the vendored `pad` and `gate_blocks` (a child
+    process): each block trade's risk a contract, fee, own-w outcome and exit are its row's, every other w NaN, the
+    facts align with the blocks; a planted fee and stop on two rows are caught."""
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "survey_route_child.py"), "gate"], cwd=ROOT,
+                       capture_output=True, text=True, encoding="utf-8", timeout=900)
+    lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
+    assert r.returncode == 0 and lines, r.stderr[-3000:]
+    out = json.loads(lines[-1])
+    assert out["ok"] is True and out["aligned"] is True and out["problems"] == [], out
+    assert out["stops"] > 10 and out["fees"] > 10 and len(out["control_caught"]) >= 2, out

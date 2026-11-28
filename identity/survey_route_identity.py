@@ -7,20 +7,25 @@ on the search years' bars, against two independent records of the same quantitie
 **I-1, the stop's unit** (`--part trailing`): the route's trailing range `survey_route.trailing`, on the walker arrays
 the route is fed (`atlas_a3.bar_arrays` through `design_trades.history_from_arrays`) and Stage 2's day kinds, equals
 Q-171's own (`s1_range.add_trailing` of `s1_range.day_table` on the same arrays, its day kinds by
-`vol_descriptive.day_kind` with A1's FOMC and BLS days), in every session, NaN for NaN, tolerance zero; the days whose
-walked status the two kind sources disagree on are counted beside (zero expected).
+`vol_descriptive.day_kind` with A1's FOMC and BLS days), in every session, NaN for NaN, tolerance zero; and the two kind
+sources disagree on no day's walked status (part of `holds`).
 
 **I-2, a survey point through the route** (`--part route`): RL3's early-look base cell as a survey point of the real
 lever space (`search_space.from_lever_space(slots={"ny_am": 1})`: `ny_am.0` on, `rl3`, the window holding 09:00, S1
 the midpoint of `lever_space.stop_width("ny_am")`, S2 the midpoint of S2's range, every design-wide lever at its first
 cell or low end, T7 off) routed with the early look's declared kind, cutoff and side rule (`scripts/early_look.py`'s
-`KIND`, `CUTOFF`, `RULE`): on every day the route trades, its fills -- date, alert, fill bar, side, the alert's
-volatility, the ticket's tag -- equal those of the early look's own spec (`design_trades.rl3_spec` at its 50-tick stop,
-built here as `early_look.build` builds it), row for row (a fill and its side do not depend on the stop; the outcome
-columns do, and are not compared). Beside, the early look's spec's trade count and counts equal the ones its committed
-result records (`results/early_look_rl3_pd_fade.csv.manifest.json`'s `trades`, `counts`), so the spec rebuilt here is
-the one that run read. **I-2 needs S1 to load** (`results/s1_range.csv`, git-ignored, E-245): a checkout without it
-refuses I-2 by name (F-13's build item 6, `run_clean.py` supplying the file in place, comes first).
+`KIND`, `CUTOFF`, `RULE`). Three comparisons, each at tolerance zero:
+- **the fills**: on every day the route trades, its fills -- date, alert, fill bar, side, the alert's volatility --
+  equal those of the early look itself, rebuilt by **`early_look.build`** (its spec at its 50-tick stop, its A3 grid
+  `A.rrs(cfg)`, its own facts and job blocks), row for row (a fill and its side do not depend on the stop);
+- **the stops and outcomes**: for every stop group of the route (the days its S1 stop is one value), the route's rows
+  equal `design_trades.build_trades(rl3_spec(kind, cutoff, rule, stop))` on those days at the route's own w, column for
+  column (the whole frame: stop, costs, outcome, MAE, exit and kind at w);
+- **the record**: the rebuilt early look's `trades_sha256` (`search_cut.trades_subhash` of its padded table), trade
+  count and counts equal those its committed result records (`results/early_look_rl3_pd_fade.csv.manifest.json`), so
+  the reference is the one that run read.
+**I-2 needs S1 to load** (`results/s1_range.csv`, git-ignored, E-245): a checkout without it refuses I-2 by name
+(F-13's build item 6, `run_clean.py` supplying the file in place, comes first).
 
 Why not P-16's registered trades hash through a survey point: no point of the lever space expresses P-16 -- F-13's T1
 offers `p14` and `rl3` only (`p16` has no playbook side, `trigger_sides.NO_SIDE`), P-16's registered walk keeps FV3's
@@ -58,7 +63,6 @@ LAST = "2023-12-29"
 PARTS = ("trailing", "route")
 EARLY_RECORD = "results/early_look_rl3_pd_fade.csv.manifest.json"
 FILL_COLUMNS = ("date", "decision_slot_minutes", "entry_t", "side")
-AUX_COLUMNS = ("date", "entry_t", "decision_slot_minutes", "sigma", "tag", "resting")
 SLOT = "ny_am.0"
 
 
@@ -97,9 +101,11 @@ def trailing_identity(days: Sequence[str], arrays: Mapping[str, tuple], kinds: M
     finite = {s: int(np.isfinite(got[s]).sum()) for s in S1R.SESSIONS}
     walked_ref = ref["day_kind"].astype(str).isin(S1R.WALKED_KINDS).to_numpy()
     walked_mine = np.array([str(kinds[d]) in S1R.WALKED_KINDS for d in ref["date"].astype(str)])
-    return {"part": "trailing", "holds": bool(all(per.values()) and all(v > 0 for v in finite.values())),
+    disagree = int((walked_ref != walked_mine).sum())
+    return {"part": "trailing", "holds": bool(all(per.values()) and all(v > 0 for v in finite.values())
+                                             and disagree == 0),
             "equal_by_session": per, "finite_by_session": finite, "days": len(days),
-            "walked_status_disagreements": int((walked_ref != walked_mine).sum()), "tolerance": 0}
+            "walked_status_disagreements": disagree, "tolerance": 0}
 
 
 # ------------------------------------------------------------------------------------------------ I-2
@@ -141,12 +147,37 @@ def rl3_point(sp: Any) -> dict[str, Any]:
     return d
 
 
+def early_fills(early: Mapping[str, Any]) -> pd.DataFrame:
+    """The early look's fills from `early_look.build`'s output, in its (block day, index) order: the date, the alert,
+    the fill bar's end, the side (its job blocks' `sides`) and the alert's volatility (its facts)."""
+    rows = []
+    for (di, j), f in early["facts"].items():
+        side = int(np.asarray(early["blocks"][di].sides)[j])
+        rows.append({"date": str(early["dates"][di]), "decision_slot_minutes": int(f.decision),
+                     "entry_t": float(f.entry), "side": "long" if side > 0 else "short", "sigma": float(f.sigma)})
+    return pd.DataFrame(rows, columns=list(FILL_COLUMNS) + ["sigma"])
+
+
+def record_problems(early: Mapping[str, Any], record: Mapping[str, Any] | None) -> list[str]:
+    """The rebuilt early look against its committed record: `trades_sha256`, `trades` and `counts`."""
+    if record is None:
+        return ["no record of the early look"]
+    out = []
+    for k in ("trades_sha256", "trades"):
+        if early.get(k) != record.get(k):
+            out.append(f"{k}: rebuilt {early.get(k)!r}, recorded {record.get(k)!r}")
+    if json.loads(json.dumps(early.get("counts"), sort_keys=True)) != record.get("counts"):
+        out.append("counts differ")
+    return out
+
+
 def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, kind: str, cutoff: int,
-                   rule: Mapping[str, str], early_stop: int, fee_for_stop: Callable[[int], float], fresh_rr: float,
-                   tick_value: float, market_entry_ticks: float, tick: float,
-                   record: Mapping[str, Any] | None) -> dict[str, Any]:
-    """I-2 on a given space and history (the module docstring). `record` the early look's recorded parameters (its
-    `trades` and `counts`), or None where absent (then I-2 does not hold)."""
+                   rule: Mapping[str, str], early: Mapping[str, Any], record: Mapping[str, Any] | None,
+                   fee_for_stop: Callable[[int], float], tick_value: float, market_entry_ticks: float, tick: float,
+                   route_side: str | None = None) -> dict[str, Any]:
+    """I-2 on a given space and history (the module docstring). `early` is `early_look.build`'s output, `record` its
+    committed result's parameters (or None: then I-2 does not hold). `route_side` plants a side rule on the route
+    alone (a light test's fault); the references keep the declared rule."""
     from extended import design_trades as DT
     from extended import survey_route as SR
     from extended import triggers as T
@@ -154,33 +185,54 @@ def route_identity(sp: Any, hist: Any, kinds: Mapping[str, str], cal: Any, *, ki
     side = "fade" if set(rule.values()) == {"fade"} else None
     if side is None:
         raise ValueError(f"the early look's rule {rule!r} is not one word for every level")
-    rt = SR.route(sp, rl3_point(sp), side_rules={"rl3": side}, source_params={"rl3": {"kind": kind, "cutoff": cutoff}})
+    rt = SR.route(sp, rl3_point(sp), side_rules={"rl3": route_side or side},
+                  source_params={"rl3": {"kind": kind, "cutoff": cutoff}})
     trail = SR.trailing(hist, day_kinds=kinds, cal=cal)
-    out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fresh_rr=fresh_rr, fee_for_stop=fee_for_stop,
+    out = SR.build(rt, hist, cal=cal, day_kinds=kinds, news_windows=None, fee_for_stop=fee_for_stop,
                    tick_value=tick_value, market_entry_ticks=market_entry_ticks, trail=trail, tick=tick)
-    traded = {hist.days[i] for i, (s, _) in enumerate(SR.stops(rt, trail)[SLOT]) if s is not None}
-    spec = DT.rl3_spec(kind, cutoff, dict(rule), early_stop)
-    ctxs = {i: T.context_for(spec.source, cal, date.fromisoformat(d), i, rules=spec.rules)
-            for i, d in enumerate(hist.days)}
-    ref = DT.build_trades(spec, hist, lambda i: ctxs[i], day_kinds=kinds, rr_grid=out.rr_grid, fresh_rr=fresh_rr,
-                          fee_micro_eq=float(fee_for_stop(early_stop)), tick_value=tick_value,
-                          market_entry_ticks=market_entry_ticks, tick=tick)
-    on = ref.trades["date"].astype(str).isin(traded).to_numpy() if len(ref.trades) else np.zeros(0, bool)
-    a = out.trades.loc[:, list(FILL_COLUMNS)].reset_index(drop=True) if len(out.trades) else pd.DataFrame()
-    b = ref.trades.loc[on, list(FILL_COLUMNS)].reset_index(drop=True) if len(ref.trades) else pd.DataFrame()
-    fills = len(a) > 0 and a.equals(b)
-    ax = out.aux.loc[:, list(AUX_COLUMNS)].reset_index(drop=True) if len(out.aux) else pd.DataFrame()
-    bx = ref.aux.loc[on, list(AUX_COLUMNS)].reset_index(drop=True) if len(ref.aux) else pd.DataFrame()
-    aux = len(ax) > 0 and ax.equals(bx)
-    rec = None
-    if record is not None:
-        rec = {"trades": int(len(ref.trades)) == int(record.get("trades", -1)),
-               "counts": json.loads(json.dumps(ref.counts, sort_keys=True)) == record.get("counts")}
-    holds = bool(fills and aux and rec is not None and all(rec.values()))
-    return {"part": "route", "holds": holds, "fills_equal": bool(fills), "aux_equal": bool(aux),
-            "record_equal": rec, "route_trades": int(len(out.trades)), "early_trades_on_route_days": int(on.sum()),
-            "early_trades": int(len(ref.trades)), "route_days": len(traded), "stand_aside": out.counts[SLOT]["stand_aside"],
-            "k": rt.slots[0].k, "w": rt.slots[0].w, "tolerance": 0}
+    w = float(rt.slots[0].w)
+    groups: dict[int, list[int]] = {}
+    for i, (s, _) in enumerate(SR.stops(rt, trail, tick=tick)[SLOT]):
+        if s is not None:
+            groups.setdefault(int(s), []).append(i)
+    traded = {hist.days[i] for ds in groups.values() for i in ds}
+    # the fills, against the early look itself
+    ef = early_fills(early)
+    ef = ef[ef["date"].isin(traded)].reset_index(drop=True)
+    if len(out.trades):
+        mine = out.trades.loc[:, list(FILL_COLUMNS)].reset_index(drop=True)
+        mine["sigma"] = out.aux["sigma"].to_numpy(float)
+    else:
+        mine = pd.DataFrame(columns=list(FILL_COLUMNS) + ["sigma"])
+    fills = len(mine) > 0 and len(mine) == len(ef) and all(
+        np.array_equal(mine[c].astype(str).to_numpy(), ef[c].astype(str).to_numpy()) for c in ("date", "side")) \
+        and all(np.array_equal(mine[c].to_numpy(float), ef[c].to_numpy(float))
+                for c in ("decision_slot_minutes", "entry_t", "sigma"))
+    # the stops and outcomes, group by group, against design_trades on the declared spec
+    bad_groups: list[int] = []
+    ctxs: dict[int, Any] = {}
+    for s, ds in sorted(groups.items()):
+        spec = DT.rl3_spec(kind, cutoff, dict(rule), s)
+        for i in ds:
+            if i not in ctxs:
+                ctxs[i] = T.context_for(spec.source, cal, date.fromisoformat(hist.days[i]), i, rules=spec.rules)
+        ref = DT.build_trades(spec, hist, lambda i: ctxs[i], day_kinds=kinds, rr_grid=(w,), fresh_rr=w,
+                              fee_micro_eq=float(fee_for_stop(s)), tick_value=tick_value,
+                              market_entry_ticks=market_entry_ticks, days=ds, tick=tick)
+        on = out.trades["date"].isin([hist.days[i] for i in ds]).to_numpy() if len(out.trades) \
+            else np.zeros(0, bool)
+        if int(on.sum()) != len(ref.trades):
+            bad_groups.append(s)
+        elif len(ref.trades) and not out.trades.loc[on, list(ref.trades.columns)].reset_index(drop=True).equals(
+                ref.trades.reset_index(drop=True)):
+            bad_groups.append(s)
+    rec = record_problems(early, record)
+    holds = bool(fills and groups and not bad_groups and not rec)
+    return {"part": "route", "holds": holds, "fills_equal": bool(fills), "stop_groups": len(groups),
+            "stop_groups_unequal": bad_groups[:10], "record_problems": rec, "route_trades": int(len(out.trades)),
+            "early_trades_on_route_days": int(len(ef)), "early_trades": int(len(early_fills(early))),
+            "route_days": len(traded), "stand_aside": out.counts[SLOT]["stand_aside"], "k": rt.slots[0].k, "w": w,
+            "tolerance": 0}
 
 
 # ------------------------------------------------------------------------------------------------ the run
@@ -224,7 +276,6 @@ def main(argv: list[str] | None = None) -> int:
         arr_fn = A.bar_arrays(dict(cfg), list(days))
         arrays = {str(d): arr_fn(str(d)) for d in days}
         fomc, bls, _ = spec_s1.release_days()
-        crr = float(fcfg["state_policy"]["fresh"]["combine_rr"])
         problems = cut_log.problems()
     if problems:
         print(json.dumps({"identity": "Q-215", "holds": False, "why": f"search_cut problems: {problems}"}))
@@ -242,8 +293,10 @@ def main(argv: list[str] | None = None) -> int:
                                    "results/s1_range.csv is git-ignored (E-245) -- F-13's build item 6 first"})
         else:
             hist = DT.history_from_arrays(days, arrays)
+            del arrays
             rec_path = ROOT / EARLY_RECORD
             record = json.loads(rec_path.read_text(encoding="utf-8")).get("parameters") if rec_path.is_file() else None
+            early = EL.build(ROOT)                    # the early look itself: its spec, grid, facts and job blocks
             fees: dict[int, float] = {}
 
             def fee(s: int) -> float:
@@ -252,9 +305,9 @@ def main(argv: list[str] | None = None) -> int:
                 return fees[s]
 
             results.append(route_identity(sp, hist, kinds, cal, kind=EL.KIND, cutoff=int(EL.CUTOFF), rule=EL.RULE,
-                                          early_stop=int(EL.STOP_TICKS), fee_for_stop=fee, fresh_rr=crr,
-                                          tick_value=tv, market_entry_ticks=float(cfg["slip_ticks"]),
-                                          tick=float(cfg["contract"]["tick"]), record=record))
+                                          early=early, record=record, fee_for_stop=fee, tick_value=tv,
+                                          market_entry_ticks=float(cfg["slip_ticks"]),
+                                          tick=float(cfg["contract"]["tick"])))
     holds = bool(results) and all(r.get("holds") for r in results)
     print(json.dumps({"identity": "Q-215 survey route", "holds": holds, "parts": results,
                       "seconds": round(time.perf_counter() - t0, 1)}, sort_keys=True, default=str))
